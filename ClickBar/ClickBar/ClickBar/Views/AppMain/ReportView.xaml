@@ -1,0 +1,196 @@
+﻿<UserControl x:Class="ClickBar.Views.AppMain.ReportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ClickBar.Views.AppMain"
+             xmlns:nav="clr-namespace:ClickBar.State.Navigators" xmlns:appmain="clr-namespace:ClickBar.ViewModels.AppMain" d:DataContext="{d:DesignInstance Type=appmain:ReportViewModel}"
+             mc:Ignorable="d" >
+    <UserControl.InputBindings>
+        <KeyBinding Key="F6" 
+                    Command="{Binding UpdateCurrentViewModelCommand}"
+                    CommandParameter="{x:Static nav:CashierViewType.Statistics}"/>
+        <KeyBinding Key="F8" 
+                    Command="{Binding UpdateCurrentViewModelCommand}"
+                    CommandParameter="{x:Static nav:CashierViewType.Settings}"/>
+        <KeyBinding Key="F10" 
+                    Command="{Binding UpdateCurrentViewModelCommand}"
+                    CommandParameter="{x:Static nav:CashierViewType.Admin}"/>
+    </UserControl.InputBindings>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0"
+              Margin="10 20 10 20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Style="{StaticResource RoundCorner}"
+                    Height="100"
+                    Width="190"
+                    Command="{Binding ReportCommand}">
+                <StackPanel Orientation="Vertical">
+                    <Label HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           FontSize="28"
+                           Content="PRESEK"
+                           FontWeight="Bold"/>
+                    <Label HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           FontSize="28"
+                           Content="STANJA"
+                           FontWeight="Bold"/>
+                </StackPanel>
+            </Button>
+            <Button Grid.Column="1"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Style="{StaticResource RoundCorner}"
+                    Height="100"
+                    Width="190"
+                    Command="{Binding DayReportCommand}">
+                <StackPanel Orientation="Vertical">
+                    <Label HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           FontSize="28"
+                           Content="DNEVNI"
+                           FontWeight="Bold"/>
+                    <Label HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           FontSize="28"
+                           Content="IZVEŠTAJ"
+                           FontWeight="Bold"/>
+                </StackPanel>
+            </Button>
+            <Button Grid.Column="2"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Style="{StaticResource RoundCorner}"
+                    Height="100"
+                    Width="190"
+                    Command="{Binding PeriodicReportCommand}">
+                <StackPanel Orientation="Vertical">
+                    <Label HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           FontSize="28"
+                           Content="PERIODIČNI"
+                           FontWeight="Bold"/>
+                    <Label HorizontalAlignment="Center"
+                           HorizontalContentAlignment="Center"
+                           FontSize="28"
+                           Content="IZVEŠTAJ"
+                           FontWeight="Bold"/>
+                </StackPanel>
+            </Button>
+
+        </Grid>
+
+        <Grid Grid.Row="1" 
+              Margin="10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+
+                    <Button Style="{StaticResource RoundCorner}"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
+                            FontSize="28"
+                            Height="50"
+                            Width="50"
+                            Command="{Binding PrintReportCommand}"
+                            Margin="10">
+                        <Image Margin="5"
+                               Source="../../Icons/printer.png"/>
+                    </Button>
+                    <StackPanel Orientation="Vertical"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <Label Content="Uvesti i artikle u izveštaj: "
+                                   FontSize="16"
+                                   Height="40"
+                                   Width="210"
+                                   HorizontalContentAlignment="Right"
+                                   VerticalContentAlignment="Center"/>
+                            <ToggleButton Width="80"
+                                          Height="40"
+                                          Style="{StaticResource SwitchTypeToggleButton}"
+                                          IsChecked="{Binding Items}"
+                                          Margin="55 0 0 0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0 10 0 0">
+                            <Label Content="Šifra / br. kartice konobara:"
+                                   FontSize="16"
+                                   Height="40"
+                                   Width="210"
+                                   HorizontalContentAlignment="Right"
+                                   VerticalContentAlignment="Center"/>
+                            <TextBox Text="{Binding SmartCard}"
+                                     Width="150"
+                                     FontSize="24"
+                                     VerticalContentAlignment="Center"
+                                     HorizontalContentAlignment="Center"
+                                     Margin="10 0 0 0"
+                                     MaxLength="10"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Button Style="{StaticResource RoundCorner}"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            FontSize="28"
+                            Height="50"
+                            Width="50"
+                            ToolTip="Izvoz artikala"
+                            Command="{Binding ExportReportCommand}"
+                            Margin="10"
+                            IsEnabled="{Binding Items}">
+                        <Image Margin="5"
+                               Source="../../Icons/export.png"/>
+                    </Button>
+
+                </Grid>
+
+                <Grid Grid.Row="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Label Grid.Row="0"
+                           Content="{Binding Title}"
+                           FontSize="30"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+                    <Border Grid.Row="1"
+                            BorderBrush="Black"
+                            BorderThickness="1"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Margin="0 10 0 10">
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Auto">
+                            <TextBlock Text="{Binding Report}"
+                                       FontSize="22"
+                                       FontFamily="Cascadia Code"
+                                       Margin="5"/>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>

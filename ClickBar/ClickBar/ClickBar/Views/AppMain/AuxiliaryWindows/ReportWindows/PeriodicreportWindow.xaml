@@ -1,0 +1,66 @@
+﻿<Window x:Class="ClickBar.Views.AppMain.AuxiliaryWindows.ReportWindows.PeriodicreportWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ClickBar.Views.AppMain.AuxiliaryWindows.ReportWindows"
+        mc:Ignorable="d"
+        Title="Periodični izveštaj"
+        Background="{StaticResource BrushLogo2}"
+        Width="500"
+        Height="570"
+        ResizeMode="NoResize" WindowStartupLocation="CenterScreen">
+    <Window.InputBindings>
+        <KeyBinding Key="Return" 
+                    Command="{Binding SetDateCommand}"/>
+    </Window.InputBindings>
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+
+        <Label Content="PERIODIČNI IZVEŠTAJ:"
+               FontSize="26"
+               HorizontalAlignment="Center"
+               Grid.Row="0"
+               FontWeight="Bold"/>
+
+        <StackPanel Orientation="Vertical"
+                    Grid.Row="1"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Margin="0 40 0 40">
+            <StackPanel Orientation="Horizontal">
+                <Label Content="Izaberite datum od:"
+                       FontSize="18"
+                       Height="40"
+                       HorizontalContentAlignment="Center"
+                       VerticalContentAlignment="Center"/>
+
+                <Calendar SelectedDate="{Binding StartReport}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <Label Content="Izaberite datum do:"
+                       FontSize="18"
+                       Height="40"
+                       HorizontalContentAlignment="Center"
+                       VerticalContentAlignment="Center"/>
+
+                <Calendar SelectedDate="{Binding EndReport}"/>
+            </StackPanel>
+        </StackPanel>
+
+        <Button Grid.Row="2"
+                HorizontalAlignment="Center"
+                Content="Potvrdi"
+                FontSize="20"
+                Margin="0 30 0 0"
+                Command="{Binding SetDateCommand}"
+                Height="40"
+                Width="100"
+                Style="{StaticResource RoundCorner}"/>
+    </Grid>
+</Window>
+

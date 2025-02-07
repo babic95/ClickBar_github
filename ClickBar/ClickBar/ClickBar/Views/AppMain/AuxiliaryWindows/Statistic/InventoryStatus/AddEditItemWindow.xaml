@@ -1,0 +1,341 @@
+﻿<Window x:Class="ClickBar.Views.AppMain.AuxiliaryWindows.Statistic.AddEditItemWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ClickBar.Views.AppMain.AuxiliaryWindows.Statistic" 
+        xmlns:statistic="clr-namespace:ClickBar.ViewModels.AppMain.Statistic"
+        d:DataContext="{d:DesignInstance Type=statistic:InventoryStatusViewModel}"
+        mc:Ignorable="d"
+        WindowState="Maximized"
+        Background="{StaticResource BrushLogo2}"
+        Title="Dodaj/Izmeni artikal"
+        MinWidth="820"
+        WindowStartupLocation="CenterScreen">
+    <Grid HorizontalAlignment="Center">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+
+        <Label Foreground="Black"
+               FontSize="38"
+               Content="Izmena/dodavanje artikla:"
+               Grid.Row="0"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"
+               Margin="0 10"/>
+
+        <ScrollViewer Grid.Row="1"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel Orientation="Vertical"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Margin="0 10 0 0">
+                <StackPanel Orientation="Horizontal">
+                    <StackPanel Orientation="Vertical">
+                        <Label Height="40"
+                       Foreground="Black"
+                       Content="Grupa:"
+                       FontSize="24"
+                       HorizontalAlignment="Right"
+                       Margin="0 5"/>
+                        <Label Height="40"
+                       Foreground="Black"
+                       Content="Naziv:"
+                       FontSize="24"
+                       HorizontalAlignment="Right"
+                       Margin="0 5"/>
+                        <Label Height="40"
+                       Foreground="Black"
+                       Content="Jedinična cena:"
+                       FontSize="24"
+                       HorizontalAlignment="Right"
+                       Margin="0 5"
+                               Visibility="{Binding CurrentInventoryStatus.VisibilityJC}"/>
+                        <Label Height="40"
+                       Foreground="Black"
+                       Content="Noćna cena:"
+                       FontSize="24"
+                       HorizontalAlignment="Right"
+                       Margin="0 5"/>
+                        <Label Height="40"
+                       Foreground="Black"
+                       Content="Dnevna cena:"
+                       FontSize="24"
+                       HorizontalAlignment="Right"
+                       Margin="0 5"/>
+                        <Label Height="40"
+                       Foreground="Black"
+                       Content="JM:"
+                       FontSize="24"
+                       HorizontalAlignment="Right"
+                       Margin="0 5"/>
+                        <Label Height="40"
+                       Foreground="Black"
+                       Content="Labela poreza:"
+                       FontSize="24"
+                       HorizontalAlignment="Right"
+                       Margin="0 5"/>
+                        <Label Height="40"
+                       Foreground="Black"
+                       Content="Alarm:"
+                       FontSize="24"
+                       HorizontalAlignment="Right"
+                       Margin="0 5"/>
+                        <Label Height="40"
+                       Foreground="Black"
+                       Content="Skloni artikal iz prodaje:"
+                       FontSize="24"
+                       HorizontalAlignment="Right"
+                       Margin="0 5"/>
+                        <Label Height="40"
+                       Foreground="Black"
+                       Content="Zabrani popust:"
+                       FontSize="24"
+                       HorizontalAlignment="Right"
+                       Margin="0 5"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Vertical">
+                        <ComboBox Height="40"
+                              Width="600"
+                              FontSize="24"
+                              HorizontalContentAlignment="Center"
+                              VerticalContentAlignment="Center"
+                              Margin="0 5"
+                              SelectedItem="{Binding CurrentGroupItems, Mode=TwoWay}"
+                              ItemsSource="{Binding AllGroupItems}"
+                              DisplayMemberPath="Name"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentInventoryStatus.Item.Name, Mode=TwoWay}"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                                 IsReadOnly="{Binding EditItemIsReadOnly}"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentInventoryStatus.Item.SellingUnitPrice, Mode=TwoWay}"
+                                 Visibility="{Binding CurrentInventoryStatus.VisibilityJC}"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentInventoryStatus.Item.SellingNocnaUnitPrice, Mode=TwoWay}"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentInventoryStatus.Item.SellingDnevnaUnitPrice, Mode=TwoWay}"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentInventoryStatus.Item.Jm, Mode=TwoWay}"/>
+                        <ComboBox Height="40"
+                                  Width="600"
+                                  Foreground="Black"
+                                  FontSize="24"
+                                  HorizontalContentAlignment="Center"
+                                  VerticalContentAlignment="Center"
+                                  Margin="0 5"
+                                  ItemsSource="{Binding AllLabels}"
+                                  DisplayMemberPath="Name"
+                                  SelectedItem="{Binding CurrentLabel}"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentInventoryStatus.Alarm, Mode=TwoWay}"/>
+                        <CheckBox IsChecked="{Binding CurrentInventoryStatus.Item.IsCheckedDesableItem}"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Left"
+                                    Margin="0 14 0 0">
+                            <CheckBox.LayoutTransform>
+                                <ScaleTransform ScaleX="2" ScaleY="2" />
+                            </CheckBox.LayoutTransform>
+                        </CheckBox>
+                        <CheckBox IsChecked="{Binding CurrentInventoryStatus.Item.IsCheckedZabraniPopust}"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Left"
+                                    Margin="0 20 0 0">
+                            <CheckBox.LayoutTransform>
+                                <ScaleTransform ScaleX="2" ScaleY="2" />
+                            </CheckBox.LayoutTransform>
+                        </CheckBox>
+                    </StackPanel>
+                </StackPanel>
+
+                <Label Content="Normativi:"
+                   FontSize="20"
+                   HorizontalAlignment="Center"/>
+
+                <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Center">
+                    <DataGrid ItemsSource="{Binding Norma}"
+                              AutoGenerateColumns="False"
+                              HorizontalContentAlignment="Center"
+                              FontSize="16"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Auto" 
+                              Background="AliceBlue"
+                              x:Name="dataGrid"
+                              CanUserAddRows="False" >
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Naziv artikla u normativu" 
+                                        Width="auto"
+                                        Binding="{Binding Item.Name}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                        <Setter Property="VerticalAlignment" Value="Center" />
+                                        <Setter Property="FontSize" Value="14" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="Količina u normativu" 
+                                        Width="auto"
+                                        Binding="{Binding Quantity}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center" />
+                                        <Setter Property="VerticalAlignment" Value="Center" />
+                                        <Setter Property="FontSize" Value="14" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTemplateColumn>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Command="{Binding DataContext.EditNormCommand, ElementName=dataGrid}"
+                                                    CommandParameter="{Binding Item.Id}"
+                                                    Background="{x:Null}"
+                                                    ToolTip="Izmeni normativ"
+                                                    BorderBrush="{x:Null}"
+                                                    Width="30">
+                                                <Image Source="/Icons/edit.png"/>
+                                            </Button>
+                                            <Button Command="{Binding DataContext.DeleteNormCommand, ElementName=dataGrid}"
+                                                    CommandParameter="{Binding Item.Id}"
+                                                    Background="{x:Null}"
+                                                    ToolTip="Obriši normativ"
+                                                    BorderBrush="{x:Null}"
+                                                    Width="30">
+                                                <Image Source="/Icons/clear.png"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <Button Command="{Binding OpenNormativWindowCommand}"
+                            Height="30"
+                            Width="30"
+                            VerticalAlignment="Top"
+                            Background="{x:Null}"
+                            ToolTip="Dodaj normativ"
+                            BorderBrush="{x:Null}">
+                        <Image Source="/Icons/plus.png"/>
+                    </Button>
+                </StackPanel>
+
+                <Label Content="Želje:"
+                   FontSize="20"
+                   HorizontalAlignment="Center"/>
+
+                <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Center">
+                    <DataGrid ItemsSource="{Binding Zelje}"
+                              AutoGenerateColumns="False"
+                              HorizontalContentAlignment="Center"
+                              FontSize="16"
+                              Width="350"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Auto" 
+                              Background="AliceBlue"
+                              x:Name="dataGrid1"
+                              CanUserAddRows="False" >
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="Želja" 
+                                        Width="*">
+                                <DataGridTemplateColumn.CellTemplate >
+                                    <DataTemplate>
+                                        <TextBox HorizontalContentAlignment="Center"
+                                                 VerticalContentAlignment="Center"
+                                                 FontSize="14"
+                                                 Text="{Binding Path=Zelja, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" ></TextBox>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Width="30">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Command="{Binding DataContext.DeleteZeljaCommand, ElementName=dataGrid1}"
+                                                    CommandParameter="{Binding Id}"
+                                                    Background="{x:Null}"
+                                                    ToolTip="Obriši želju"
+                                                    BorderBrush="{x:Null}"
+                                                    Width="30">
+                                                <Image Source="/Icons/clear.png"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <Button Command="{Binding AddNewZeljaCommand}"
+                            CommandParameter="{Binding CurrentInventoryStatus.Item.Id}"
+                            Height="30"
+                            Width="30"
+                            VerticalAlignment="Top"
+                            Background="{x:Null}"
+                            ToolTip="Dodaj želju"
+                            BorderBrush="{x:Null}">
+                        <Image Source="/Icons/plus.png"/>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+        <Button Grid.Row="2"
+                Margin="0 10"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Style="{StaticResource RoundCorner}"
+                Height="50"
+                Width="190"
+                Command="{Binding SaveCommand}">
+            <StackPanel Orientation="Vertical">
+                <Label HorizontalAlignment="Center"
+                       HorizontalContentAlignment="Center"
+                       FontSize="24"
+                       Content="SAČUVAJ"
+                       FontWeight="Bold"/>
+            </StackPanel>
+        </Button>
+    </Grid>
+</Window>

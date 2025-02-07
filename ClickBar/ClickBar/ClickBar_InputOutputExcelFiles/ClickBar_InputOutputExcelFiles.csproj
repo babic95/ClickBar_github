@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Platforms>AnyCPU;x64;x86;ARM32</Platforms>
+    <Configurations>Debug;Release;Crno</Configurations>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.95.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClickBar_Common\ClickBar_Common.csproj" />
+    <ProjectReference Include="..\ClickBar_Database\ClickBar_Database.csproj" />
+    <ProjectReference Include="..\ClickBar_Settings\ClickBar_Settings.csproj" />
+  </ItemGroup>
+
+</Project>

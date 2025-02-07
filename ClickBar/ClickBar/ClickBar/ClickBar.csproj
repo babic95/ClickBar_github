@@ -1,0 +1,128 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>True</UseWindowsForms>
+    <StartupObject>ClickBar.Startup</StartupObject>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
+    <Platforms>AnyCPU;x64;x86;ARM32</Platforms>
+    <Configurations>Debug;Release;Crno</Configurations>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Icons\backspace1.png" />
+    <None Remove="Icons\clear.png" />
+    <None Remove="Icons\delete.png" />
+    <None Remove="Icons\edit.png" />
+    <None Remove="Icons\export.png" />
+    <None Remove="Icons\information.png" />
+    <None Remove="Icons\kuhinja.png" />
+    <None Remove="Icons\left.png" />
+    <None Remove="Icons\logo.png" />
+    <None Remove="Icons\logout_icon.png" />
+    <None Remove="Icons\no-signal.png" />
+    <None Remove="Icons\open.png" />
+    <None Remove="Icons\plus.png" />
+    <None Remove="Icons\printer.png" />
+    <None Remove="Icons\right.png" />
+    <None Remove="Icons\search.png" />
+    <None Remove="Icons\signal.png" />
+    <None Remove="Icons\sto.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="icon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClickBar_API\ClickBar_API.csproj" />
+    <ProjectReference Include="..\ClickBar_Common\ClickBar_Common.csproj" />
+    <ProjectReference Include="..\ClickBar_Database\ClickBar_Database.csproj" />
+    <ProjectReference Include="..\ClickBar_Database_Drlja\ClickBar_Database_Drlja.csproj" />
+    <ProjectReference Include="..\ClickBar_eFaktura\ClickBar_eFaktura.csproj" />
+    <ProjectReference Include="..\ClickBar_InputOutputExcelFiles\ClickBar_InputOutputExcelFiles.csproj" />
+    <ProjectReference Include="..\ClickBar_Mutex\ClickBar_Mutex.csproj" />
+    <ProjectReference Include="..\ClickBar_Printer\ClickBar_Printer.csproj" />
+    <ProjectReference Include="..\ClickBar_Process\ClickBar_Process.csproj" />
+    <ProjectReference Include="..\ClickBar_Report\ClickBar_Report.csproj" />
+    <ProjectReference Include="..\ClickBar_Settings\ClickBar_Settings.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Styles\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+    <PackageReference Include="System.IO.Ports" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Icons\backspace1.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Icons\clear.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Icons\delete.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Icons\edit.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Icons\export.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Icons\information.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Icons\kuhinja.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Icons\left.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Icons\logo.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Icons\logout_icon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Icons\no-signal.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Icons\open.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Icons\plus.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Icons\printer.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Icons\right.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Icons\search.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Icons\signal.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Icons\sto.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="ActivationCodes.cvs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,421 @@
+﻿<Window x:Class="ClickBar.Views.AppMain.AuxiliaryWindows.Statistic.Nivelacija.AddEditNivelacijaItemWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ClickBar.Views.AppMain.AuxiliaryWindows.Statistic.Nivelacija"
+        xmlns:statistic="clr-namespace:ClickBar.ViewModels.AppMain.Statistic" 
+             xmlns:converters="clr-namespace:ClickBar.Converters"
+        d:DataContext="{d:DesignInstance Type=statistic:NivelacijaViewModel}"
+        mc:Ignorable="d"
+        Background="{StaticResource BrushLogo2}"
+        Title="Dodaj/Izmeni Nivelacije"
+        MinWidth="700"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <converters:DecimalNumberToString x:Key="decimalToString"/>
+        <converters:DecimalNumberQuantityToString x:Key="decimalQuantityToString"/>
+    </Window.Resources>
+    <Grid HorizontalAlignment="Center">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+
+        <Label Foreground="Black"
+               FontSize="30"
+               Content="Izmena/dodavanje nivelacije:"
+               Grid.Row="0"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"
+               Margin="0 10"/>
+
+        <ScrollViewer Grid.Row="1"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel Orientation="Horizontal">
+                <StackPanel Orientation="Vertical"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Margin="0 10 0 0">
+                    <Label Content="Formiranje nove cene:"
+                           FontSize="20"/>
+                    <Border BorderBrush="Black"
+                            BorderThickness="2">
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="10">
+                            <StackPanel Orientation="Vertical">
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content=""
+                               FontSize="16"
+                               HorizontalAlignment="Right"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content=""
+                               FontSize="16"
+                               HorizontalAlignment="Right"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content=""
+                               FontSize="16"
+                               HorizontalAlignment="Right"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content=""
+                               FontSize="16"
+                               HorizontalAlignment="Right"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content=""
+                               FontSize="16"
+                               HorizontalAlignment="Right"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content=""
+                               FontSize="16"
+                               HorizontalAlignment="Right"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content=""
+                               FontSize="16"
+                               HorizontalAlignment="Right"
+                               Margin="0 5"/>
+                                <Viewbox Height="30"
+                                 Margin="0 5">
+                                    <RadioButton IsChecked="{Binding NewPriceSelected, Mode=TwoWay}"
+                                         HorizontalAlignment="Right"
+                                         Margin="2.5"/>
+                                </Viewbox>
+                                <Viewbox Height="30"
+                                 Margin="0 5">
+                                    <RadioButton IsChecked="{Binding RazlikaCeneSelected, Mode=TwoWay}"
+                                         HorizontalAlignment="Right"
+                                         Margin="2.5"/>
+                                </Viewbox>
+                                <Viewbox Height="30"
+                                 Margin="0 5">
+                                    <RadioButton IsChecked="{Binding ProcenatNaDosadasnjuCenuSelected, Mode=TwoWay}"
+                                         HorizontalAlignment="Right"
+                                         Margin="2.5"/>
+                                </Viewbox>
+                                <Viewbox Height="30"
+                                 Margin="0 5">
+                                    <RadioButton IsChecked="{Binding MarzaLastCalculationSelected, Mode=TwoWay}"
+                                         HorizontalAlignment="Right"
+                                         Margin="2.5"/>
+                                </Viewbox>
+                            </StackPanel>
+                            <StackPanel Orientation="Vertical">
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="Naziv:"
+                               FontSize="16"
+                               HorizontalAlignment="Right"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="JM:"
+                               FontSize="16"
+                               HorizontalAlignment="Right"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="Stopa PDV:"
+                               FontSize="16"
+                               HorizontalAlignment="Right"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="Trenutna JC sa PDV:"
+                               FontSize="16"
+                               HorizontalAlignment="Right"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="Ulazna cena sa poslednje kalkulacije:"
+                               FontSize="16"
+                               HorizontalAlignment="Right"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="Količina u magacinu:"
+                               FontSize="16"
+                               HorizontalAlignment="Right"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="Nova JC:"
+                               FontSize="16"
+                               HorizontalAlignment="Right"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="Nova JC sa PDV:"
+                               FontSize="16"
+                               HorizontalAlignment="Right"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="Razlika u ceni:"
+                               FontSize="16"
+                               HorizontalAlignment="Right"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="Procenat na dosadašnju cenu:"
+                               FontSize="16"
+                               HorizontalAlignment="Right"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="Marža na poslednju kalkulaciju:"
+                               FontSize="16"
+                               HorizontalAlignment="Right"
+                               Margin="0 5"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Vertical">
+                                <TextBox Height="30"
+                                 Width="300"
+                                 Foreground="Black"
+                                 FontSize="16"
+                                 IsReadOnly="True"
+                                 HorizontalContentAlignment="Center"
+                                 VerticalContentAlignment="Center"
+                                 Margin="0 5"
+                                 Text="{Binding CurrentItemsToNivelacija.Name}"/>
+                                <TextBox Height="30"
+                                 Width="300"
+                                 Foreground="Black"
+                                 FontSize="16"
+                                 IsReadOnly="True"
+                                 HorizontalContentAlignment="Center"
+                                 VerticalContentAlignment="Center"
+                                 Margin="0 5"
+                                 Text="{Binding CurrentItemsToNivelacija.Jm}"/>
+                                <TextBox Height="30"
+                                 Width="300"
+                                 Foreground="Black"
+                                 FontSize="16"
+                                 IsReadOnly="True"
+                                 HorizontalContentAlignment="Center"
+                                 VerticalContentAlignment="Center"
+                                 Margin="0 5"
+                                 Text="{Binding CurrentItemsToNivelacija.StopaPDV}"/>
+                                <TextBox Height="30"
+                                 Width="300"
+                                 Foreground="Black"
+                                 FontSize="16"
+                                 IsReadOnly="True"
+                                 HorizontalContentAlignment="Center"
+                                 VerticalContentAlignment="Center"
+                                 Margin="0 5"
+                                 Text="{Binding CurrentItemsToNivelacija.OldPrice, Converter={StaticResource decimalToString}}"/>
+                                <TextBox Height="30"
+                                 Width="300"
+                                 Foreground="Black"
+                                 FontSize="16"
+                                 IsReadOnly="True"
+                                 HorizontalContentAlignment="Center"
+                                 VerticalContentAlignment="Center"
+                                 Margin="0 5"
+                                 Text="{Binding CurrentItemsToNivelacija.LastImportPrice, Converter={StaticResource decimalToString}}"/>
+                                <TextBox Height="30"
+                                 Width="300"
+                                 Foreground="Black"
+                                 FontSize="16"
+                                 IsReadOnly="True"
+                                 HorizontalContentAlignment="Center"
+                                 VerticalContentAlignment="Center"
+                                 Margin="0 5"
+                                 Text="{Binding CurrentItemsToNivelacija.Quantity, Converter={StaticResource decimalQuantityToString}}"/>
+                                <TextBox Height="30"
+                                 Width="300"
+                                 Foreground="Black"
+                                 FontSize="16"
+                                 IsReadOnly="True"
+                                 HorizontalContentAlignment="Center"
+                                 VerticalContentAlignment="Center"
+                                 Margin="0 5"
+                                 Text="{Binding CurrentItemsToNivelacija.NewPrice, Converter={StaticResource decimalToString}}"/>
+                                <TextBox Height="30"
+                                 Width="300"
+                                 Foreground="Black"
+                                 FontSize="16"
+                                 HorizontalContentAlignment="Center"
+                                 VerticalContentAlignment="Center"
+                                 Margin="0 5"
+                                 IsEnabled="{Binding NewPriceSelected}"
+                                 Text="{Binding NewPriceString}"/>
+                                <TextBox Height="30"
+                                 Width="300"
+                                 Foreground="Black"
+                                 FontSize="16"
+                                 HorizontalContentAlignment="Center"
+                                 VerticalContentAlignment="Center"
+                                 Margin="0 5"
+                                 IsEnabled="{Binding RazlikaCeneSelected}"
+                                 Text="{Binding RazlikaCeneString}"/>
+                                <TextBox Height="30"
+                                 Width="300"
+                                 Foreground="Black"
+                                 FontSize="16"
+                                 HorizontalContentAlignment="Center"
+                                 VerticalContentAlignment="Center"
+                                 Margin="0 5"
+                                 IsEnabled="{Binding ProcenatNaDosadasnjuCenuSelected}"
+                                 Text="{Binding ProcenatNaDosadasnjuCenuString}"/>
+                                <TextBox Height="30"
+                                 Width="300"
+                                 Foreground="Black"
+                                 FontSize="16"
+                                 HorizontalContentAlignment="Center"
+                                 VerticalContentAlignment="Center"
+                                 Margin="0 5"
+                                 IsEnabled="{Binding MarzaLastCalculationSelected}"
+                                 Text="{Binding MarzaLastCalculationString}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Vertical">
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content=""
+                               FontSize="16"
+                               HorizontalAlignment="Left"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content=""
+                               FontSize="16"
+                               HorizontalAlignment="Left"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="%"
+                               FontSize="16"
+                               HorizontalAlignment="Left"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="din."
+                               FontSize="16"
+                               HorizontalAlignment="Left"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="din."
+                               FontSize="16"
+                               HorizontalAlignment="Left"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content=""
+                               FontSize="16"
+                               HorizontalAlignment="Left"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="din."
+                               FontSize="16"
+                               HorizontalAlignment="Left"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="din."
+                               FontSize="16"
+                               HorizontalAlignment="Left"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="din."
+                               FontSize="16"
+                               HorizontalAlignment="Left"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="%"
+                               FontSize="16"
+                               HorizontalAlignment="Left"
+                               Margin="0 5"/>
+                                <Label Height="30"
+                               Foreground="Black"
+                               Content="%"
+                               FontSize="16"
+                               HorizontalAlignment="Left"
+                               Margin="0 5"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <Label Content="Zaokruživanje cene:"
+                           FontSize="20"
+                           Margin="0 25 0 0"/>
+                    <Border BorderBrush="Black"
+                            BorderThickness="2">
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="10">
+                            <StackPanel Orientation="Vertical">
+                                <Viewbox Height="30"
+                                         Margin="0 5"
+                                         HorizontalAlignment="Left">
+                                    <RadioButton Content="Cena se zaokružuje na 2 decimale"
+                                                 IsChecked="{Binding NeZaokruzujeSelected, Mode=TwoWay}"
+                                                 HorizontalAlignment="Left"
+                                                 HorizontalContentAlignment="Left"
+                                                 Margin="2.5"/>
+                                </Viewbox>
+                                <Viewbox Height="30"
+                                         Margin="0 5"
+                                         HorizontalAlignment="Left">
+                                    <RadioButton Content="Zaokruži na ceo broj"
+                                                 IsChecked="{Binding ZaokruzujeSelected, Mode=TwoWay}"
+                                                 HorizontalAlignment="Left"
+                                                 HorizontalContentAlignment="Left"
+                                                 Margin="2.5"/>
+                                </Viewbox>
+                                <Viewbox Height="30"
+                                         Margin="0 5"
+                                         HorizontalAlignment="Left">
+                                    <RadioButton Content="Zaokruži za 10"
+                                                 IsChecked="{Binding Zaokruzuje10Selected, Mode=TwoWay}"
+                                                 HorizontalAlignment="Left"
+                                                 HorizontalContentAlignment="Left"
+                                                 Margin="2.5"/>
+                                </Viewbox>
+                                <Viewbox Height="30"
+                                         Margin="0 5"
+                                         HorizontalAlignment="Left">
+                                    <RadioButton Content="Zaokruži za 100"
+                                                 IsChecked="{Binding Zaokruzuje100Selected, Mode=TwoWay}"
+                                                 Margin="2.5"/>
+                                </Viewbox>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+        <Button Grid.Row="2"
+                Margin="0 10"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Style="{StaticResource RoundCorner}"
+                Height="50"
+                Width="190"
+                Command="{Binding AddToNivelacijaCommand}">
+            <StackPanel Orientation="Vertical">
+                <Label HorizontalAlignment="Center"
+                       HorizontalContentAlignment="Center"
+                       FontSize="24"
+                       Content="SAČUVAJ"
+                       FontWeight="Bold"/>
+            </StackPanel>
+        </Button>
+    </Grid>
+</Window>

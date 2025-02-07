@@ -1,0 +1,6 @@
+@ClickBar_Porudzbine.Server_HostAddress = http://localhost:5062
+
+GET {{ClickBar_Porudzbine.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

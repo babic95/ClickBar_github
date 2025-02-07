@@ -1,0 +1,55 @@
+﻿<Window x:Class="ClickBar.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ClickBar" 
+        xmlns:viewmodels="clr-namespace:ClickBar.ViewModels"
+        xmlns:activationVM="clr-namespace:ClickBar.ViewModels.Activation"
+        xmlns:loginVM="clr-namespace:ClickBar.ViewModels.Login"
+        xmlns:activationView="clr-namespace:ClickBar.Views.Activation"
+        xmlns:loginView="clr-namespace:ClickBar.Views.Login"
+        xmlns:appMainView="clr-namespace:ClickBar.Views.AppMain"
+        xmlns:tableOverviewView="clr-namespace:ClickBar.Views.TableOverview"
+        xmlns:saleView="clr-namespace:ClickBar.Views.Sale"
+        d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
+        mc:Ignorable="d"
+        Title="CCS ClickBar"
+        WindowState="Maximized"
+        Background="{StaticResource BrushLogo2}"
+        WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing">
+    
+        <Grid>
+            <Grid.Resources>
+                <ResourceDictionary>
+                    <DataTemplate DataType="{x:Type activationVM:ActivationViewModel}">
+                        <activationView:ActivationView/>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type loginVM:LoginViewModel}">
+                    <loginView:LoginView/>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type loginVM:LoginCardViewModel}">
+                    <loginView:LoginCardView/>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type viewmodels:AppMainViewModel}">
+                        <appMainView:AppMainView/>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type viewmodels:TableOverviewViewModel}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                      CanContentScroll="True">
+                        <tableOverviewView:TableOverviewView/>
+                    </ScrollViewer>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type viewmodels:SaleViewModel}">
+                    <!--<ScrollViewer VerticalScrollBarVisibility="Auto"
+                                  CanContentScroll="True">
+                        <saleView:SaleView/>
+                    </ScrollViewer>-->
+                    <saleView:SaleView/>
+                </DataTemplate>
+                </ResourceDictionary>
+            </Grid.Resources>
+            <ContentControl Content="{Binding CurrentViewModel}"/>
+        </Grid>
+</Window>

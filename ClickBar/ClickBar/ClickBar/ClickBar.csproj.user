@@ -1,0 +1,388 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup />
+  <ItemGroup>
+    <ApplicationDefinition Update="App.xaml">
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Views\Activation\ActivationView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AdminView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AppMainView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Admin\AddNewPaymentPlaceWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Admin\AddNewRoomWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\InformationWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\ReportWindows\DayReportWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\ReportWindows\PeriodicreportWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\AddEditPartnerWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\AddEditRadnikWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\Calculation\AddCaclulationWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\PrintTypeWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\Otpis\AddQuantityForOtpisWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\Otpis\AllItemsForOtpisWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\Radnici\WhatDidWorkerSellWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\LagerListaView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\OtpisPreviewView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\OtpisView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\PartnerView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\ViewCalculation\AllItemsForCalculationWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\ViewCalculation\EditCalculationWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\AddEditItemWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\AddEditSupplierWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\AddNormWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\Calculation\AddQuantityToCalculationWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\AddQuantityToNormWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\AddOrEditGroupItemsWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\AddOrEditSupergroupWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\Knjizenje\ItemsInInvoiceWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\Nivelacija\AddEditNivelacijaItemWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\Refaund\PayRefaundWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\ViewCalculation\EditQuantityCalculationWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\ViewCalculation\ViewCalculationItemsWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\ReportView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\SettingsView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\StatisticsView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\AddEditSupplierView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\CalculationView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\FirmaView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\FixNormView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\InventoryStatusView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\KEPView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\KnjizenjeView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\NivelacijaView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\PocetnoStanjeView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\PregledPazaraView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\PriceIncreaseView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\RadniciView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\RefaundView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\ViewCalculationView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\Statistic\ViewNivelacijaView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\Components\PasswordBox.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\Login\LoginCardView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\Login\LoginView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\Sale\ItemInvoiceAddZeljeWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\Sale\PaySale\ChangePaymentPlaceWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\Sale\PaySale\PaySaleWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\Sale\PaySale\SplitOrderWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\Sale\SaleView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\TableOverview\KuhinjaPorudzbineWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\TableOverview\KuhinjaStavkePorudzbine.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\TableOverview\TableOverviewView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="MainWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\Activation\ActivationView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AdminView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AppMainView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Admin\AddNewPaymentPlaceWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Admin\AddNewRoomWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\InformationWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\ReportWindows\DayReportWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\ReportWindows\PeriodicreportWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\AddEditPartnerWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\AddEditRadnikWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\Calculation\AddCaclulationWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\PrintTypeWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\Otpis\AddQuantityForOtpisWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\Otpis\AllItemsForOtpisWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\Radnici\WhatDidWorkerSellWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\LagerListaView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\OtpisPreviewView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\OtpisView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\PartnerView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\ViewCalculation\AllItemsForCalculationWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\ViewCalculation\EditCalculationWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\AddEditItemWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\AddEditSupplierWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\AddNormWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\Calculation\AddQuantityToCalculationWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\AddQuantityToNormWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\AddOrEditGroupItemsWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\AddOrEditSupergroupWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\Knjizenje\ItemsInInvoiceWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\Nivelacija\AddEditNivelacijaItemWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\Refaund\PayRefaundWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\ViewCalculation\EditQuantityCalculationWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\ViewCalculation\ViewCalculationItemsWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\ReportView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\SettingsView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\StatisticsView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\AddEditSupplierView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\CalculationView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\FirmaView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\FixNormView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\InventoryStatusView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\KEPView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\KnjizenjeView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\NivelacijaView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\PocetnoStanjeView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\PregledPazaraView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\PriceIncreaseView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\RadniciView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\RefaundView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\ViewCalculationView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\ViewNivelacijaView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\Components\PasswordBox.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\Login\LoginCardView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\Login\LoginView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\Sale\ItemInvoiceAddZeljeWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\Sale\PaySale\ChangePaymentPlaceWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\Sale\PaySale\PaySaleWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\Sale\PaySale\SplitOrderWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\Sale\SaleView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\TableOverview\KuhinjaPorudzbineWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\TableOverview\KuhinjaStavkePorudzbine.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\TableOverview\TableOverviewView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+</Project>

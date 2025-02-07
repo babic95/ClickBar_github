@@ -1,0 +1,240 @@
+﻿@import url("https://fonts.googleapis.com/css?family=Roboto:300,400,500,700");
+
+* {
+    box-sizing: border-box;
+    font-family: "Roboto", sans-serif;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+.mr-20 {
+    margin-right: 20px !important;
+}
+
+.App2 {
+    color: white;
+}
+
+.pageSwitcher {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10%;
+}
+
+.pageSwitcherItem {
+    background-color: #40434e;
+    color: #9da6b1;
+    padding: 10px 25px;
+    cursor: pointer;
+    font-size: 0.9em;
+    border: none;
+    outline: none;
+    display: inline-block;
+    text-decoration: none;
+}
+
+.pageSwitcherItem-active {
+    background-color: var(--clr-robin-blue);
+    color: white;
+}
+
+.pageSwitcherItem:first-child {
+    border-top-left-radius: 25px;
+    border-bottom-left-radius: 25px;
+}
+
+.pageSwitcherItem:last-child {
+    border-top-right-radius: 25px;
+    border-bottom-right-radius: 25px;
+}
+
+.dugmici {
+    margin: 20px 0px;
+}
+
+.formTitle {
+    color: var(--clr-robin-blue);
+    font-weight: 300;
+    margin-bottom: 50px;
+}
+
+.konobarDiv{
+    margin: 0
+}
+
+.konobarP {
+    font-size: 0.7em;
+}
+
+.formTitleLink {
+    color: var(--clr-robin-blue);
+    text-decoration: none;
+    display: inline-block;
+    font-size: 1.5em;
+    margin: 0 10px;
+    padding-bottom: 5px;
+}
+
+    .formTitleLink:first-child {
+        margin-left: 0;
+    }
+
+.formTitleLink-active {
+    color: white;
+    border-bottom: 1px solid var(--clr-robin-blue);
+}
+
+.formField {
+    margin-bottom: 40px;
+}
+
+.formFieldLabel {
+    font-size: 0.6em;
+    color: var(--clr-robin-blue);
+}
+
+.formFieldInput {
+    width: 85%;
+    background-color: transparent;
+    border: none;
+    color: white;
+    outline: none;
+    border-bottom: 1px solid #445366;
+    font-size: 1em;
+    font-weight: 300;
+    padding-bottom: 10px;
+    margin-top: 10px;
+}
+
+    .formFieldInput::placeholder {
+        color: #616e7f;
+    }
+
+.centerB {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.formFieldButton {
+    /*background-color: var(--clr-robin-blue);*/
+    background-color: #EC8B5E;
+    border: 2px solid white;
+    /*outline: none;*/
+    border-radius: 50px;
+    padding: 10px 50px;
+    font-size: 1.1em;
+    color: white;
+    font-weight: 500;
+}
+
+.formFieldButtonNadgrupa1 {
+    /*background-color: var(--clr-robin-blue);*/
+    background-color: #EC8B5E;
+    border: 2px solid white;
+    /*outline: none;*/
+    border-radius: 50px;
+    padding: 5px 30px;
+    font-size: 1.2em;
+    width: 50%;
+    color: white;
+    font-weight: 500;
+}
+.formFieldButtonGrupa1 {
+    /*background-color: var(--clr-robin-blue);*/
+    background-color: #EC8B5E;
+    border: 2px solid white;
+    /*outline: none;*/
+    border-radius: 50px;
+    padding: 0px 20px;
+    width: 150px;
+    height: 50px;
+    font-size: 0.8em;
+    margin: 5px;
+    color: white;
+}
+.formFieldButtonArtikal {
+    /*background-color: var(--clr-robin-blue);*/
+    background-color: #EC8B5E;
+    border: 2px solid white;
+    /*outline: none;*/
+    width: 45%;
+    border-radius: 50px;
+    padding: 0;
+    font-size: 0.7em;
+    color: white;
+    margin: 5px;
+    font-weight: 500;
+}
+
+.rows {
+    display: inline;
+    width: 50%;
+    height: 50%;
+}
+
+.formFieldLink {
+    color: #66707d;
+    text-decoration: none;
+    display: inline-block;
+    border-bottom: 1.5px solid var(--clr-robin-blue);
+    padding-bottom: 5px;
+}
+
+.formFieldCheckboxLabel {
+    color: #646f7d;
+    font-size: 0.9em;
+}
+
+.formFieldCheckbox {
+    position: relative;
+    top: 1.5px;
+}
+
+.formFieldTermsLink {
+    color: white;
+    border-bottom: 1px solid var(--clr-robin-blue);
+    text-decoration: none;
+    display: inline-block;
+    padding-bottom: 2px;
+    margin-left: 5px;
+}
+
+.socialMediaButtons {
+    padding: 10px 100px 10px 0px;
+}
+
+@media screen and (min-width: 350px) {
+
+    .appForm1 {
+        width: 100%;
+        background-color: #2D353C;
+        padding: 25px 40px;
+        overflow: auto;
+    }
+}
+
+.logo {
+    padding: 10px;
+    width: 100%;
+    height: 100%;
+}
+
+@media screen and (min-width: 992px) {
+    .appAside {
+        width: 50%;
+        background-color: var(--clr-robin-blue);
+        min-height: 100vh;
+        /*background: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url("../../assets/images/header_main_img.jpg") center/cover no-repeat;*/
+    }
+
+    .appForm {
+        width: 50%;
+        background-color: #2D353C;
+        padding: 25px 40px;
+        overflow: auto;
+    }
+}

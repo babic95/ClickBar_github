@@ -1,0 +1,51 @@
+﻿<Window x:Class="ClickBar.Views.AppMain.AuxiliaryWindows.Statistic.InventoryStatus.PrintTypeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ClickBar.Views.AppMain.AuxiliaryWindows.Statistic.InventoryStatus" xmlns:statistic="clr-namespace:ClickBar.ViewModels.AppMain.Statistic" d:DataContext="{d:DesignInstance Type=statistic:InventoryStatusViewModel}"
+        mc:Ignorable="d"
+        Title="Tip štampe"
+        Background="{StaticResource BrushLogo2}"
+        Width="400"
+        Height="300"
+        ResizeMode="NoResize" WindowStartupLocation="CenterScreen">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Label Content="ODABERITE TIP STAMPE:"
+               FontSize="26"
+               HorizontalAlignment="Center"
+               Grid.Row="0"
+               FontWeight="Bold"/>
+
+        <StackPanel Orientation="Horizontal"
+                    Grid.Row="1"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+
+            <Button Grid.Row="2"
+                    HorizontalAlignment="Center"
+                    Content="POS"
+                    FontSize="30"
+                    Margin="0 30 0 0"
+                    Command="{Binding PrintCommand}"
+                    Height="100"
+                    Width="100"
+                    Style="{StaticResource RoundCorner}"/>
+            
+            <Button Grid.Row="2"
+                    HorizontalAlignment="Center"
+                    Content="A4"
+                    FontSize="30"
+                    Margin="20 30 0 0"
+                    Command="{Binding PrintA4Command}"
+                    Height="100"
+                    Width="100"
+                    Style="{StaticResource RoundCorner}"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -1,0 +1,395 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--Colors-->
+    <Color x:Key="ColorNavigationBar">#2D353C</Color>
+    <Color x:Key="ColorNavigationBarSelect">#242B30</Color>
+    <Color x:Key="ColorNavigationBarTitle">#DEE2E6</Color>
+    <Color x:Key="ColorNavigationBarText">#BEBEBE</Color>
+    <Color x:Key="ColorNavigationBarTextSelect">White</Color>
+    <Color x:Key="ColorNavigationBarSelectItem">#478B71</Color>
+    <Color x:Key="ColorLogo1">#141A46</Color>
+    <Color x:Key="ColorLogo2">#EC8B5E</Color>
+
+
+    <!--Brushes-->
+    <SolidColorBrush x:Key="BrushNavigationBar" Color="{StaticResource ColorNavigationBar}"/>
+    <SolidColorBrush x:Key="BrushNavigationBarSelect" Color="{StaticResource ColorNavigationBarSelect}"/>
+    <SolidColorBrush x:Key="BrushNavigationBarTitle" Color="{StaticResource ColorNavigationBarTitle}"/>
+    <SolidColorBrush x:Key="BrushNavigationBarText" Color="{StaticResource ColorNavigationBarText}"/>
+    <SolidColorBrush x:Key="BrushNavigationBarTextSelect" Color="{StaticResource ColorNavigationBarTextSelect}"/>
+    <SolidColorBrush x:Key="BrushNavigationBarSelectItem" Color="{StaticResource ColorNavigationBarSelectItem}"/>
+    <SolidColorBrush x:Key="BrushLogo1" Color="{StaticResource ColorLogo1}"/>
+    <SolidColorBrush x:Key="BrushLogo2" Color="{StaticResource ColorLogo2}"/>
+
+
+    <!--Icons-->
+    <Image x:Key="Table" Source="/Icons/sto.png" />
+    <Image x:Key="IconPrinter" Source="/Icons/printer.png" />
+    <Image x:Key="IconSearch" Source="/Icons/search.png" />
+    <Image x:Key="IconLogout" Source="/Icons/logout_icon.png" />
+    <Image x:Key="IconLeft" Source="/Icons/left.png" />
+    <Image x:Key="IconClear" Source="/Icons/clear.png" />
+    <Image x:Key="IconEdit" Source="/Icons/edit.png" />
+    <Image x:Key="IconAdd" Source="/Icons/plus.png" />
+    <Image x:Key="IconInformation" Source="/Icons/information.png" />
+    <Image x:Key="IconKuhinja" Source="/Icons/kuhinja.png" />
+
+    <!--<BitmapImage x:Key="Logo" UriSource="/Icons/logo.png" />
+    <BitmapImage x:Key="Icon" UriSource="/Icons/icon.png" />-->
+
+    <Style x:Key="userName" TargetType="TextBox">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TextBox}">
+                    <Border Background="White" 
+                            x:Name="Bd" BorderBrush="Transparent"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="15">
+                        <ScrollViewer Name="PART_ContentHost" SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" TargetName="Bd"/>
+                            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                        </Trigger>
+                        <Trigger Property="Width" Value="Auto">
+                            <Setter Property="MinWidth" Value="100"/>
+                        </Trigger>
+                        <Trigger Property="Height" Value="Auto">
+                            <Setter Property="MinHeight" Value="20"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <Style x:Key="MenuButton" TargetType="{x:Type Button}">
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Padding" Value="1"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Grid x:Name="grid">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center">
+                        </ContentPresenter>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter Property="Background" TargetName="grid" Value="#DEE2E6">
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" TargetName="grid" Value="#EC8B5E"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" TargetName="grid" Value="0.25"/>
+                        </Trigger>
+
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="RoundCorner" TargetType="{x:Type Button}">
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Padding" Value="1"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Grid x:Name="grid">
+                        <Border x:Name="border" CornerRadius="8" BorderBrush="White" BorderThickness="2">
+                            <Border.Background>
+                                <RadialGradientBrush GradientOrigin="0.496,1.052">
+                                    <RadialGradientBrush.RelativeTransform>
+                                        <TransformGroup>
+                                            <ScaleTransform CenterX="0.5" CenterY="0.5" 
+                                                        ScaleX="1.5" ScaleY="1.5"/>
+                                            <TranslateTransform X="0.02" Y="0.3"/>
+                                        </TransformGroup>
+                                    </RadialGradientBrush.RelativeTransform>
+                                </RadialGradientBrush>
+                            </Border.Background>
+                            <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          TextElement.FontWeight="Bold">
+                            </ContentPresenter>
+                        </Border>
+
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter Property="Background" TargetName="border">
+                                <Setter.Value>
+                                    <RadialGradientBrush GradientOrigin="0.496,1.052">
+                                        <RadialGradientBrush.RelativeTransform>
+                                            <TransformGroup>
+                                                <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1.5" ScaleY="1.5"/>
+                                                <TranslateTransform X="0.02" Y="0.3"/>
+                                            </TransformGroup>
+                                        </RadialGradientBrush.RelativeTransform>
+                                    </RadialGradientBrush>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource BrushNavigationBarSelectItem}"/>
+                            <Setter Property="Background" TargetName="border" Value="{StaticResource BrushNavigationBarSelectItem}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" TargetName="grid" Value="0.25"/>
+                        </Trigger>
+
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="NormalPaymentPlaceButton" TargetType="{x:Type Button}">
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Padding" Value="1"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Grid x:Name="grid">
+                        <Border x:Name="border" CornerRadius="0" BorderBrush="Transparent" BorderThickness="0">
+                            <Border.Background>
+                                <RadialGradientBrush GradientOrigin="0.496,1.052">
+                                    <RadialGradientBrush.RelativeTransform>
+                                        <TransformGroup>
+                                            <ScaleTransform CenterX="0.5" CenterY="0.5" 
+                                                        ScaleX="1.5" ScaleY="1.5"/>
+                                            <TranslateTransform X="0.02" Y="0.3"/>
+                                        </TransformGroup>
+                                    </RadialGradientBrush.RelativeTransform>
+                                </RadialGradientBrush>
+                            </Border.Background>
+                            <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          TextElement.FontWeight="Bold">
+                            </ContentPresenter>
+                        </Border>
+
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter Property="Background" TargetName="border">
+                                <Setter.Value>
+                                    <RadialGradientBrush GradientOrigin="0.496,1.052">
+                                        <RadialGradientBrush.RelativeTransform>
+                                            <TransformGroup>
+                                                <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1.5" ScaleY="1.5"/>
+                                                <TranslateTransform X="0.02" Y="0.3"/>
+                                            </TransformGroup>
+                                        </RadialGradientBrush.RelativeTransform>
+                                    </RadialGradientBrush>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="BorderBrush" TargetName="border" Value="#EC8B5E"/>
+                            <Setter Property="Background" TargetName="border" Value="#EC8B5E"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" TargetName="grid" Value="0.25"/>
+                        </Trigger>
+
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="RoundPaymentPlaceButton" TargetType="{x:Type Button}">
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Padding" Value="1"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Grid x:Name="grid">
+                        <Border x:Name="border" CornerRadius="100000" BorderBrush="Transparent" BorderThickness="0">
+                            <Border.Background>
+                                <RadialGradientBrush GradientOrigin="0.496,1.052">
+                                    <RadialGradientBrush.RelativeTransform>
+                                        <TransformGroup>
+                                            <ScaleTransform CenterX="0.5" CenterY="0.5" 
+                                                        ScaleX="1.5" ScaleY="1.5"/>
+                                            <TranslateTransform X="0.02" Y="0.3"/>
+                                        </TransformGroup>
+                                    </RadialGradientBrush.RelativeTransform>
+                                </RadialGradientBrush>
+                            </Border.Background>
+                            <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          TextElement.FontWeight="Bold">
+                            </ContentPresenter>
+                        </Border>
+
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter Property="Background" TargetName="border">
+                                <Setter.Value>
+                                    <RadialGradientBrush GradientOrigin="0.496,1.052">
+                                        <RadialGradientBrush.RelativeTransform>
+                                            <TransformGroup>
+                                                <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1.5" ScaleY="1.5"/>
+                                                <TranslateTransform X="0.02" Y="0.3"/>
+                                            </TransformGroup>
+                                        </RadialGradientBrush.RelativeTransform>
+                                    </RadialGradientBrush>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="BorderBrush" TargetName="border" Value="#EC8B5E"/>
+                            <Setter Property="Background" TargetName="border" Value="#EC8B5E"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" TargetName="grid" Value="0.25"/>
+                        </Trigger>
+
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="pass" TargetType="PasswordBox">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type PasswordBox}">
+                    <Border Background="White" 
+                            x:Name="Bd" BorderBrush="Transparent"
+                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="15">
+                        <ScrollViewer Name="PART_ContentHost" SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" TargetName="Bd"/>
+                            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                        </Trigger>
+                        <Trigger Property="Width" Value="Auto">
+                            <Setter Property="MinWidth" Value="100"/>
+                        </Trigger>
+                        <Trigger Property="Height" Value="Auto">
+                            <Setter Property="MinHeight" Value="20"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="LoginButton" TargetType="{x:Type Button}">
+        <Setter Property="Width" Value="60" />
+        <Setter Property="Margin" Value="0,0,10,10" />
+        <Setter Property="FontSize" Value="40" />
+        <Setter Property="Foreground" Value="#2a232a" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid x:Name="grid">
+                        <Border x:Name="border" CornerRadius="30" Background="#EC8B5E" BorderBrush="Transparent" >
+                            <ContentPresenter x:Name="contentPresenter" ContentTemplate="{TemplateBinding ContentTemplate}" 
+                                          Content="{TemplateBinding Content}" 
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                          Margin="{TemplateBinding Padding}" 
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter Property="Background" TargetName="border">
+                                <Setter.Value>
+                                    <RadialGradientBrush GradientOrigin="0.496,1.052">
+                                        <GradientStop Color="{StaticResource ColorNavigationBarSelectItem}" Offset="1"/>
+                                    </RadialGradientBrush>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource BrushNavigationBarSelectItem}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" TargetName="grid" Value="0.25"/>
+                        </Trigger>
+
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="QuantityButton" TargetType="{x:Type Button}">
+        <Setter Property="Width" Value="55" />
+        <Setter Property="Margin" Value="1.5" />
+        <Setter Property="FontSize" Value="37" />
+        <Setter Property="Foreground" Value="#EAAC8B" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid x:Name="grid">
+                        <Border x:Name="border" CornerRadius="30" Background="{StaticResource BrushNavigationBar}" BorderBrush="Transparent" >
+                            <ContentPresenter x:Name="contentPresenter" ContentTemplate="{TemplateBinding ContentTemplate}" 
+                                              Content="{TemplateBinding Content}" 
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                              Margin="{TemplateBinding Padding}" 
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter Property="Background" TargetName="border">
+                                <Setter.Value>
+                                    <RadialGradientBrush GradientOrigin="0.496,1.052">
+                                        <GradientStop Color="{StaticResource ColorNavigationBarSelectItem}" Offset="1"/>
+                                    </RadialGradientBrush>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource BrushNavigationBarSelectItem}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" TargetName="grid" Value="0.25"/>
+                        </Trigger>
+
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <LinearGradientBrush x:Key="HeaderBrush" StartPoint="0.5,0" EndPoint="0.5,1">
+        <GradientStop Color="#FF6B8E95" Offset="0"/>
+        <GradientStop Color="#FF14A7C1" Offset="1"/>
+        <GradientStop Color="#FF1E424E" Offset="0.509"/>
+        <GradientStop Color="#FF1D4855" Offset="0.542"/>
+        <GradientStop Color="#FF1D4855" Offset="0.542"/>
+        <GradientStop Color="#FF193A44" Offset="0.526"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="HeaderBorderBrush" StartPoint="0.5,0" EndPoint="0.5,1">
+        <GradientStop Color="#FF1D1D1D" Offset="0.614"/>
+        <GradientStop Color="#FF007F96" Offset="0.853"/>
+        <GradientStop Color="#FF0AEAFA" Offset="1"/>
+    </LinearGradientBrush>
+
+    <Style x:Key="HeaderStyle" TargetType="DataGridColumnHeader">
+        <Setter Property="Foreground" Value="Black" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="30" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+</ResourceDictionary>

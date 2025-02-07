@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Platforms>AnyCPU;x64;x86;ARM32</Platforms>
+    <Configurations>Debug;Release;Crno</Configurations>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Easy.Logger" Version="3.7.5" />
+    <PackageReference Include="log4net" Version="2.0.14" />
+  </ItemGroup>
+
+</Project>

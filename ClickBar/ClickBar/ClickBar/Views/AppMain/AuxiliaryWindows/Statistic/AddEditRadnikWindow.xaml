@@ -1,0 +1,203 @@
+﻿<Window x:Class="ClickBar.Views.AppMain.AuxiliaryWindows.Statistic.AddEditRadnikWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:System="clr-namespace:System;assembly=mscorlib"
+        xmlns:enums="clr-namespace:ClickBar.Enums.AppMain.Statistic"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ClickBar.Views.AppMain.AuxiliaryWindows.Statistic" 
+        xmlns:statistic="clr-namespace:ClickBar.ViewModels.AppMain.Statistic" 
+        d:DataContext="{d:DesignInstance Type=statistic:RadniciViewModel}"
+        mc:Ignorable="d"
+        Title="Izmena/dodavanje radnika" Height="700" Width="800"
+        Background="{StaticResource BrushLogo2}"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <ObjectDataProvider x:Key="typesRadnici" MethodName="GetValues"
+                            ObjectType="{x:Type System:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="enums:RadnikStateEnumeration"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </Window.Resources>
+    <Grid HorizontalAlignment="Center">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+
+        <Label Foreground="Black"
+               FontSize="38"
+               Content="Izmena/dodavanje radnika:"
+               Grid.Row="0"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"
+               Margin="0 10"/>
+
+        <ScrollViewer Grid.Row="1"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel Orientation="Vertical">
+                <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Margin="0 10 0 0">
+                    <StackPanel Orientation="Vertical">
+                        <Label Height="40"
+                           Foreground="Black"
+                           Content="*Šifra:"
+                           FontSize="24"
+                           HorizontalAlignment="Right"
+                           Margin="0 5"/>
+                        <Label Height="40"
+                           Foreground="Black"
+                           Content="*Ime i prezime:"
+                           FontSize="24"
+                           HorizontalAlignment="Right"
+                           Margin="0 5"/>
+                        <Label Height="40"
+                           Foreground="Black"
+                           Content="*Pozicija:"
+                           FontSize="24"
+                           HorizontalAlignment="Right"
+                           Margin="0 5"/>
+                        <Label Height="40"
+                           Foreground="Black"
+                           Content="Broj kartice:"
+                           FontSize="24"
+                           HorizontalAlignment="Right"
+                           Margin="0 5"/>
+                        <Label Height="40"
+                           Foreground="Black"
+                           Content="JMBG:"
+                           FontSize="24"
+                           HorizontalAlignment="Right"
+                           Margin="0 5"/>
+                        <Label Height="40"
+                           Foreground="Black"
+                           Content="Broj telefona:"
+                           FontSize="24"
+                           HorizontalAlignment="Right"
+                           Margin="0 5"/>
+                        <Label Height="40"
+                           Foreground="Black"
+                           Content="Grad:"
+                           FontSize="24"
+                           HorizontalAlignment="Right"
+                           Margin="0 5"/>
+                        <Label Height="40"
+                           Foreground="Black"
+                           Content="Adresa:"
+                           FontSize="24"
+                           HorizontalAlignment="Right"
+                           Margin="0 5"/>
+                        <Label Height="40"
+                           Foreground="Black"
+                           Content="E-mail:"
+                           FontSize="24"
+                           HorizontalAlignment="Right"
+                           Margin="0 5"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Vertical">
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentRadnik.Id}"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentRadnik.Name}"/>
+                        <ComboBox Height="40"
+                                  Width="600"
+                                  Foreground="Black"
+                                  FontSize="24"
+                                  HorizontalContentAlignment="Center"
+                                  VerticalContentAlignment="Center"
+                                  Margin="0 5"
+                                  ItemsSource="{Binding Source={StaticResource typesRadnici}}"
+                                  SelectedItem="{Binding Path=CurrentRadnik.RadnikStateEnumeration}"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentRadnik.SmartCardNumber}"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentRadnik.Jmbg}"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentRadnik.ContractNumber}"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentRadnik.City}"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentRadnik.Address}"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentRadnik.Email}"/>
+                    </StackPanel>
+                </StackPanel>
+                <Label Content="Obavezna su sva polja sa *"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Bottom"
+                       FontSize="20"
+                       FontWeight="Bold"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Button Grid.Row="2"
+                Margin="0 10"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Style="{StaticResource RoundCorner}"
+                Height="50"
+                Width="190"
+                Command="{Binding SaveRadnikCommand}">
+            <StackPanel Orientation="Vertical">
+                <Label HorizontalAlignment="Center"
+                       HorizontalContentAlignment="Center"
+                       FontSize="24"
+                       Content="SAČUVAJ"
+                       FontWeight="Bold"/>
+            </StackPanel>
+        </Button>
+    </Grid>
+</Window>

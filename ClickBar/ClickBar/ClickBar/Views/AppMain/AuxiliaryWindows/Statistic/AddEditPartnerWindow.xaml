@@ -1,0 +1,162 @@
+﻿<Window x:Class="ClickBar.Views.AppMain.AuxiliaryWindows.Statistic.AddEditPartnerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ClickBar.Views.AppMain.AuxiliaryWindows.Statistic"
+        mc:Ignorable="d"
+        Title="Izmena/dodavanje firme partnera" Height="600" Width="800"
+        Background="{StaticResource BrushLogo2}"
+        WindowStartupLocation="CenterScreen">
+    <Grid HorizontalAlignment="Center">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+
+        <Label Foreground="Black"
+               FontSize="38"
+               Content="Izmena/dodavanje firme partnera:"
+               Grid.Row="0"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"
+               Margin="0 10"/>
+
+        <ScrollViewer Grid.Row="1"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel Orientation="Vertical">
+                <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Margin="0 10 0 0">
+                    <StackPanel Orientation="Vertical">
+                        <Label Height="40"
+                           Foreground="Black"
+                           Content="*Naziv firme:"
+                           FontSize="24"
+                           HorizontalAlignment="Right"
+                           Margin="0 5"/>
+                        <Label Height="40"
+                           Foreground="Black"
+                           Content="*PIB:"
+                           FontSize="24"
+                           HorizontalAlignment="Right"
+                           Margin="0 5"/>
+                        <Label Height="40"
+                           Foreground="Black"
+                           Content="MB:"
+                           FontSize="24"
+                           HorizontalAlignment="Right"
+                           Margin="0 5"/>
+                        <Label Height="40"
+                           Foreground="Black"
+                           Content="Broj telefona:"
+                           FontSize="24"
+                           HorizontalAlignment="Right"
+                           Margin="0 5"/>
+                        <Label Height="40"
+                           Foreground="Black"
+                           Content="Grad:"
+                           FontSize="24"
+                           HorizontalAlignment="Right"
+                           Margin="0 5"/>
+                        <Label Height="40"
+                           Foreground="Black"
+                           Content="Adresa:"
+                           FontSize="24"
+                           HorizontalAlignment="Right"
+                           Margin="0 5"/>
+                        <Label Height="40"
+                           Foreground="Black"
+                           Content="E-mail:"
+                           FontSize="24"
+                           HorizontalAlignment="Right"
+                           Margin="0 5"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Vertical">
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentPartner.Name}"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentPartner.Pib}"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentPartner.MB}"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentPartner.ContractNumber}"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentPartner.City}"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentPartner.Address}"/>
+                        <TextBox Height="40"
+                             Width="600"
+                             Foreground="Black"
+                             FontSize="24"
+                             HorizontalContentAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             Margin="0 5"
+                             Text="{Binding CurrentPartner.Email}"/>
+                    </StackPanel>
+                </StackPanel>
+                <Label Content="Obavezna su sva polja sa *"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Bottom"
+                       FontSize="20"
+                       FontWeight="Bold"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Button Grid.Row="2"
+                Margin="0 10"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Style="{StaticResource RoundCorner}"
+                Height="50"
+                Width="190"
+                Command="{Binding SaveCommand}">
+            <StackPanel Orientation="Vertical">
+                <Label HorizontalAlignment="Center"
+                       HorizontalContentAlignment="Center"
+                       FontSize="24"
+                       Content="SAČUVAJ"
+                       FontWeight="Bold"/>
+            </StackPanel>
+        </Button>
+    </Grid>
+</Window>

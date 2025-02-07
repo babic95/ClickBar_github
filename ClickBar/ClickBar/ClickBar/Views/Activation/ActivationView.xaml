@@ -1,0 +1,238 @@
+﻿<UserControl x:Class="ClickBar.Views.Activation.ActivationView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:enum="clr-namespace:ClickBar.ViewModels.Activation"
+             xmlns:local="clr-namespace:ClickBar.Views.Activation"
+             xmlns:activation="clr-namespace:ClickBar.ViewModels.Activation"
+             d:DataContext="{d:DesignInstance Type=activation:ActivationViewModel}"
+             mc:Ignorable="d" >
+    <Border Width="850" Height="500" 
+            BorderBrush="Transparent"
+            Background="#EC8B5E"
+            CornerRadius="30">
+        <Grid>
+            <Border Margin="10,10,10,10"
+                    BorderBrush="{StaticResource BrushNavigationBar}"
+                    Background="{StaticResource BrushNavigationBar}"
+                    CornerRadius="20">
+                <Grid>
+                    <Grid.Background>
+                        <ImageBrush ImageSource="{Binding Logo}" 
+                                    Opacity="0.4" 
+                                    Stretch="Uniform"/>
+                    </Grid.Background>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="80"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="auto"/>
+                    </Grid.RowDefinitions>
+                    <Label Grid.Row="0" 
+                           Foreground="{StaticResource BrushLogo2}" 
+                           Background="Transparent"
+                           BorderThickness="0"
+                           FontSize="22" FontWeight="Bold"
+                           Content="AKTIVACIJA CCS ClickBar-a"
+                           IsHitTestVisible="False"
+                           HorizontalAlignment="Center"
+                           Margin="0 10 0 0"/>
+                    <Grid Grid.Row="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="1"
+                              HorizontalAlignment="Left"
+                              Margin="15 0 0 5">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="auto"/>
+                            </Grid.RowDefinitions>
+                            <StackPanel Orientation="Vertical"
+                                        Grid.Row="2"
+                                        Margin="0 5">
+
+                                <Image Source="\Icons\logo.png" 
+                                       Height="150"
+                                       Margin="0 0 0 10"/>
+                                <TextBlock Foreground="{StaticResource BrushLogo2}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" 
+                                           Text="CleanCodeSirmium"/>
+                                <TextBlock Foreground="{StaticResource BrushLogo2}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" 
+                                           Text="tel: +381/64-44-20-296"
+                                           InputScope="TelephoneNumber"/>
+                                <TextBlock Foreground="{StaticResource BrushLogo2}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" 
+                                           Text="email: cleancodesirmium@gmail.com"
+                                           InputScope="EmailSmtpAddress"/>
+                            </StackPanel>
+                        </Grid>
+                        <Button Grid.Row="1"
+                                Style="{StaticResource RoundCorner}"
+                                Content="Aktiviraj"
+                                FontSize="16"
+                                Height="40"
+                                Width="100"
+                                VerticalAlignment="Bottom"
+                                HorizontalAlignment="Center"
+                                Foreground="White"
+                                Margin="0 0 0 10"
+                                Command="{Binding ActivationCommand}"
+                                CommandParameter="{Binding ActivationCodeNumber}"
+                                IsEnabled="{Binding IsEnable}"/>
+
+                        <Grid Grid.Column="1"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Bottom">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0">
+                                <StackPanel Margin="0 0 0 20">
+                                    <TextBlock FontSize="14"
+                                               TextWrapping="Wrap"
+                                               Foreground="{StaticResource BrushLogo2}">
+                                        <TextBlock.Inlines>
+                                            <Run FontWeight="Bold" FontSize="16" Text="Aktivacioni broj uređaja"/>
+                                            <Run FontSize="14" Text=" - Ovaj element je generisan od strane proizvođača. (Unosi se samo prvi put!)"/>
+                                        </TextBlock.Inlines>
+                                    </TextBlock>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <Grid Grid.Row="1"
+                                  HorizontalAlignment="Center"
+                                  Margin="10"
+                                  MinWidth="300">
+
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" 
+                                            Orientation="Vertical">
+                                    <Label Content="Aktivacioni broj uređaja: "
+                                           Foreground="White"
+                                           HorizontalAlignment="Right"
+                                           HorizontalContentAlignment="Right"
+                                           VerticalContentAlignment="Center"
+                                           FontSize="16"
+                                           Height="40"/>
+                                </StackPanel>
+                                <StackPanel x:Name="activationCode" Grid.Column="1" 
+                                            Orientation="Horizontal"
+                                            Background="White">
+                                    <StackPanel.Style>
+                                        <Style>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ActivationCode}" 
+                                         Value="{x:Static enum:ActivationCodePartEnumeration.FirstPart}">
+                                                    <Setter Property="FocusManager.FocusedElement" 
+                                        Value="{Binding ElementName=FirstPart}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding ActivationCode}" 
+                                         Value="{x:Static enum:ActivationCodePartEnumeration.SecondPart}">
+                                                    <Setter Property="FocusManager.FocusedElement" 
+                                        Value="{Binding ElementName=SecondPart}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding ActivationCode}" 
+                                         Value="{x:Static enum:ActivationCodePartEnumeration.ThirdPart}">
+                                                    <Setter Property="FocusManager.FocusedElement" 
+                                        Value="{Binding ElementName=ThirdPart}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding ActivationCode}" 
+                                         Value="{x:Static enum:ActivationCodePartEnumeration.FourPart}">
+                                                    <Setter Property="FocusManager.FocusedElement" 
+                                        Value="{Binding ElementName=FourPart}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding ActivationCode}" 
+                                         Value="{x:Static enum:ActivationCodePartEnumeration.FivePart}">
+                                                    <Setter Property="FocusManager.FocusedElement" 
+                                        Value="{Binding ElementName=FivePart}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+                                    <TextBox x:Name="FirstPart"
+                         Text="{Binding FirstPart, UpdateSourceTrigger=PropertyChanged}"
+                         HorizontalContentAlignment="Center"
+                         VerticalContentAlignment="Center"
+                         FontSize="16"
+                         Height="40"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         MaxLength="4"
+                         Width="50"
+                         GotFocus="FirstPart_GotFocus"/>
+                                    <Label Content="-"
+                       FontSize="16"
+                       Height="40"/>
+                                    <TextBox x:Name="SecondPart"
+                         Text="{Binding SecondPart, UpdateSourceTrigger=PropertyChanged}"
+                         HorizontalContentAlignment="Center"
+                         VerticalContentAlignment="Center"
+                         FontSize="16"
+                         Height="40"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         MaxLength="4"
+                         Width="50"
+                         GotFocus="SecondPart_GotFocus"/>
+                                    <Label Content="-"
+                       FontSize="16"
+                       Height="40"/>
+                                    <TextBox x:Name="ThirdPart"
+                         Text="{Binding ThirdPart, UpdateSourceTrigger=PropertyChanged}"
+                         HorizontalContentAlignment="Center"
+                         VerticalContentAlignment="Center"
+                         FontSize="16"
+                         Height="40"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         MaxLength="4"
+                         Width="50"
+                         GotFocus="ThirdPart_GotFocus"/>
+                                    <Label Content="-"
+                       FontSize="16"
+                       Height="40"/>
+                                    <TextBox x:Name="FourPart"
+                         Text="{Binding FourPart, UpdateSourceTrigger=PropertyChanged}"
+                         HorizontalContentAlignment="Center"
+                         VerticalContentAlignment="Center"
+                         FontSize="16"
+                         Height="40"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         MaxLength="4"
+                         Width="50"
+                         GotFocus="FourPart_GotFocus"/>
+                                    <Label Content="-"
+                       FontSize="16"
+                       Height="40"/>
+                                    <TextBox x:Name="FivePart"
+                         Text="{Binding FivePart, UpdateSourceTrigger=PropertyChanged}"
+                         HorizontalContentAlignment="Center"
+                         VerticalContentAlignment="Center"
+                         FontSize="16"
+                         Height="40"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         MaxLength="4"
+                         Width="50"
+                         GotFocus="FivePart_GotFocus"/>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

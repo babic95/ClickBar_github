@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Platforms>AnyCPU;x64;x86;ARM32</Platforms>
+    <Configurations>Debug;Release;Crno</Configurations>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="QRCoder" Version="1.4.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Models\Statistic\Calculation\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClickBar_Logging\ClickBar_Logging.csproj" />
+  </ItemGroup>
+
+</Project>
