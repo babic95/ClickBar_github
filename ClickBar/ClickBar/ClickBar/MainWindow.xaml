@@ -19,12 +19,12 @@
         Background="{StaticResource BrushLogo2}"
         WindowStartupLocation="CenterScreen"
         Closing="Window_Closing">
-    
-        <Grid>
-            <Grid.Resources>
-                <ResourceDictionary>
-                    <DataTemplate DataType="{x:Type activationVM:ActivationViewModel}">
-                        <activationView:ActivationView/>
+
+    <Grid>
+        <Grid.Resources>
+            <ResourceDictionary>
+                <DataTemplate DataType="{x:Type activationVM:ActivationViewModel}">
+                    <activationView:ActivationView/>
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type loginVM:LoginViewModel}">
                     <loginView:LoginView/>
@@ -33,7 +33,7 @@
                     <loginView:LoginCardView/>
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type viewmodels:AppMainViewModel}">
-                        <appMainView:AppMainView/>
+                    <appMainView:AppMainView/>
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type viewmodels:TableOverviewViewModel}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto"
@@ -42,14 +42,10 @@
                     </ScrollViewer>
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type viewmodels:SaleViewModel}">
-                    <!--<ScrollViewer VerticalScrollBarVisibility="Auto"
-                                  CanContentScroll="True">
-                        <saleView:SaleView/>
-                    </ScrollViewer>-->
                     <saleView:SaleView/>
                 </DataTemplate>
-                </ResourceDictionary>
-            </Grid.Resources>
-            <ContentControl Content="{Binding CurrentViewModel}"/>
-        </Grid>
+            </ResourceDictionary>
+        </Grid.Resources>
+        <ContentControl Content="{Binding CurrentViewModel}"/>
+    </Grid>
 </Window>

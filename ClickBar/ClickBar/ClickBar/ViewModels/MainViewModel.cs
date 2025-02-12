@@ -7,17 +7,15 @@ using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Settings;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
-using System.Linq;
-using System.Threading.Tasks;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
-using System.IO;
-using System.Diagnostics;
 using ClickBar_Logging;
 using ClickBar_Database_Drlja;
 using ClickBar.Commands.AppMain;
+using ClickBar.ViewModels;
 
 namespace ClickBar.ViewModels
 {

@@ -25,7 +25,7 @@ namespace ClickBar.ViewModels.Login
 {
     public class LoginViewModel : ViewModelBase
     {
-        private IServiceProvider _serviceProvider;
+        private readonly IServiceProvider _serviceProvider;
         private string _message;
         private string _password;
         private ImageSource _logo;
@@ -61,14 +61,8 @@ namespace ClickBar.ViewModels.Login
         }
 
         #region Internal Properties
-        internal SqlServerDbContext DbContext
-        {
-            get; private set;
-        }
-        internal SqliteDrljaDbContext DrljaDbContext
-        {
-            get; private set;
-        }
+        internal SqlServerDbContext DbContext { get; private set; }
+        internal SqliteDrljaDbContext DrljaDbContext { get; private set; }
         #endregion Internal Properties
 
         #region Properties

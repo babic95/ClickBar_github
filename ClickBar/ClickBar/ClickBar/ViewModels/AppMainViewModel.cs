@@ -18,7 +18,7 @@ namespace ClickBar.ViewModels
 {
     public class AppMainViewModel : ViewModelBase, INavigator
     {
-        private IServiceProvider _serviceProvider;
+        private readonly IServiceProvider _serviceProvider;
 
         private CashierDB _loggedCashier;
         private string _cashierNema;
