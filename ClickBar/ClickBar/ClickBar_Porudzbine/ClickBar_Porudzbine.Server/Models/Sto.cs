@@ -1,4 +1,4 @@
-﻿using ClickBar_Database.Models;
+﻿using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Database_Drlja.Models;
 
 namespace ClickBar_Porudzbine.Server.Models
@@ -21,10 +21,10 @@ namespace ClickBar_Porudzbine.Server.Models
         public string? Id { get; set; }
         public int? Name { get; set; }
         public int? DeoSaleId { get; set; }
-        public decimal? X { get; set; }
-        public decimal? Y { get; set; }
-        public decimal? Width { get; set; }
-        public decimal? Height { get; set; }
+        public float? X { get; set; }
+        public float? Y { get; set; }
+        public float? Width { get; set; }
+        public float? Height { get; set; }
         public string? Color { get; set; }
     }
 }

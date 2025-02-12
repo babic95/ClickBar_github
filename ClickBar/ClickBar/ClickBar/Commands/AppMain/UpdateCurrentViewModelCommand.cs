@@ -3,10 +3,6 @@ using ClickBar.ViewModels;
 using ClickBar.ViewModels.AppMain;
 using ClickBar_Common.Enums;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace ClickBar.Commands.AppMain
@@ -15,7 +11,7 @@ namespace ClickBar.Commands.AppMain
     {
         public event EventHandler CanExecuteChanged;
 
-        private AppMainViewModel _currentViewModel;
+        private readonly AppMainViewModel _currentViewModel;
 
         public UpdateCurrentViewModelCommand(AppMainViewModel currentViewModel)
         {
@@ -29,9 +25,8 @@ namespace ClickBar.Commands.AppMain
 
         public void Execute(object parameter)
         {
-            if (parameter is CashierViewType)
+            if (parameter is CashierViewType viewType)
             {
-                CashierViewType viewType = (CashierViewType)parameter;
                 switch (viewType)
                 {
                     case CashierViewType.Report:
@@ -47,27 +42,22 @@ namespace ClickBar.Commands.AppMain
                         }
                         break;
                     case CashierViewType.Settings:
-                        if (_currentViewModel.LoggedCashier.Type == CashierTypeEnumeration.Admin)
+                        if (_currentViewModel.LoggedCashier.Type == CashierTypeEnumeration.Admin &&
+                            _currentViewModel.CurrentViewModel is not SettingsViewModel)
                         {
-                            if (_currentViewModel.CurrentViewModel is not SettingsViewModel)
-                            {
-                                _currentViewModel.CheckedSettings();
-                            }
+                            _currentViewModel.CheckedSettings();
                         }
                         break;
                     case CashierViewType.Admin:
-                        if (_currentViewModel.LoggedCashier.Type == CashierTypeEnumeration.Admin)
+                        if (_currentViewModel.LoggedCashier.Type == CashierTypeEnumeration.Admin &&
+                            _currentViewModel.CurrentViewModel is not AdminViewModel)
                         {
-                            if (_currentViewModel.CurrentViewModel is not AdminViewModel)
-                            {
-                                _currentViewModel.CheckedAdmin();
-                            }
+                            _currentViewModel.CheckedAdmin();
                         }
                         break;
                     default:
                         break;
                 }
-                return;
             }
         }
     }

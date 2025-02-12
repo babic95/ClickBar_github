@@ -38,39 +38,60 @@ namespace ClickBar.Commands
                     case AppStateEnumerable.Login:
                         if (SettingsManager.Instance.EnableSmartCard())
                         {
-                            _navigator.CurrentViewModel = _serviceProvider.GetRequiredService<LoginCardViewModel>();
+                            if (!(_navigator.CurrentViewModel is LoginCardViewModel))
+                            {
+                                _navigator.CurrentViewModel = _serviceProvider.GetRequiredService<LoginCardViewModel>();
+                            }
                         }
                         else
                         {
-                            _navigator.CurrentViewModel = _serviceProvider.GetRequiredService<LoginViewModel>();
+                            if (!(_navigator.CurrentViewModel is LoginViewModel))
+                            {
+                                _navigator.CurrentViewModel = _serviceProvider.GetRequiredService<LoginViewModel>();
+                            }
                         }
                         break;
                     case AppStateEnumerable.Main:
-                        var appMainViewModel = _serviceProvider.GetRequiredService<AppMainViewModel>();
-                        // Set additional properties if needed
-                        _navigator.CurrentViewModel = appMainViewModel;
+                        if (!(_navigator.CurrentViewModel is AppMainViewModel))
+                        {
+                            var appMainViewModel = _serviceProvider.GetRequiredService<AppMainViewModel>();
+                            // Set additional properties if needed
+                            _navigator.CurrentViewModel = appMainViewModel;
+                        }
                         break;
                     case AppStateEnumerable.Sale:
                         if (appState.ViewModel is SaleViewModel saleViewModel)
                         {
-                            _navigator.CurrentViewModel = saleViewModel;
+                            if (!(_navigator.CurrentViewModel is SaleViewModel))
+                            {
+                                _navigator.CurrentViewModel = saleViewModel;
+                            }
                         }
                         else
                         {
-                            var newSaleViewModel = _serviceProvider.GetRequiredService<SaleViewModel>();
-                            // Set additional properties if needed
-                            _navigator.CurrentViewModel = newSaleViewModel;
+                            if (!(_navigator.CurrentViewModel is SaleViewModel))
+                            {
+                                var newSaleViewModel = _serviceProvider.GetRequiredService<SaleViewModel>();
+                                // Set additional properties if needed
+                                _navigator.CurrentViewModel = newSaleViewModel;
+                            }
                         }
                         break;
                     case AppStateEnumerable.TableOverview:
                         if (appState.ViewModel is SaleViewModel tableOverviewSaleViewModel)
                         {
-                            _navigator.CurrentViewModel = tableOverviewSaleViewModel.TableOverviewViewModel;
+                            if (!(_navigator.CurrentViewModel is TableOverviewViewModel))
+                            {
+                                _navigator.CurrentViewModel = tableOverviewSaleViewModel.TableOverviewViewModel;
+                            }
                         }
                         else
                         {
-                            var newTableOverviewSaleViewModel = _serviceProvider.GetRequiredService<SaleViewModel>();
-                            _navigator.CurrentViewModel = newTableOverviewSaleViewModel.TableOverviewViewModel;
+                            if (!(_navigator.CurrentViewModel is TableOverviewViewModel))
+                            {
+                                var newTableOverviewSaleViewModel = _serviceProvider.GetRequiredService<SaleViewModel>();
+                                _navigator.CurrentViewModel = newTableOverviewSaleViewModel.TableOverviewViewModel;
+                            }
                         }
                         break;
                     default:

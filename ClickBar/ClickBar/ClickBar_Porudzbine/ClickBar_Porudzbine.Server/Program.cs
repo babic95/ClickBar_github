@@ -1,7 +1,8 @@
-﻿using ClickBar_Database;
+﻿using ClickBar_DatabaseSQLManager;
 using ClickBar_Database_Drlja;
 using ClickBar_Logging;
 using ClickBar_Settings;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
 try
@@ -10,42 +11,20 @@ try
 
     Logger.ConfigureLog(SettingsManager.Instance.GetLoggingFolderPath(), true);
 
-    var pathToDB = SettingsManager.Instance.GetPathToDB();
     var pathToDrljaDB = SettingsManager.Instance.GetPathToDrljaKuhinjaDB();
-
     if (string.IsNullOrEmpty(pathToDrljaDB))
     {
         pathToDrljaDB = @"C:\KRUG2024\KRUG2024SQLITE3.db";
     }
 
-    using (SqliteDrljaDbContext sqliteDrljaDbContext = new SqliteDrljaDbContext())
-    {
-        var isConnection = await sqliteDrljaDbContext.ConfigureDatabase(pathToDrljaDB);
+    // Konfiguracija servisa
+    string connectionString = SettingsManager.Instance.GetConnectionString();
+    builder.Services.AddDbContext<SqlServerDbContext>(options =>
+        options.UseSqlServer(connectionString));
 
-        if (!isConnection)
-        {
-            return;
-        }
-    }
-    using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
-    {
-        var pomocnaBaza = SettingsManager.Instance.GetPathToMainDB();
+    builder.Services.AddDbContext<SqliteDrljaDbContext>(options =>
+        options.UseSqlite($"Data Source={pathToDrljaDB}"));
 
-        if (!string.IsNullOrEmpty(pomocnaBaza))
-        {
-            pathToDB = pomocnaBaza;
-        }
-
-        var isConnection = await sqliteDbContext.ConfigureDatabase(pathToDB);
-
-        if (!isConnection)
-        {
-            return;
-        }
-    }
-    Log.Debug("KONEKCIJA JE PROŠLA");
-
-    // Servisna konfiguracija
     builder.Services.AddControllers();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>

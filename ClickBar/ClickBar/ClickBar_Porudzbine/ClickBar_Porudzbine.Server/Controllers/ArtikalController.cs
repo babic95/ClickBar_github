@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using ClickBar_Porudzbine.Server.Models;
 using ClickBar_Database_Drlja.Models;
 using System.Text.RegularExpressions;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 
 namespace ClickBar_Porudzbine.Server.Controllers
 {
@@ -12,83 +12,85 @@ namespace ClickBar_Porudzbine.Server.Controllers
     [Route("api/artikal")]
     public class ArtikalController : ControllerBase
     {
+        private readonly SqlServerDbContext _sqlServerDbContext;
+        private readonly SqliteDrljaDbContext _sqliteDrljaDbContext;
+
+        public ArtikalController(SqlServerDbContext sqlServerDbContext, SqliteDrljaDbContext sqliteDrljaDbContext)
+        {
+            _sqlServerDbContext = sqlServerDbContext;
+            _sqliteDrljaDbContext = sqliteDrljaDbContext;
+        }
+
         [HttpGet("allArtikli")]
         public IActionResult AllArtikli()
         {
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            List<Nadgrupa> nadgrupe = new List<Nadgrupa>();
+
+            var artikliDB = _sqlServerDbContext.Items.Join(_sqlServerDbContext.ItemGroups,
+                item => item.IdItemGroup,
+                group => group.Id,
+                (item, group) => new { Item = item, Group = group }).Join(_sqlServerDbContext.Supergroups,
+                group => group.Group.IdSupergroup,
+                supergroup => supergroup.Id,
+                (group, supergroup) => new { Group = group, SuperGroup = supergroup });
+
+            if (artikliDB != null &&
+                artikliDB.Any())
             {
-                using (SqliteDrljaDbContext sqliteDrljaDbContext = new SqliteDrljaDbContext())
+                artikliDB.ForEachAsync(artikalDB =>
                 {
-
-                    List<Nadgrupa> nadgrupe = new List<Nadgrupa>();
-
-                    var artikliDB = sqliteDbContext.Items.Join(sqliteDbContext.ItemGroups,
-                        item => item.IdItemGroup,
-                        group => group.Id,
-                        (item, group) => new { Item = item, Group = group }).Join(sqliteDbContext.Supergroups,
-                        group => group.Group.IdSupergroup,
-                        supergroup => supergroup.Id,
-                        (group, supergroup) => new { Group = group, SuperGroup = supergroup });
-
-                    if (artikliDB != null &&
-                        artikliDB.Any())
+                    if (artikalDB.Group.Group.Name.ToLower() != "sirovina" &&
+                       artikalDB.Group.Group.Name.ToLower() != "sirovine" &&
+                       artikalDB.SuperGroup.Name.ToLower() != "osnovna")
                     {
-                        artikliDB.ForEachAsync(artikalDB =>
+                        Artikal artikal = new Artikal(artikalDB.Group.Item);
+
+                        var nadgrupa = nadgrupe.FirstOrDefault(n => n.Id == artikalDB.SuperGroup.Id);
+
+                        if (nadgrupa == null)
                         {
-                            if (artikalDB.Group.Group.Name.ToLower() != "sirovina" &&
-                               artikalDB.Group.Group.Name.ToLower() != "sirovine" &&
-                               artikalDB.SuperGroup.Name.ToLower() != "osnovna")
+                            nadgrupa = new Nadgrupa()
                             {
-                                Artikal artikal = new Artikal(artikalDB.Group.Item);
+                                Id = artikalDB.SuperGroup.Id,
+                                Name = artikalDB.SuperGroup.Name,
+                                Grupe = new List<Grupa>()
+                            };
+                            nadgrupe.Add(nadgrupa);
+                        }
 
-                                var nadgrupa = nadgrupe.FirstOrDefault(n => n.Id == artikalDB.SuperGroup.Id);
+                        var grupa = nadgrupa.Grupe.FirstOrDefault(g => g.Id == artikalDB.Group.Group.Id);
+                        if (grupa == null)
+                        {
+                            grupa = new Grupa(artikalDB.Group.Group);
+                            nadgrupa.Grupe.Add(grupa);
+                        }
 
-                                if (nadgrupa == null)
-                                {
-                                    nadgrupa = new Nadgrupa()
-                                    {
-                                        Id = artikalDB.SuperGroup.Id,
-                                        Name = artikalDB.SuperGroup.Name,
-                                        Grupe = new List<Grupa>()
-                                    };
-                                    nadgrupe.Add(nadgrupa);
-                                }
+                        grupa.Artikli.Add(artikal);
 
-                                var grupa = nadgrupa.Grupe.FirstOrDefault(g => g.Id == artikalDB.Group.Group.Id);
-                                if (grupa == null)
-                                {
-                                    grupa = new Grupa(artikalDB.Group.Group);
-                                    nadgrupa.Grupe.Add(grupa);
-                                }
+                        var zelje = _sqliteDrljaDbContext.Zelje.Where(z => z.TR_BRART == artikal.Id_String);
 
-                                grupa.Artikli.Add(artikal);
+                        if (zelje != null &&
+                        zelje.Any())
+                        {
+                            zelje.ForEachAsync(z =>
+                            {
+                                Zelja zelja = new Zelja(z);
 
-                                var zelje = sqliteDrljaDbContext.Zelje.Where(z => z.TR_BRART == artikal.Id_String);
-
-                                if (zelje != null &&
-                                zelje.Any())
-                                {
-                                    zelje.ForEachAsync(z =>
-                                    {
-                                        Zelja zelja = new Zelja(z);
-
-                                        artikal.Zelje.Add(zelja);
-                                    });
-                                }
-
-                                Zelja zelja = new Zelja(new ZeljaDB()
-                                {
-                                    TR_IDZELJA = -1 * artikal.Id,
-                                    TR_ZELJA = "Dodaj zelju",
-                                    TR_BRART = artikal.Id_String
-                                });
                                 artikal.Zelje.Add(zelja);
-                            }
-                        });
+                            });
+                        }
 
-                        return Ok(nadgrupe);
+                        Zelja zelja = new Zelja(new ZeljaDB()
+                        {
+                            TR_IDZELJA = -1 * artikal.Id,
+                            TR_ZELJA = "Dodaj zelju",
+                            TR_BRART = artikal.Id_String
+                        });
+                        artikal.Zelje.Add(zelja);
                     }
-                }
+                });
+
+                return Ok(nadgrupe);
             }
             return NotFound(null);
         }

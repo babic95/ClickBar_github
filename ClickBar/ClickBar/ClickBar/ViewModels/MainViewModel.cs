@@ -80,8 +80,11 @@ namespace ClickBar.ViewModels
             get { return _currentViewModel; }
             set
             {
-                _currentViewModel = value;
-                OnPropertyChange(nameof(CurrentViewModel));
+                if (_currentViewModel != value)
+                {
+                    _currentViewModel = value;
+                    OnPropertyChange(nameof(CurrentViewModel));
+                }
             }
         }
         #endregion Properties
@@ -116,12 +119,9 @@ namespace ClickBar.ViewModels
         }
         private void ShowMainWindow()
         {
-            if (Window.IsVisible)
+            if (!Window.IsVisible || Window.WindowState == WindowState.Minimized)
             {
-                if (Window.WindowState == WindowState.Minimized)
-                {
-                    Window.WindowState = WindowState.Normal;
-                }
+                Window.WindowState = WindowState.Normal;
                 Window.Activate();
             }
             else

@@ -1,0 +1,71 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\appmain\\settings\\migrationdbcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\appmain\\settings\\migrationdbcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\viewmodels\\mainviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\viewmodels\\mainviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "MigrationDbCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Settings\\MigrationDbCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\AppMain\\Settings\\MigrationDbCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Settings\\MigrationDbCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\AppMain\\Settings\\MigrationDbCommand.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB4AAAAxAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-12T16:24:06.541Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "App.xaml.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\App.xaml.cs",
+              "RelativeDocumentMoniker": "ClickBar\\App.xaml.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\App.xaml.cs",
+              "RelativeToolTip": "ClickBar\\App.xaml.cs",
+              "ViewState": "AgIAAAQAAAAAAAAAAAAcwAkAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-12T16:24:01.166Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "MainViewModel.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\MainViewModel.cs",
+              "RelativeDocumentMoniker": "ClickBar\\ViewModels\\MainViewModel.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\MainViewModel.cs",
+              "RelativeToolTip": "ClickBar\\ViewModels\\MainViewModel.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAIwBMAAAAgAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-12T16:22:29.517Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

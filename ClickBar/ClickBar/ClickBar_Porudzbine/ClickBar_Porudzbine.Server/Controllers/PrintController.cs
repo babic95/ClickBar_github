@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ClickBar_Database_Drlja;
+using ClickBar_DatabaseSQLManager;
+using Microsoft.AspNetCore.Mvc;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -8,6 +10,15 @@ namespace YourNamespace.Controllers
     [Route("api/[controller]")]
     public class PrintController : ControllerBase
     {
+        private readonly SqlServerDbContext sqliteDbContext;
+        private readonly SqliteDrljaDbContext sqliteDrljaDbContext;
+
+        public PrintController(SqlServerDbContext sqliteDbContext, SqliteDrljaDbContext sqliteDrljaDbContext)
+        {
+            this.sqliteDbContext = sqliteDbContext;
+            this.sqliteDrljaDbContext = sqliteDrljaDbContext;
+        }
+
         [HttpPost]
         public async Task<IActionResult> Print([FromBody] PrintRequest request)
         {
