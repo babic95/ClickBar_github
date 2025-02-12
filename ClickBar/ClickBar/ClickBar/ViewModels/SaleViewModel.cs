@@ -28,6 +28,7 @@ namespace ClickBar.ViewModels
     {
         #region Fields
         private IServiceProvider _serviceProvider;
+        private readonly Lazy<UpdateCurrentAppStateViewModelCommand> _updateCurrentAppStateViewModelCommand;
 
         private AppMainViewModel _mainViewModel;
         private string _cashierNema;
@@ -71,10 +72,10 @@ namespace ClickBar.ViewModels
             _serviceProvider = serviceProvider;
             DbContext = dbContextFactory.CreateDbContext();
             DrljaDbContext = drljaDbContextFactory.CreateDbContext();
-            UpdateAppViewModelCommand = serviceProvider.GetRequiredService<UpdateCurrentAppStateViewModelCommand>();
+            _updateCurrentAppStateViewModelCommand = new Lazy<UpdateCurrentAppStateViewModelCommand>(() => serviceProvider.GetRequiredService<UpdateCurrentAppStateViewModelCommand>());
             LoggedCashier = serviceProvider.GetRequiredService<CashierDB>();
-            TableOverviewCommand = serviceProvider.GetRequiredService<TableOverviewCommand>();
-            HookOrderOnTableCommand = serviceProvider.GetRequiredService<HookOrderOnTableCommand>();
+            //TableOverviewCommand = serviceProvider.GetRequiredService<TableOverviewCommand>();
+            //HookOrderOnTableCommand = serviceProvider.GetRequiredService<HookOrderOnTableCommand>();
             PayCommand = _serviceProvider.GetRequiredService<PayCommand<SaleViewModel>>();
 
             var comPort = SettingsManager.Instance.GetComPort();
@@ -372,15 +373,17 @@ namespace ClickBar.ViewModels
 
         #region Commands
         public ICommand ClickOnQuantityButtonCommand => new ClickOnQuantityButtonCommand(this);
-        public ICommand UpdateAppViewModelCommand { get; set; }
+        public ICommand UpdateAppViewModelCommand => _updateCurrentAppStateViewModelCommand.Value;
         public ICommand LogoutCommand => new LogoutCommand(this);
         public ICommand SelectSupergroupCommand => new SelectSupergroupCommand(this);
         public ICommand SelectGroupCommand => new SelectGroupCommand(this);
         public ICommand SelectItemCommand => new SelectItemCommand(this);
         public ICommand ResetAllCommand => new ResetAllCommand(this);
         public ICommand PayCommand { get; }
-        public ICommand HookOrderOnTableCommand { get; }
-        public ICommand TableOverviewCommand { get; }
+        public ICommand HookOrderOnTableCommand => new HookOrderOnTableCommand(this, _serviceProvider);
+        //public ICommand HookOrderOnTableCommand { get; }
+        //public ICommand TableOverviewCommand { get; }
+        public ICommand TableOverviewCommand => new TableOverviewCommand(this, _serviceProvider);
         public ICommand ReduceQuantityCommand => new ReduceQuantityCommand(this);
         public ICommand PrintReportCommand => new PrintReportCommand(this);
         public ICommand RemoveOrderCommand => new RemoveOrderCommand(this);

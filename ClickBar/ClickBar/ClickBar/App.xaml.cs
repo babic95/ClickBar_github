@@ -127,12 +127,11 @@ namespace ClickBar
 
             // Registracija komandi
             services.AddTransient<UpdateCurrentAppStateViewModelCommand>(); // Registracija specifične komande
-            services.AddTransient<TableOverviewCommand>();
-            services.AddTransient<HookOrderOnTableCommand>();
+            //services.AddTransient<TableOverviewCommand>();
+            //services.AddTransient<HookOrderOnTableCommand>();
             services.AddTransient<ActivationCommand>();
             services.AddTransient<RefaundCommand>();
             services.AddTransient<ChangePaymentPlaceCommand>();
-            services.AddTransient<SplitOrderCommand>();
 
             // Registracija generičke komande
             services.AddTransient(typeof(PayCommand<>));

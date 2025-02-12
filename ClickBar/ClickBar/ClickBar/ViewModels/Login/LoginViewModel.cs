@@ -26,6 +26,7 @@ namespace ClickBar.ViewModels.Login
     public class LoginViewModel : ViewModelBase
     {
         private readonly IServiceProvider _serviceProvider;
+        private readonly Lazy<UpdateCurrentAppStateViewModelCommand> _updateCurrentAppStateViewModelCommand;
         private string _message;
         private string _password;
         private ImageSource _logo;
@@ -46,7 +47,7 @@ namespace ClickBar.ViewModels.Login
             _serviceProvider = serviceProvider;
             DbContext = dbContextFactory.CreateDbContext();
             DrljaDbContext = drljaDbContextFactory.CreateDbContext();
-            UpdateCurrentAppStateViewModelCommand = serviceProvider.GetRequiredService<UpdateCurrentAppStateViewModelCommand>();
+            _updateCurrentAppStateViewModelCommand = new Lazy<UpdateCurrentAppStateViewModelCommand>(() => serviceProvider.GetRequiredService<UpdateCurrentAppStateViewModelCommand>());
 
             Initialization();
 
@@ -106,7 +107,7 @@ namespace ClickBar.ViewModels.Login
         }
         #endregion Properties
 
-        public ICommand UpdateCurrentAppStateViewModelCommand { get; set; }
+        public UpdateCurrentAppStateViewModelCommand UpdateCurrentAppStateViewModelCommand => _updateCurrentAppStateViewModelCommand.Value;
         public ICommand ClickOnLoginButtonCommand => new ClickOnLoginButtonCommand(this);
 
         private void KillApp()

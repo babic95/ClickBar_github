@@ -22,6 +22,7 @@ namespace ClickBar.ViewModels
     public class MainViewModel : ViewModelBase, INavigator
     {
         private readonly IServiceProvider _serviceProvider;
+        private readonly Lazy<UpdateCurrentAppStateViewModelCommand> _updateCurrentAppStateViewModelCommand;
         private ProcessManager _processManager;
         private ViewModelBase _currentViewModel;
         private System.Windows.Forms.NotifyIcon _notifyIcon;
@@ -66,7 +67,7 @@ namespace ClickBar.ViewModels
                 Log.Error(string.Format("MainViewModel - MainViewModel -> greska prilikom pokretanja servera za porudzbine: "), ex);
             }
 
-            UpdateCurrentViewModelCommand = serviceProvider.GetRequiredService<UpdateCurrentAppStateViewModelCommand>();
+            _updateCurrentAppStateViewModelCommand = new Lazy<UpdateCurrentAppStateViewModelCommand>(() => serviceProvider.GetRequiredService<UpdateCurrentAppStateViewModelCommand>());
         }
 
         #region Properties
@@ -87,7 +88,7 @@ namespace ClickBar.ViewModels
         }
         #endregion Properties
 
-        public ICommand UpdateCurrentViewModelCommand { get; }
+        public ICommand UpdateCurrentViewModelCommand => _updateCurrentAppStateViewModelCommand.Value;
         public ICommand HiddenWindowCommand => new HiddenWindowCommand(Window);
 
         public CashierDB LoggedCashier { get; set; }

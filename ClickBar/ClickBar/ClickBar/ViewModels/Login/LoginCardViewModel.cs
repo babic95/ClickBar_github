@@ -26,6 +26,7 @@ namespace ClickBar.ViewModels.Login
     public class LoginCardViewModel : ViewModelBase
     {
         private IServiceProvider _serviceProvider;
+        private readonly Lazy<UpdateCurrentAppStateViewModelCommand> _updateCurrentAppStateViewModelCommand;
         private readonly string _fromPath = @"C:\CCS ClickBar\ClickBar_Admin\PIN.json";
         private string _message;
         private string _password;
@@ -49,7 +50,7 @@ namespace ClickBar.ViewModels.Login
             _serviceProvider = serviceProvider;
             DbContext = dbContextFactory.CreateDbContext();
             DrljaDbContext = drljaDbContextFactory.CreateDbContext();
-            UpdateCurrentAppStateViewModelCommand = serviceProvider.GetRequiredService<UpdateCurrentAppStateViewModelCommand>();
+            _updateCurrentAppStateViewModelCommand = new Lazy<UpdateCurrentAppStateViewModelCommand>(() => serviceProvider.GetRequiredService<UpdateCurrentAppStateViewModelCommand>());
 
             Initialization();
 
@@ -157,7 +158,7 @@ namespace ClickBar.ViewModels.Login
         }
         #endregion Properties
 
-        public ICommand UpdateCurrentAppStateViewModelCommand { get; set; }
+        public ICommand UpdateCurrentAppStateViewModelCommand => _updateCurrentAppStateViewModelCommand.Value;
 
         private void SendPin()
         {

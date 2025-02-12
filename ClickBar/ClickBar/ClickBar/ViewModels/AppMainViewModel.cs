@@ -13,12 +13,14 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
+using ClickBar.Commands;
 
 namespace ClickBar.ViewModels
 {
     public class AppMainViewModel : ViewModelBase, INavigator
     {
         private readonly IServiceProvider _serviceProvider;
+        private readonly Lazy<UpdateCurrentAppStateViewModelCommand> _updateCurrentAppStateViewModelCommand;
 
         private CashierDB _loggedCashier;
         private string _cashierNema;
@@ -49,7 +51,7 @@ namespace ClickBar.ViewModels
             DbContext = dbContextFactory.CreateDbContext();
             DrljaDbContext = drljaDbContextFactory.CreateDbContext();
             _loggedCashier = serviceProvider.GetRequiredService<CashierDB>();
-            UpdateAppViewModelCommand = serviceProvider.GetRequiredService<ICommand>();
+            _updateCurrentAppStateViewModelCommand = new Lazy<UpdateCurrentAppStateViewModelCommand>(() => serviceProvider.GetRequiredService<UpdateCurrentAppStateViewModelCommand>());
 
             ConnectionWithLPFR = _notConnected;
             Initialization();
@@ -161,7 +163,7 @@ namespace ClickBar.ViewModels
         #endregion Properties
 
         #region Commands
-        public ICommand UpdateAppViewModelCommand { get; set; }
+        public ICommand UpdateAppViewModelCommand => _updateCurrentAppStateViewModelCommand.Value;
         public ICommand UpdateCurrentViewModelCommand => new UpdateCurrentViewModelCommand(this);
         public ICommand LogoutCommand => new LogoutCommand(this);
         public ICommand InformationCommand => new InformationCommand();
