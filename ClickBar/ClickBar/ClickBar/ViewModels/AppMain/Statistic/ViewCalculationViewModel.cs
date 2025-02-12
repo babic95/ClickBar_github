@@ -65,7 +65,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         public ViewCalculationViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             TotalInputPrice = 0;
             TotalOutputPrice = 0;
             SearchToCalculationDate = DateTime.Now;

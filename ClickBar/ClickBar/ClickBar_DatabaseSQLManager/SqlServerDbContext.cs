@@ -1006,8 +1006,12 @@ namespace ClickBar_DatabaseSQLManager
         private void InitializeDatabase()
         {
             if (_databaseInitialized)
+            {
+                Log.Debug("Database already initialized.");
                 return;
+            }
 
+            Log.Debug("SqlServerDbContext - InitializeDatabase - Initializing database...");
             EnsureDatabaseExists();
             _databaseInitialized = true; // Postavi na true nakon inicijalizacije
         }
@@ -1019,10 +1023,12 @@ namespace ClickBar_DatabaseSQLManager
                 try
                 {
                     connection.Open();
+                    Log.Debug("Connected to master database.");
                     string checkDatabaseQuery = $"IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'{_databaseName}') CREATE DATABASE [{_databaseName}]";
                     using (SqlCommand command = new SqlCommand(checkDatabaseQuery, connection))
                     {
                         command.ExecuteNonQuery();
+                        Log.Debug("Database check/creation executed.");
                     }
 
                     _connectionString = _connectionString.Replace("Initial Catalog=master;", $"Initial Catalog={_databaseName};");
@@ -1030,6 +1036,7 @@ namespace ClickBar_DatabaseSQLManager
                     {
                         dbConnection.Open();
                         _sqlConnection = dbConnection;
+                        Log.Debug("Connected to application database.");
 
                         // Proveri i kreiraj tabele i kolone samo jednom
                         CreateTables();

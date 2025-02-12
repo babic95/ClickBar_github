@@ -8,6 +8,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 
 namespace ClickBar.ViewModels.AppMain.Statistic
 {
@@ -27,7 +28,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         public AddEditSupplierViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             DbContext.Suppliers.ToList().ForEach(x =>
             {
                 SuppliersAll.Add(new Supplier(x));

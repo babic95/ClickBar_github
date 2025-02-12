@@ -81,7 +81,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         public InventoryStatusViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             AllGroupItems = new ObservableCollection<GroupItems>();
             AllSupergroups = new ObservableCollection<Supergroup>() { new Supergroup(-1, "Sve nadgrupe") };
             AllGroups = new ObservableCollection<GroupItems>() { new GroupItems(-1, -1, "Sve grupe") };

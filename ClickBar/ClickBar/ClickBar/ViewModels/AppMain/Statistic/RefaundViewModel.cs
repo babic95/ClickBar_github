@@ -75,7 +75,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         {
             _serviceProvider = serviceProvider;
 
-            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             LoggedCashier = serviceProvider.GetRequiredService<CashierDB>();
             _mainViewModel = serviceProvider.GetRequiredService<AppMainViewModel>();
             RefaundCommand = serviceProvider.GetRequiredService<RefaundCommand>();

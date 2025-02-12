@@ -34,7 +34,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         public ViewNivelacijaViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             Nivelacije = new ObservableCollection<Nivelacija>();
 
             var nivelacije = DbContext.Nivelacijas;

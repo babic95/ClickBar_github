@@ -2,6 +2,7 @@
 using ClickBar.Models.AppMain.Statistic;
 using ClickBar_DatabaseSQLManager;
 using ClickBar_DatabaseSQLManager.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -31,7 +32,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         public PartnerViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
 
             DbContext.Partners.ToList().ForEach(x =>
             {

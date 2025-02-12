@@ -59,7 +59,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         public CalculationViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             LoggedCashier = serviceProvider.GetRequiredService<CashierDB>();
 
             CalculationDate = DateTime.Now;

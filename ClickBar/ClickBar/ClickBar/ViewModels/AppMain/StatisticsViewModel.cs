@@ -49,7 +49,7 @@ namespace ClickBar.ViewModels.AppMain
         public StatisticsViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             _loggedCashier = serviceProvider.GetRequiredService<CashierDB>();
             _mainViewModel = serviceProvider.GetRequiredService<AppMainViewModel>();
             //CheckedInventoryStatus();

@@ -41,7 +41,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         public OtpisViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             LoggedCashier = serviceProvider.GetRequiredService<CashierDB>();
 
             ItemsInOtpis = new ObservableCollection<OtpisItem>();

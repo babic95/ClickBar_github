@@ -35,7 +35,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         public KEPViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             TypesKEP = new ObservableCollection<string>()
             {
                 "Sve",

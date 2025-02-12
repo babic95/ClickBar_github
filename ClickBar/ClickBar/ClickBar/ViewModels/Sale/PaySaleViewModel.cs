@@ -78,11 +78,10 @@ namespace ClickBar.ViewModels.Sale
         public PaySaleViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            var dbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             var drljaDbContext = serviceProvider.GetRequiredService<SqliteDrljaDbContext>();
             var saleViewModel = serviceProvider.GetRequiredService<SaleViewModel>();
 
-            DbContext = dbContext;
             DrljaDbContext = drljaDbContext;
             PayCommand = _serviceProvider.GetRequiredService<PayCommand<PaySaleViewModel>>();
             SplitOrderCommand = _serviceProvider.GetRequiredService<SplitOrderCommand>();

@@ -16,6 +16,7 @@ namespace ClickBar
             _mainViewModel = mainViewModel;
             _mainViewModel.Window = this; // Set the Window property here
             DataContext = _mainViewModel;
+            MessageBox.Show("MainWindow initialized successfully.", "Initialization", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)

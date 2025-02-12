@@ -48,7 +48,7 @@ namespace ClickBar.ViewModels.AppMain
         public AdminViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             _loggedCashier = serviceProvider.GetRequiredService<CashierDB>();
 
             IsCheckedRoundPaymentPlace = false;

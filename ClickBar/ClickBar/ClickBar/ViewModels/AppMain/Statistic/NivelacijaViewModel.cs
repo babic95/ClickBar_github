@@ -67,7 +67,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         public NivelacijaViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             NeZaokruzujeSelected = true;
             NewPriceSelected = true;
             Reset();

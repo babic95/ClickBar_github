@@ -35,7 +35,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         public PocetnoStanjeViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             PopisDate = DateTime.Now;
             //PopisDate = new DateTime(2025, 1, 22);
         }

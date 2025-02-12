@@ -143,9 +143,23 @@ namespace ClickBar
 
         protected override void OnStartup(StartupEventArgs e)
         {
-            var mainWindow = _serviceProvider.GetService<MainWindow>();
-            mainWindow.Show();
-            base.OnStartup(e);
+            try
+            {
+                var mainWindow = _serviceProvider.GetService<MainWindow>();
+                if (mainWindow != null)
+                {
+                    mainWindow.Show();
+                    base.OnStartup(e);
+                }
+                else
+                {
+                    MessageBox.Show("Failed to initialize MainWindow. Please check your configurations.", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Exception during startup: {ex.Message}", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

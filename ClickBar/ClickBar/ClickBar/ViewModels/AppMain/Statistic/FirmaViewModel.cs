@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 
 namespace ClickBar.ViewModels.AppMain.Statistic
 {
@@ -26,7 +27,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         public FirmaViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             FirmaDB = DbContext.Firmas.FirstOrDefault();
 
             if (FirmaDB != null)

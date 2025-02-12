@@ -2,6 +2,7 @@
 using ClickBar.Models.AppMain.Statistic;
 using ClickBar.Models.AppMain.Statistic.Radnici;
 using ClickBar_DatabaseSQLManager;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -36,7 +37,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         public RadniciViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
 
             DbContext.Cashiers.ToList().ForEach(x =>
             {

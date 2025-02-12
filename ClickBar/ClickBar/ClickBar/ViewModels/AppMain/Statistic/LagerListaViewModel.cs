@@ -37,7 +37,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         public LagerListaViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             Initialize();
         }
         #endregion Constructors

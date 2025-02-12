@@ -31,7 +31,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         public PregledPazaraViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             DateTime fromDateTime = DateTime.Now;
 
             FromDate = fromDateTime;
