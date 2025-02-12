@@ -3,7 +3,9 @@ using ClickBar.Commands.AppMain.Statistic.Nivelacija;
 using ClickBar.Enums.AppMain.Statistic;
 using ClickBar.Models.AppMain.Statistic;
 using ClickBar.Models.Sale;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -18,6 +20,8 @@ namespace ClickBar.ViewModels.AppMain.Statistic
     public class NivelacijaViewModel : ViewModelBase
     {
         #region Fields
+        private IServiceProvider _serviceProvider;
+
         private ObservableCollection<Invertory> _items;
         private NivelacijaItem? _currentNivelacijaItem;
 
@@ -60,8 +64,10 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #endregion Fields
 
         #region Constructors
-        public NivelacijaViewModel()
+        public NivelacijaViewModel(IServiceProvider serviceProvider)
         {
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
             NeZaokruzujeSelected = true;
             NewPriceSelected = true;
             Reset();
@@ -69,6 +75,10 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #endregion Constructors
 
         #region Properties internal
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
         internal Window NivelacijaItemWindow;
         internal List<GroupItems> Groups;
         internal decimal TotalNivelacija
@@ -640,56 +650,54 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #region Internal methods
         internal void Reset()
         {
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            CurrentNivelacija = new Nivelacija(DbContext,
+                NivelacijaStateEnumeration.Nivelacija);
+
+            Groups = new List<GroupItems>() { new GroupItems(-1, -1, "Sve grupe") };
+            TotalNivelacija = 0;
+            TotalNewNivelacija = 0;
+            TotalOldNivelacija = 0;
+            TotalPdvNivelacija = 0;
+
+            if (DbContext.Items != null &&
+                DbContext.Items.Any())
             {
-                CurrentNivelacija = new Nivelacija(sqliteDbContext, NivelacijaStateEnumeration.Nivelacija);
-
-                Groups = new List<GroupItems>() { new GroupItems(-1, -1, "Sve grupe") };
-                TotalNivelacija = 0;
-                TotalNewNivelacija = 0;
-                TotalOldNivelacija = 0;
-                TotalPdvNivelacija = 0;
-
-                if (sqliteDbContext.Items != null &&
-                    sqliteDbContext.Items.Any())
+                DbContext.Items.ToList().ForEach(x =>
                 {
-                    sqliteDbContext.Items.ToList().ForEach(x =>
+                    Item item = new Item(x);
+                    var group = DbContext.ItemGroups.Find(x.IdItemGroup);
+
+                    if (group != null)
                     {
-                        Item item = new Item(x);
-                        var group = sqliteDbContext.ItemGroups.Find(x.IdItemGroup);
-
-                        if (group != null)
-                        {
-                            bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
-                            AllItems.Add(new Invertory(item, x.IdItemGroup, x.TotalQuantity, 0, x.AlarmQuantity, isSirovina));
-                        }
-                    });
-                }
-
-                SearchItems = new List<Invertory>(AllItems);
-
-                if (sqliteDbContext.ItemGroups != null &&
-                    sqliteDbContext.ItemGroups.Any())
-                {
-                    sqliteDbContext.ItemGroups.ToList().ForEach(group =>
-                    {
-                        if (group.Name.ToLower().Contains("sirovine") ||
-                           group.Name.ToLower().Contains("sirovina"))
-                        {
-
-                        }
-                        else
-                        {
-                            Groups.Add(new GroupItems(group.Id, group.IdSupergroup, group.Name));
-                        }
-                    });
-                }
-
-                AllGroups = new ObservableCollection<GroupItems>(Groups);
-                CurrentGroup = AllGroups.FirstOrDefault();
-
-                CurrentNivelacijaItem = null;
+                        bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
+                        AllItems.Add(new Invertory(item, x.IdItemGroup, x.TotalQuantity, 0, x.AlarmQuantity, isSirovina));
+                    }
+                });
             }
+
+            SearchItems = new List<Invertory>(AllItems);
+
+            if (DbContext.ItemGroups != null &&
+                DbContext.ItemGroups.Any())
+            {
+                DbContext.ItemGroups.ToList().ForEach(group =>
+                {
+                    if (group.Name.ToLower().Contains("sirovine") ||
+                       group.Name.ToLower().Contains("sirovina"))
+                    {
+
+                    }
+                    else
+                    {
+                        Groups.Add(new GroupItems(group.Id, group.IdSupergroup, group.Name));
+                    }
+                });
+            }
+
+            AllGroups = new ObservableCollection<GroupItems>(Groups);
+            CurrentGroup = AllGroups.FirstOrDefault();
+
+            CurrentNivelacijaItem = null;
         }
         #endregion Internal methods
 

@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using Microsoft.EntityFrameworkCore;
 using ClickBar_Logging;
 using ClickBar_Common.Models.Order.Drlja;
@@ -42,46 +42,51 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder
                 {
                     if (_viewModel.PaySaleViewModel.SaleViewModel.TableId != 0)
                     {
-                        using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
-                        {
-                            var unprocessedOrderDB = sqliteDbContext.UnprocessedOrders.FirstOrDefault(x => x.PaymentPlaceId == _viewModel.PaySaleViewModel.SaleViewModel.TableId);
+                        var unprocessedOrderDB = _viewModel.DbContext.UnprocessedOrders.FirstOrDefault(x => x.PaymentPlaceId == _viewModel.PaySaleViewModel.SaleViewModel.TableId);
 
-                            if (unprocessedOrderDB != null)
+                        if (unprocessedOrderDB != null)
+                        {
+                            if (_viewModel.ItemsInvoiceForPay != null &&
+                                _viewModel.ItemsInvoiceForPay.Any())
                             {
-                                if (_viewModel.ItemsInvoiceForPay != null &&
-                                    _viewModel.ItemsInvoiceForPay.Any())
+                                PorudzbinaDrlja? porudzbinaDrlja = null;
+
+                                if (!string.IsNullOrEmpty(SettingsManager.Instance.GetPathToDrljaKuhinjaDB()))
                                 {
-                                    PorudzbinaDrlja porudzbinaDrlja = new PorudzbinaDrlja()
+                                    porudzbinaDrlja = new PorudzbinaDrlja()
                                     {
                                         PorudzbinaId = unprocessedOrderDB.Id,
                                         Items = new List<PorudzbinaItemDrlja>(),
                                         RadnikId = unprocessedOrderDB.CashierId,
                                         StoBr = unprocessedOrderDB.PaymentPlaceId.ToString()
                                     };
+                                }
 
-                                    _viewModel.ItemsInvoiceForPay.ToList().ForEach(item =>
+                                _viewModel.ItemsInvoiceForPay.ToList().ForEach(item =>
+                                {
+                                    var u = _viewModel.DbContext.ItemsInUnprocessedOrder.FirstOrDefault(x => x.ItemId == item.Item.Id &&
+                                    x.UnprocessedOrderId == unprocessedOrderDB.Id);
+
+                                    if (u != null)
                                     {
-                                        var u = sqliteDbContext.ItemsInUnprocessedOrder.FirstOrDefault(x => x.ItemId == item.Item.Id &&
-                                        x.UnprocessedOrderId == unprocessedOrderDB.Id);
+                                        unprocessedOrderDB.TotalAmount -= item.TotalAmout;
+                                        _viewModel.DbContext.UnprocessedOrders.Update(unprocessedOrderDB);
 
-                                        if (u != null)
+                                        if (u.Quantity == item.Quantity)
                                         {
-                                            unprocessedOrderDB.TotalAmount -= item.TotalAmout;
-                                            sqliteDbContext.UnprocessedOrders.Update(unprocessedOrderDB);
-
-                                            if (u.Quantity == item.Quantity)
-                                            {
-                                                sqliteDbContext.ItemsInUnprocessedOrder.Remove(u);
-                                            }
-                                            else
-                                            {
-                                                u.Quantity -= item.Quantity;
-                                                sqliteDbContext.ItemsInUnprocessedOrder.Update(u);
-                                            }
-
-                                            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                                            _viewModel.DbContext.ItemsInUnprocessedOrder.Remove(u);
+                                        }
+                                        else
+                                        {
+                                            u.Quantity -= item.Quantity;
+                                            _viewModel.DbContext.ItemsInUnprocessedOrder.Update(u);
                                         }
 
+                                        _viewModel.DbContext.SaveChanges();
+                                    }
+
+                                    if (porudzbinaDrlja != null)
+                                    {
                                         porudzbinaDrlja.Items.Add(new PorudzbinaItemDrlja()
                                         {
                                             Kolicina = item.Quantity,
@@ -92,7 +97,10 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder
                                             BrojNarudzbe = 0,
                                             Jm = item.Item.Jm
                                         });
-                                    });
+                                    }
+                                });
+                                if (porudzbinaDrlja != null)
+                                {
                                     var result = await PostStornoPorudzbinaAsync(porudzbinaDrlja);
 
                                     if (result != 200)
@@ -107,13 +115,15 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder
                                 }
                             }
                         }
-                        MessageBox.Show("Uspešno ste stornirali kuhinju!", "Uspešno", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show("Uspešno!", "Uspešno", MessageBoxButton.OK, MessageBoxImage.Information);
                         _viewModel.PaySaleViewModel.SplitOrderWindow.Close();
                         _viewModel.PaySaleViewModel.Window.Close();
 
                         _viewModel.PaySaleViewModel.SaleViewModel.Reset();
 
-                        AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
+                        AppStateParameter appStateParameter = new AppStateParameter(_viewModel.DbContext,
+                            _viewModel.DrljaDbContext,
+                            AppStateEnumerable.TableOverview,
                             _viewModel.PaySaleViewModel.SaleViewModel.LoggedCashier,
                             _viewModel.PaySaleViewModel.SaleViewModel);
                         _viewModel.PaySaleViewModel.SaleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);

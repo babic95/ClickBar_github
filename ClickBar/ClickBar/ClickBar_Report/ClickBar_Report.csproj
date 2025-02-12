@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ClickBar_Common\ClickBar_Common.csproj" />
-    <ProjectReference Include="..\ClickBar_Database\ClickBar_Database.csproj" />
+    <ProjectReference Include="..\ClickBar_DatabaseSQLManager\ClickBar_DatabaseSQLManager.csproj" />
   </ItemGroup>
 
 </Project>

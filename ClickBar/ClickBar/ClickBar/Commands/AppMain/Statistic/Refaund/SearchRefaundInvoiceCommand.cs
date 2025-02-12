@@ -1,7 +1,7 @@
 ﻿using ClickBar.Models.Sale;
 using ClickBar.ViewModels.AppMain.Statistic;
-using ClickBar_Database.Models;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager.Models;
+using ClickBar_DatabaseSQLManager;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -33,35 +33,31 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
         {
             try
             {
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                _currentViewModel.AllInvoicesInDate = new List<Invoice>();
+                var invoices = _currentViewModel.DbContext.Invoices.Where(invoice =>
+                invoice.TransactionType == (int)ClickBar_Common.Enums.TransactionTypeEnumeration.Sale &&
+                invoice.SdcDateTime.HasValue &&
+                invoice.SdcDateTime.Value.Date == _currentViewModel.SelectedDateForRefund.Date);
+
+                var invoicesRefaund = _currentViewModel.DbContext.Invoices.Where(invoice =>
+                invoice.TransactionType == (int)ClickBar_Common.Enums.TransactionTypeEnumeration.Refund &&
+                invoice.SdcDateTime.HasValue);
+
+                if (invoices != null &&
+                    invoices.Any())
                 {
-
-                    _currentViewModel.AllInvoicesInDate = new List<Invoice>();
-                    var invoices = sqliteDbContext.Invoices.Where(invoice =>
-                    invoice.TransactionType == (int)ClickBar_Common.Enums.TransactionTypeEnumeration.Sale &&
-                    invoice.SdcDateTime.HasValue &&
-                    invoice.SdcDateTime.Value.Date == _currentViewModel.SelectedDateForRefund.Date);
-
-                    var invoicesRefaund = sqliteDbContext.Invoices.Where(invoice =>
-                    invoice.TransactionType == (int)ClickBar_Common.Enums.TransactionTypeEnumeration.Refund &&
-                    invoice.SdcDateTime.HasValue);
-
-                    if (invoices != null &&
-                        invoices.Any())
+                    invoices.ToList().ForEach(invoice =>
                     {
-                        invoices.ToList().ForEach(invoice =>
+                        if (invoicesRefaund.FirstOrDefault(inv => inv.ReferentDocumentNumber == invoice.InvoiceNumberResult) == null &&
+                        !string.IsNullOrEmpty(invoice.InvoiceNumberResult))
                         {
-                            if (invoicesRefaund.FirstOrDefault(inv => inv.ReferentDocumentNumber == invoice.InvoiceNumberResult) == null &&
-                            !string.IsNullOrEmpty(invoice.InvoiceNumberResult))
-                            {
-                                _currentViewModel.AllInvoicesInDate.Add(new Invoice(invoice, _currentViewModel.AllInvoicesInDate.Count + 1));
-                            }
-                        });
-                    }
-                    _currentViewModel.SearchInvoices = new ObservableCollection<Invoice>(_currentViewModel.AllInvoicesInDate);
-
-                    _currentViewModel.InvoiceType = _currentViewModel.InvoiceType;
+                            _currentViewModel.AllInvoicesInDate.Add(new Invoice(invoice, _currentViewModel.AllInvoicesInDate.Count + 1));
+                        }
+                    });
                 }
+                _currentViewModel.SearchInvoices = new ObservableCollection<Invoice>(_currentViewModel.AllInvoicesInDate);
+
+                _currentViewModel.InvoiceType = _currentViewModel.InvoiceType;
             }
             catch (Exception ex)
             {

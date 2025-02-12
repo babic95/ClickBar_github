@@ -3,8 +3,8 @@ using ClickBar.ViewModels;
 using ClickBar_Common.Models.Invoice.Helpers;
 using ClickBar_Common.Models.Invoice.Tax;
 using ClickBar_Common.Models.Invoice;
-using ClickBar_Database.Models;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager.Models;
+using ClickBar_DatabaseSQLManager;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,7 +52,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
             //    }
             //    else
             //    {
-            //        SqliteDbContext sqliteDbContext = new SqliteDbContext();
+            //        SqlServerDbContext sqliteDbContext = new SqlServerDbContext();
 
             //        InvoiceDB invoice = await sqliteDbContext.GetInvoice(copyInvoiceTypeViewModel.CurrentInvoice.Id);
 

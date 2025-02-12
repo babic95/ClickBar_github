@@ -8,7 +8,7 @@ using System.Windows.Input;
 using System.Windows;
 using ClickBar.Enums.Sale;
 using ClickBar.Models.Sale;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using System.Collections.ObjectModel;
 
 namespace ClickBar.Commands.AppMain.Statistic.Refaund

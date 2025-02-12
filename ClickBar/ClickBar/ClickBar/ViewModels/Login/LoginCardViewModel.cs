@@ -1,10 +1,14 @@
 ﻿using ClickBar.Commands;
+using ClickBar.Commands.AppMain;
 using ClickBar.Enums;
 using ClickBar_API;
 using ClickBar_Common.Enums;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_Database_Drlja;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Settings;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,6 +25,7 @@ namespace ClickBar.ViewModels.Login
 {
     public class LoginCardViewModel : ViewModelBase
     {
+        private IServiceProvider _serviceProvider;
         private readonly string _fromPath = @"C:\CCS ClickBar\ClickBar_Admin\PIN.json";
         private string _message;
         private string _password;
@@ -39,24 +44,31 @@ namespace ClickBar.ViewModels.Login
             Name = "CleanCodeSirmium"
         };
 
-        public LoginCardViewModel(ICommand updateCurrentViewModelCommand)
+        public LoginCardViewModel(IServiceProvider serviceProvider, IDbContextFactory<SqlServerDbContext> dbContextFactory, IDbContextFactory<SqliteDrljaDbContext> drljaDbContextFactory)
         {
+            _serviceProvider = serviceProvider;
+            DbContext = dbContextFactory.CreateDbContext();
+            DrljaDbContext = drljaDbContextFactory.CreateDbContext();
+            UpdateCurrentAppStateViewModelCommand = serviceProvider.GetRequiredService<UpdateCurrentAppStateViewModelCommand>();
+
             Initialization();
 
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            AllCashiers = DbContext.Cashiers.ToList();
+
+            string? logoUrl = SettingsManager.Instance.GetPathToLogo();
+
+            if (File.Exists(logoUrl))
             {
-                AllCashiers = sqliteDbContext.Cashiers.ToList();
-                UpdateCurrentViewModelCommand = updateCurrentViewModelCommand;
-
-                string? logoUrl = SettingsManager.Instance.GetPathToLogo();
-
-                if (File.Exists(logoUrl))
-                {
-                    Logo = new BitmapImage(new Uri(logoUrl));
-                }
+                Logo = new BitmapImage(new Uri(logoUrl));
             }
         }
 
+        #region Internal Properties
+        internal SqlServerDbContext DbContext { get; private set; }
+        internal SqliteDrljaDbContext DrljaDbContext { get; private set; }
+        #endregion Internal Properties
+
+        #region Properties
         public List<CashierDB> AllCashiers { get; private set; }
 
         public ImageSource Logo
@@ -115,13 +127,13 @@ namespace ClickBar.ViewModels.Login
                         AppStateParameter appStateParameter;
                         if (c.Type == CashierTypeEnumeration.Worker)
                         {
-                            appStateParameter = new AppStateParameter(AppStateEnumerable.Sale, c);
+                            appStateParameter = new AppStateParameter(DbContext, DrljaDbContext, AppStateEnumerable.Sale, c);
                         }
                         else
                         {
-                            appStateParameter = new AppStateParameter(AppStateEnumerable.Main, c);
+                            appStateParameter = new AppStateParameter(DbContext, DrljaDbContext, AppStateEnumerable.Main, c);
                         }
-                        UpdateCurrentViewModelCommand.Execute(appStateParameter);
+                        UpdateCurrentAppStateViewModelCommand.Execute(appStateParameter);
                     }
                     else
                     {
@@ -143,8 +155,9 @@ namespace ClickBar.ViewModels.Login
                 OnPropertyChange(nameof(Password));
             }
         }
+        #endregion Properties
 
-        public ICommand UpdateCurrentViewModelCommand { get; set; }
+        public ICommand UpdateCurrentAppStateViewModelCommand { get; set; }
 
         private void SendPin()
         {

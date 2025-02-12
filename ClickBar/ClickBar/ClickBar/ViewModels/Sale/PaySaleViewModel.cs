@@ -6,9 +6,11 @@ using ClickBar.Models.AppMain.Statistic;
 using ClickBar.Models.Sale;
 using ClickBar.Models.Sale.Buyer;
 using ClickBar_Common.Models.Invoice;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_Database_Drlja;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -36,6 +38,8 @@ namespace ClickBar.ViewModels.Sale
     public class PaySaleViewModel : ViewModelBase
     {
         #region Fields
+        private IServiceProvider _serviceProvider;
+
         private FocusEnumeration _focus;
 
         private ObservableCollection<ItemInvoice> _itemsInvoice;
@@ -67,19 +71,27 @@ namespace ClickBar.ViewModels.Sale
         private string _mobileMoney;
 
         private Visibility _visibilityBlack;
-        private Visibility _visibilityBlackView; 
+        private Visibility _visibilityBlackView;
         #endregion Fields
 
         #region Constructors
-        public PaySaleViewModel(Window window, SaleViewModel saleViewModel)
+        public PaySaleViewModel(IServiceProvider serviceProvider)
         {
+            _serviceProvider = serviceProvider;
+            var dbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            var drljaDbContext = serviceProvider.GetRequiredService<SqliteDrljaDbContext>();
+            var saleViewModel = serviceProvider.GetRequiredService<SaleViewModel>();
 
+            DbContext = dbContext;
+            DrljaDbContext = drljaDbContext;
+            PayCommand = _serviceProvider.GetRequiredService<PayCommand<PaySaleViewModel>>();
+            SplitOrderCommand = _serviceProvider.GetRequiredService<SplitOrderCommand>();
 #if CRNO
             VisibilityBlack = Visibility.Hidden;
 #else
             VisibilityBlack = Visibility.Visible;
 #endif
-            Window = window;
+
             SaleViewModel = saleViewModel;
             CashierNema = saleViewModel.CashierNema;
             BuyerVisibility = Visibility.Hidden;
@@ -101,14 +113,12 @@ namespace ClickBar.ViewModels.Sale
             CurrentBuyerIdElement = BuyerIdElements.FirstOrDefault();
 
             Partners = new ObservableCollection<Partner>();
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            DbContext.Partners.ForEachAsync(partner =>
             {
-                sqliteDbContext.Partners.ForEachAsync(partner =>
-                {
-                    Partners.Add(new Partner(partner));
-                });
-                CurrentPartner = new Partner();
-            }
+                Partners.Add(new Partner(partner));
+            });
+            CurrentPartner = new Partner();
+
         }
         #endregion Constructors
 
@@ -677,6 +687,14 @@ namespace ClickBar.ViewModels.Sale
         #endregion Properties
 
         #region Internal Properties
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
+        internal SqliteDrljaDbContext DrljaDbContext
+        {
+            get; private set;
+        }
         internal List<Payment> Payment { get; set; }
         internal SaleViewModel SaleViewModel { get; set; }
         internal Window Window { get; set; }
@@ -685,8 +703,8 @@ namespace ClickBar.ViewModels.Sale
         #region Commands
         public ICommand CancelCommand => new CancelCommand(this);
         public ICommand ClickOnNumberButtonCommand => new ClickOnNumberButtonCommand(this);
-        public ICommand PayCommand => new PayCommand(this);
-        public ICommand SplitOrderCommand => new SplitOrderCommand(this);
+        public ICommand PayCommand { get; }
+        public ICommand SplitOrderCommand { get; }
         public ICommand ChangeFocusCommand => new ChangeFocusCommand(this);
         #endregion Commands
 

@@ -1,17 +1,7 @@
 ﻿using ClickBar.ViewModels.Sale;
+using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace ClickBar.Views.Sale.PaySale
 {
@@ -20,10 +10,19 @@ namespace ClickBar.Views.Sale.PaySale
     /// </summary>
     public partial class SplitOrderWindow : Window
     {
-        public SplitOrderWindow(PaySaleViewModel paySaleViewModel)
+        private readonly IServiceProvider _serviceProvider;
+
+        public SplitOrderWindow(IServiceProvider serviceProvider, PaySaleViewModel paySaleViewModel)
         {
             InitializeComponent();
-            DataContext = new SplitOrderViewModel(paySaleViewModel);
+            _serviceProvider = serviceProvider;
+
+            // Kreiranje instance SplitOrderViewModel-a koristeći IServiceProvider
+            var splitOrderViewModel = _serviceProvider.GetRequiredService<SplitOrderViewModel>();
+
+            splitOrderViewModel.PaySaleViewModel = paySaleViewModel;
+
+            DataContext = splitOrderViewModel;
         }
     }
 }

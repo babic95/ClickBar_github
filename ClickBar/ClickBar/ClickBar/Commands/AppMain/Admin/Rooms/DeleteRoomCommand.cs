@@ -1,6 +1,6 @@
 ﻿using ClickBar.ViewModels.AppMain;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,17 +40,13 @@ namespace ClickBar.Commands.AppMain.Admin.Rooms
 
                     if (result == MessageBoxResult.Yes)
                     {
-                        using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                        PartHallDB? partHallDB = _currentViewModel.DbContext.PartHalls.Find(_currentViewModel.CurrentPartHall.Id);
+
+                        if (partHallDB != null)
                         {
-
-                            PartHallDB? partHallDB = sqliteDbContext.PartHalls.Find(_currentViewModel.CurrentPartHall.Id);
-
-                            if (partHallDB != null)
-                            {
-                                sqliteDbContext.PartHalls.Remove(partHallDB);
-                                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-                                MessageBox.Show("Uspešno ste obrisali prostoriju!", "Uspešno brisanje", MessageBoxButton.OK, MessageBoxImage.Information);
-                            }
+                            _currentViewModel.DbContext.PartHalls.Remove(partHallDB);
+                            _currentViewModel.DbContext.SaveChanges();
+                            MessageBox.Show("Uspešno ste obrisali prostoriju!", "Uspešno brisanje", MessageBoxButton.OK, MessageBoxImage.Information);
                         }
                     }
                 }

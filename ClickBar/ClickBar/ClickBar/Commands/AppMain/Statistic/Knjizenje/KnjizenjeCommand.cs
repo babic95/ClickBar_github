@@ -6,8 +6,8 @@ using ClickBar.Models.Sale;
 using ClickBar.ViewModels.AppMain.Statistic;
 using ClickBar_Common.Enums;
 using ClickBar_Common.Models.Invoice;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Logging;
 using ClickBar_Report.Models;
 using System;
@@ -70,127 +70,123 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                 {
                     try
                     {
-                        using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                        KnjizenjePazaraDB? knjizenjePazaraDB = _currentViewModel.DbContext.KnjizenjePazara.FirstOrDefault(kp =>
+                        kp.IssueDateTime.Date == _currentViewModel.CurrentDate.Date);
+
+                        if (knjizenjePazaraDB != null)
                         {
+                            knjizenjePazaraDB.NormalSaleCash += _currentViewModel.CurrentKnjizenjePazara.NormalSaleCash;
+                            knjizenjePazaraDB.NormalSaleCard += _currentViewModel.CurrentKnjizenjePazara.NormalSaleCard;
+                            knjizenjePazaraDB.NormalSaleWireTransfer += _currentViewModel.CurrentKnjizenjePazara.NormalSaleWireTransfer;
+                            knjizenjePazaraDB.NormalRefundCash += _currentViewModel.CurrentKnjizenjePazara.NormalRefundCash;
+                            knjizenjePazaraDB.NormalRefundCard += _currentViewModel.CurrentKnjizenjePazara.NormalRefundCard;
+                            knjizenjePazaraDB.NormalRefundWireTransfer += _currentViewModel.CurrentKnjizenjePazara.NormalRefundWireTransfer;
 
-                            KnjizenjePazaraDB? knjizenjePazaraDB = sqliteDbContext.KnjizenjePazara.FirstOrDefault(kp =>
-                            kp.IssueDateTime.Date == _currentViewModel.CurrentDate.Date);
-
-                            if (knjizenjePazaraDB != null)
+                            _currentViewModel.DbContext.KnjizenjePazara.Update(knjizenjePazaraDB);
+                        }
+                        else
+                        {
+                            knjizenjePazaraDB = new KnjizenjePazaraDB()
                             {
-                                knjizenjePazaraDB.NormalSaleCash += _currentViewModel.CurrentKnjizenjePazara.NormalSaleCash;
-                                knjizenjePazaraDB.NormalSaleCard += _currentViewModel.CurrentKnjizenjePazara.NormalSaleCard;
-                                knjizenjePazaraDB.NormalSaleWireTransfer += _currentViewModel.CurrentKnjizenjePazara.NormalSaleWireTransfer;
-                                knjizenjePazaraDB.NormalRefundCash += _currentViewModel.CurrentKnjizenjePazara.NormalRefundCash;
-                                knjizenjePazaraDB.NormalRefundCard += _currentViewModel.CurrentKnjizenjePazara.NormalRefundCard;
-                                knjizenjePazaraDB.NormalRefundWireTransfer += _currentViewModel.CurrentKnjizenjePazara.NormalRefundWireTransfer;
+                                Id = _currentViewModel.CurrentKnjizenjePazara.Id,
+                                Description = _currentViewModel.CurrentKnjizenjePazara.Description,
+                                IssueDateTime = _currentViewModel.CurrentKnjizenjePazara.IssueDateTime,
+                                NormalSaleCash = _currentViewModel.CurrentKnjizenjePazara.NormalSaleCash,
+                                NormalSaleCard = _currentViewModel.CurrentKnjizenjePazara.NormalSaleCard,
+                                NormalSaleWireTransfer = _currentViewModel.CurrentKnjizenjePazara.NormalSaleWireTransfer,
+                                NormalRefundCash = _currentViewModel.CurrentKnjizenjePazara.NormalRefundCash,
+                                NormalRefundCard = _currentViewModel.CurrentKnjizenjePazara.NormalRefundCard,
+                                NormalRefundWireTransfer = _currentViewModel.CurrentKnjizenjePazara.NormalRefundWireTransfer
+                            };
+                            _currentViewModel.DbContext.KnjizenjePazara.Add(knjizenjePazaraDB);
+                        }
+                        _currentViewModel.DbContext.SaveChanges();
 
-                                sqliteDbContext.KnjizenjePazara.Update(knjizenjePazaraDB);
-                            }
-                            else
+                        decimal nivelacija = 0;
+
+                        _currentViewModel.Invoices.ToList().ForEach(invoice =>
+                        {
+                            var invoiceDB = _currentViewModel.DbContext.Invoices.FirstOrDefault(inv => inv.Id == invoice.Id);
+
+                            if (invoiceDB != null)
                             {
-                                knjizenjePazaraDB = new KnjizenjePazaraDB()
+                                invoiceDB.KnjizenjePazaraId = knjizenjePazaraDB.Id;
+                                _currentViewModel.DbContext.Invoices.Update(invoiceDB);
+
+                                var invoiceItems = _currentViewModel.DbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoiceDB.Id &&
+                                (itemInvoice.IsSirovina == null || itemInvoice.IsSirovina == 0));
+
+                                if (invoiceItems != null &&
+                                invoiceItems.Any())
                                 {
-                                    Id = _currentViewModel.CurrentKnjizenjePazara.Id,
-                                    Description = _currentViewModel.CurrentKnjizenjePazara.Description,
-                                    IssueDateTime = _currentViewModel.CurrentKnjizenjePazara.IssueDateTime,
-                                    NormalSaleCash = _currentViewModel.CurrentKnjizenjePazara.NormalSaleCash,
-                                    NormalSaleCard = _currentViewModel.CurrentKnjizenjePazara.NormalSaleCard,
-                                    NormalSaleWireTransfer = _currentViewModel.CurrentKnjizenjePazara.NormalSaleWireTransfer,
-                                    NormalRefundCash = _currentViewModel.CurrentKnjizenjePazara.NormalRefundCash,
-                                    NormalRefundCard = _currentViewModel.CurrentKnjizenjePazara.NormalRefundCard,
-                                    NormalRefundWireTransfer = _currentViewModel.CurrentKnjizenjePazara.NormalRefundWireTransfer
-                                };
-                                sqliteDbContext.KnjizenjePazara.Add(knjizenjePazaraDB);
-                            }
-                            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                            decimal nivelacija = 0;
-
-                            _currentViewModel.Invoices.ToList().ForEach(invoice =>
-                            {
-                                var invoiceDB = sqliteDbContext.Invoices.FirstOrDefault(inv => inv.Id == invoice.Id);
-
-                                if (invoiceDB != null)
-                                {
-                                    invoiceDB.KnjizenjePazaraId = knjizenjePazaraDB.Id;
-                                    sqliteDbContext.Invoices.Update(invoiceDB);
-
-                                    var invoiceItems = sqliteDbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoiceDB.Id &&
-                                    (itemInvoice.IsSirovina == null || itemInvoice.IsSirovina == 0));
-
-                                    if (invoiceItems != null &&
-                                    invoiceItems.Any())
+                                    invoiceItems.ToList().ForEach(item =>
                                     {
-                                        invoiceItems.ToList().ForEach(item =>
+                                        var itemDB = _currentViewModel.DbContext.Items.Find(item.ItemCode);
+
+                                        if (itemDB != null)
                                         {
-                                            var itemDB = sqliteDbContext.Items.Find(item.ItemCode);
-
-                                            if (itemDB != null)
+                                            if (itemDB.IdNorm != null)
                                             {
-                                                if (itemDB.IdNorm != null)
-                                                {
-                                                    var payment = sqliteDbContext.PaymentInvoices.FirstOrDefault(pay => pay.InvoiceId == invoiceDB.Id);
+                                                var payment = _currentViewModel.DbContext.PaymentInvoices.FirstOrDefault(pay => pay.InvoiceId == invoiceDB.Id);
 
-                                                    if (invoiceDB.TransactionType == (int)Enums.Sale.TransactionTypeEnumeration.Prodaja &&
-                                                    item.TotalAmout != null &&
-                                                    item.TotalAmout.HasValue)
+                                                if (invoiceDB.TransactionType == (int)Enums.Sale.TransactionTypeEnumeration.Prodaja &&
+                                                item.TotalAmout != null &&
+                                                item.TotalAmout.HasValue)
+                                                {
+                                                    switch (payment.PaymentType)
                                                     {
-                                                        switch (payment.PaymentType)
-                                                        {
-                                                            case PaymentTypeEnumeration.Cash:
-                                                                zaduzenje.NormalSaleCash += item.TotalAmout.Value;
-                                                                break;
-                                                            case PaymentTypeEnumeration.Card:
-                                                                zaduzenje.NormalSaleCard += item.TotalAmout.Value;
-                                                                break;
-                                                            case PaymentTypeEnumeration.WireTransfer:
-                                                                zaduzenje.NormalSaleWireTransfer += item.TotalAmout.Value;
-                                                                break;
-                                                        }
-                                                    }
-                                                    else if (invoiceDB.TransactionType == (int)Enums.Sale.TransactionTypeEnumeration.Refundacija &&
-                                                    item.TotalAmout != null &&
-                                                    item.TotalAmout.HasValue)
-                                                    {
-                                                        switch (payment.PaymentType)
-                                                        {
-                                                            case PaymentTypeEnumeration.Cash:
-                                                                zaduzenje.NormalRefundCash -= item.TotalAmout.Value;
-                                                                break;
-                                                            case PaymentTypeEnumeration.Card:
-                                                                zaduzenje.NormalRefundCard -= item.TotalAmout.Value;
-                                                                break;
-                                                            case PaymentTypeEnumeration.WireTransfer:
-                                                                zaduzenje.NormalRefundWireTransfer -= item.TotalAmout.Value;
-                                                                break;
-                                                        }
+                                                        case PaymentTypeEnumeration.Cash:
+                                                            zaduzenje.NormalSaleCash += item.TotalAmout.Value;
+                                                            break;
+                                                        case PaymentTypeEnumeration.Card:
+                                                            zaduzenje.NormalSaleCard += item.TotalAmout.Value;
+                                                            break;
+                                                        case PaymentTypeEnumeration.WireTransfer:
+                                                            zaduzenje.NormalSaleWireTransfer += item.TotalAmout.Value;
+                                                            break;
                                                     }
                                                 }
-                                                else
+                                                else if (invoiceDB.TransactionType == (int)Enums.Sale.TransactionTypeEnumeration.Refundacija &&
+                                                item.TotalAmout != null &&
+                                                item.TotalAmout.HasValue)
                                                 {
-                                                    if (item.OriginalUnitPrice.HasValue &&
-                                                    item.UnitPrice.HasValue && item.Quantity.HasValue)
+                                                    switch (payment.PaymentType)
                                                     {
-                                                        if (invoiceDB.TransactionType == (int)Enums.Sale.TransactionTypeEnumeration.Prodaja &&
-                                                        item.OriginalUnitPrice != item.UnitPrice)
-                                                        {
-                                                            nivelacija += (item.UnitPrice.Value - item.OriginalUnitPrice.Value) * item.Quantity.Value;
-                                                        }
+                                                        case PaymentTypeEnumeration.Cash:
+                                                            zaduzenje.NormalRefundCash -= item.TotalAmout.Value;
+                                                            break;
+                                                        case PaymentTypeEnumeration.Card:
+                                                            zaduzenje.NormalRefundCard -= item.TotalAmout.Value;
+                                                            break;
+                                                        case PaymentTypeEnumeration.WireTransfer:
+                                                            zaduzenje.NormalRefundWireTransfer -= item.TotalAmout.Value;
+                                                            break;
                                                     }
                                                 }
                                             }
-                                        });
-                                    }
+                                            else
+                                            {
+                                                if (item.OriginalUnitPrice.HasValue &&
+                                                item.UnitPrice.HasValue && item.Quantity.HasValue)
+                                                {
+                                                    if (invoiceDB.TransactionType == (int)Enums.Sale.TransactionTypeEnumeration.Prodaja &&
+                                                    item.OriginalUnitPrice != item.UnitPrice)
+                                                    {
+                                                        nivelacija += (item.UnitPrice.Value - item.OriginalUnitPrice.Value) * item.Quantity.Value;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    });
                                 }
-                            });
+                            }
+                        });
 
-                            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                        _currentViewModel.DbContext.SaveChanges();
 
-                            Knjizenje(knjizenjePazaraDB, nivelacija, zaduzenje, sqliteDbContext);
+                        Knjizenje(knjizenjePazaraDB, nivelacija, zaduzenje);
 
-                            _currentViewModel.SearchInvoicesCommand.Execute(null);
-                        }
+                        _currentViewModel.SearchInvoicesCommand.Execute(null);
                     }
                     catch (Exception ex)
                     {
@@ -199,21 +195,20 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                 }
             }
         }
-        private void Knjizenje(KnjizenjePazaraDB knjizenjePazaraDB, 
+        private void Knjizenje(KnjizenjePazaraDB knjizenjePazaraDB,
             decimal nivelacija,
-            Zaduzenje zaduzenje,
-            SqliteDbContext sqliteDbContext)
+            Zaduzenje zaduzenje)
         {
             if (knjizenjePazaraDB.NormalSaleCash != 0)
             {
-                var kepPazar = sqliteDbContext.Kep.FirstOrDefault(kep => kep.KepDate.Date == knjizenjePazaraDB.IssueDateTime.Date &&
+                var kepPazar = _currentViewModel.DbContext.Kep.FirstOrDefault(kep => kep.KepDate.Date == knjizenjePazaraDB.IssueDateTime.Date &&
                 kep.Type == (int)KepStateEnumeration.Dnevni_Pazar_Prodaja_Gotovina);
 
-                if(kepPazar != null)
+                if (kepPazar != null)
                 {
                     kepPazar.Razduzenje = knjizenjePazaraDB.NormalSaleCash;
                     kepPazar.Zaduzenje += zaduzenje.NormalSaleCash;
-                    sqliteDbContext.Kep.Update(kepPazar);
+                    _currentViewModel.DbContext.Kep.Update(kepPazar);
                 }
                 else
                 {
@@ -226,20 +221,20 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                         Zaduzenje = zaduzenje.NormalSaleCash,
                         Description = $"Pazar na dan {knjizenjePazaraDB.IssueDateTime.ToString("dd.MM.yyyy")} PROMET PRODAJA - GOTOVINA"
                     };
-                    sqliteDbContext.Kep.Add(kepDB);
+                    _currentViewModel.DbContext.Kep.Add(kepDB);
                 }
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                _currentViewModel.DbContext.SaveChanges();
             }
             if (knjizenjePazaraDB.NormalSaleCard != 0)
             {
-                var kepPazar = sqliteDbContext.Kep.FirstOrDefault(kep => kep.KepDate.Date == knjizenjePazaraDB.IssueDateTime.Date &&
+                var kepPazar = _currentViewModel.DbContext.Kep.FirstOrDefault(kep => kep.KepDate.Date == knjizenjePazaraDB.IssueDateTime.Date &&
                 kep.Type == (int)KepStateEnumeration.Dnevni_Pazar_Prodaja_Kartica);
 
                 if (kepPazar != null)
                 {
                     kepPazar.Razduzenje = knjizenjePazaraDB.NormalSaleCard;
                     kepPazar.Zaduzenje += zaduzenje.NormalSaleCard;
-                    sqliteDbContext.Kep.Update(kepPazar);
+                    _currentViewModel.DbContext.Kep.Update(kepPazar);
                 }
                 else
                 {
@@ -252,20 +247,20 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                         Zaduzenje = zaduzenje.NormalSaleCard,
                         Description = $"Pazar na dan {knjizenjePazaraDB.IssueDateTime.ToString("dd.MM.yyyy")} PROMET PRODAJA - PLATNA KARTICA"
                     };
-                    sqliteDbContext.Kep.Add(kepDB);
+                    _currentViewModel.DbContext.Kep.Add(kepDB);
                 }
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                _currentViewModel.DbContext.SaveChanges();
             }
             if (knjizenjePazaraDB.NormalSaleWireTransfer != 0)
             {
-                var kepPazar = sqliteDbContext.Kep.FirstOrDefault(kep => kep.KepDate.Date == knjizenjePazaraDB.IssueDateTime.Date &&
+                var kepPazar = _currentViewModel.DbContext.Kep.FirstOrDefault(kep => kep.KepDate.Date == knjizenjePazaraDB.IssueDateTime.Date &&
                 kep.Type == (int)KepStateEnumeration.Dnevni_Pazar_Prodaja_Virman);
 
                 if (kepPazar != null)
                 {
                     kepPazar.Razduzenje = knjizenjePazaraDB.NormalSaleWireTransfer;
                     kepPazar.Zaduzenje += zaduzenje.NormalSaleWireTransfer;
-                    sqliteDbContext.Kep.Update(kepPazar);
+                    _currentViewModel.DbContext.Kep.Update(kepPazar);
                 }
                 else
                 {
@@ -278,20 +273,20 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                         Zaduzenje = zaduzenje.NormalSaleWireTransfer,
                         Description = $"Pazar na dan {knjizenjePazaraDB.IssueDateTime.ToString("dd.MM.yyyy")} PROMET PRODAJA - PRENOS NA RAČUN"
                     };
-                    sqliteDbContext.Kep.Add(kepDB);
+                    _currentViewModel.DbContext.Kep.Add(kepDB);
                 }
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                _currentViewModel.DbContext.SaveChanges();
             }
             if (knjizenjePazaraDB.NormalRefundCash != 0)
             {
-                var kepPazar = sqliteDbContext.Kep.FirstOrDefault(kep => kep.KepDate.Date == knjizenjePazaraDB.IssueDateTime.Date &&
+                var kepPazar = _currentViewModel.DbContext.Kep.FirstOrDefault(kep => kep.KepDate.Date == knjizenjePazaraDB.IssueDateTime.Date &&
                 kep.Type == (int)KepStateEnumeration.Dnevni_Pazar_Refundacija_Gotovina);
 
                 if (kepPazar != null)
                 {
                     kepPazar.Razduzenje = knjizenjePazaraDB.NormalRefundCash;
                     kepPazar.Zaduzenje += zaduzenje.NormalRefundCash;
-                    sqliteDbContext.Kep.Update(kepPazar);
+                    _currentViewModel.DbContext.Kep.Update(kepPazar);
                 }
                 else
                 {
@@ -304,20 +299,20 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                         Zaduzenje = zaduzenje.NormalRefundCash,
                         Description = $"Pazar na dan {knjizenjePazaraDB.IssueDateTime.ToString("dd.MM.yyyy")} PROMET REFUNDACIJA - GOTOVINA"
                     };
-                    sqliteDbContext.Kep.Add(kepDB);
+                    _currentViewModel.DbContext.Kep.Add(kepDB);
                 }
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                _currentViewModel.DbContext.SaveChanges();
             }
             if (knjizenjePazaraDB.NormalRefundCard != 0)
             {
-                var kepPazar = sqliteDbContext.Kep.FirstOrDefault(kep => kep.KepDate.Date == knjizenjePazaraDB.IssueDateTime.Date &&
+                var kepPazar = _currentViewModel.DbContext.Kep.FirstOrDefault(kep => kep.KepDate.Date == knjizenjePazaraDB.IssueDateTime.Date &&
                 kep.Type == (int)KepStateEnumeration.Dnevni_Pazar_Refundacija_Kartica);
 
                 if (kepPazar != null)
                 {
                     kepPazar.Razduzenje = knjizenjePazaraDB.NormalRefundCard;
                     kepPazar.Zaduzenje += zaduzenje.NormalRefundCard;
-                    sqliteDbContext.Kep.Update(kepPazar);
+                    _currentViewModel.DbContext.Kep.Update(kepPazar);
                 }
                 else
                 {
@@ -330,20 +325,20 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                         Zaduzenje = zaduzenje.NormalRefundCard,
                         Description = $"Pazar na dan {knjizenjePazaraDB.IssueDateTime.ToString("dd.MM.yyyy")} PROMET REFUNDACIJA - PLATNA KARTICA"
                     };
-                    sqliteDbContext.Kep.Add(kepDB);
+                    _currentViewModel.DbContext.Kep.Add(kepDB);
                 }
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                _currentViewModel.DbContext.SaveChanges();
             }
             if (knjizenjePazaraDB.NormalRefundWireTransfer != 0)
             {
-                var kepPazar = sqliteDbContext.Kep.FirstOrDefault(kep => kep.KepDate.Date == knjizenjePazaraDB.IssueDateTime.Date &&
+                var kepPazar = _currentViewModel.DbContext.Kep.FirstOrDefault(kep => kep.KepDate.Date == knjizenjePazaraDB.IssueDateTime.Date &&
                 kep.Type == (int)KepStateEnumeration.Dnevni_Pazar_Refundacija_Virman);
 
                 if (kepPazar != null)
                 {
                     kepPazar.Razduzenje = knjizenjePazaraDB.NormalRefundWireTransfer;
                     kepPazar.Zaduzenje += zaduzenje.NormalRefundWireTransfer;
-                    sqliteDbContext.Kep.Update(kepPazar);
+                    _currentViewModel.DbContext.Kep.Update(kepPazar);
                 }
                 else
                 {
@@ -356,21 +351,21 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                         Zaduzenje = zaduzenje.NormalRefundWireTransfer,
                         Description = $"Pazar na dan {knjizenjePazaraDB.IssueDateTime.ToString("dd.MM.yyyy")} PROMET REFUNDACIJA - PRENOS NA RAČUN"
                     };
-                    sqliteDbContext.Kep.Add(kepDB);
+                    _currentViewModel.DbContext.Kep.Add(kepDB);
                 }
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                _currentViewModel.DbContext.SaveChanges();
             }
 
             if (nivelacija != 0)
             {
-                var kep = sqliteDbContext.Kep.FirstOrDefault(kep => kep.KepDate.Date == knjizenjePazaraDB.IssueDateTime.Date &&
+                var kep = _currentViewModel.DbContext.Kep.FirstOrDefault(kep => kep.KepDate.Date == knjizenjePazaraDB.IssueDateTime.Date &&
                 kep.Type == (int)KepStateEnumeration.Nivelacija &&
                 kep.Description.Contains("Nivelacija po pazaru"));
 
                 if (kep != null)
                 {
                     kep.Zaduzenje += nivelacija;
-                    sqliteDbContext.Kep.Update(kep);
+                    _currentViewModel.DbContext.Kep.Update(kep);
                 }
                 else
                 {
@@ -383,9 +378,9 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                         Zaduzenje = nivelacija,
                         Description = $"Nivelacija po pazaru {knjizenjePazaraDB.IssueDateTime.ToString("dd.MM.yyyy")}"
                     };
-                    sqliteDbContext.Kep.Add(kepDB);
+                    _currentViewModel.DbContext.Kep.Add(kepDB);
                 }
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                _currentViewModel.DbContext.SaveChanges();
             }
         }
     }

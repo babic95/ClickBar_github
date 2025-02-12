@@ -1,6 +1,6 @@
 ﻿using ClickBar.ViewModels.AppMain;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,55 +37,52 @@ namespace ClickBar.Commands.AppMain.Admin.Rooms
                 {
                     if (_currentViewModel.NewRoom != null)
                     {
-                        using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                        if (_currentViewModel.Rooms.Any(room => room.Id == _currentViewModel.NewRoom.Id))
                         {
-                            if (_currentViewModel.Rooms.Any(room => room.Id == _currentViewModel.NewRoom.Id))
+                            var room = _currentViewModel.DbContext.PartHalls.Find(_currentViewModel.NewRoom.Id);
+
+                            if (room != null)
                             {
-                                var room = sqliteDbContext.PartHalls.Find(_currentViewModel.NewRoom.Id);
+                                room.Image = _currentViewModel.NewRoom.Image;
+                                room.Name = _currentViewModel.NewRoom.Name;
 
-                                if (room != null)
-                                {
-                                    room.Image = _currentViewModel.NewRoom.Image;
-                                    room.Name = _currentViewModel.NewRoom.Name;
-
-                                    sqliteDbContext.PartHalls.Update(room);
-                                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-                                }
-                                else
-                                {
-                                    room = new PartHallDB()
-                                    {
-                                        Image = _currentViewModel.NewRoom.Image,
-                                        Name = _currentViewModel.NewRoom.Name,
-                                    };
-                                    sqliteDbContext.PartHalls.Add(room);
-                                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                                    _currentViewModel.NewRoom.Id = room.Id;
-                                    _currentViewModel.Rooms.Add(_currentViewModel.NewRoom);
-                                }
+                                _currentViewModel.DbContext.PartHalls.Update(room);
+                                _currentViewModel.DbContext.SaveChanges();
                             }
                             else
                             {
-                                PartHallDB room = new PartHallDB()
+                                room = new PartHallDB()
                                 {
                                     Image = _currentViewModel.NewRoom.Image,
                                     Name = _currentViewModel.NewRoom.Name,
                                 };
-                                sqliteDbContext.PartHalls.Add(room);
-                                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                                _currentViewModel.DbContext.PartHalls.Add(room);
+                                _currentViewModel.DbContext.SaveChanges();
 
                                 _currentViewModel.NewRoom.Id = room.Id;
                                 _currentViewModel.Rooms.Add(_currentViewModel.NewRoom);
                             }
                         }
-                        MessageBox.Show("Uspešno ste sačuvali izmene?", "Uspešno čuvanje", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                        if (_currentViewModel.AddNewRoomWindow != null)
+                        else
                         {
-                            _currentViewModel.AddNewRoomWindow.Close();
-                            _currentViewModel.AddNewRoomWindow = null;
+                            PartHallDB room = new PartHallDB()
+                            {
+                                Image = _currentViewModel.NewRoom.Image,
+                                Name = _currentViewModel.NewRoom.Name,
+                            };
+                            _currentViewModel.DbContext.PartHalls.Add(room);
+                            _currentViewModel.DbContext.SaveChanges();
+
+                            _currentViewModel.NewRoom.Id = room.Id;
+                            _currentViewModel.Rooms.Add(_currentViewModel.NewRoom);
                         }
+                    }
+                    MessageBox.Show("Uspešno ste sačuvali izmene?", "Uspešno čuvanje", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    if (_currentViewModel.AddNewRoomWindow != null)
+                    {
+                        _currentViewModel.AddNewRoomWindow.Close();
+                        _currentViewModel.AddNewRoomWindow = null;
                     }
                 }
             }

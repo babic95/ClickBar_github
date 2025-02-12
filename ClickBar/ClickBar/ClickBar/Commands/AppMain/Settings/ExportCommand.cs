@@ -1,4 +1,5 @@
-﻿using ClickBar_InputOutputExcelFiles;
+﻿using ClickBar.ViewModels.AppMain;
+using ClickBar_InputOutputExcelFiles;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,8 +14,10 @@ namespace ClickBar.Commands.AppMain.Settings
     {
         public event EventHandler CanExecuteChanged;
 
-        public ExportCommand()
+        private SettingsViewModel _currentViewModel;
+        public ExportCommand(SettingsViewModel currentViewModel)
         {
+            _currentViewModel = currentViewModel;
         }
 
         public bool CanExecute(object parameter)
@@ -27,7 +30,7 @@ namespace ClickBar.Commands.AppMain.Settings
             switch (parameter.ToString())
             {
                 case "Groups":
-                    bool groups = InputOutputExcelFilesManager.Instance.ExportGroups().Result;
+                    bool groups = InputOutputExcelFilesManager.Instance.ExportGroups(_currentViewModel.DbContext).Result;
 
                     if (groups)
                     {
@@ -39,7 +42,7 @@ namespace ClickBar.Commands.AppMain.Settings
                     }
                     break;
                 case "Items":
-                    bool items = InputOutputExcelFilesManager.Instance.ExportItems().Result;
+                    bool items = InputOutputExcelFilesManager.Instance.ExportItems(_currentViewModel.DbContext).Result;
 
                     if (items)
                     {
@@ -51,7 +54,7 @@ namespace ClickBar.Commands.AppMain.Settings
                     }
                     break;
                 case "Cashirs":
-                    bool cashiers = InputOutputExcelFilesManager.Instance.ExportCashiers().Result;
+                    bool cashiers = InputOutputExcelFilesManager.Instance.ExportCashiers(_currentViewModel.DbContext).Result;
 
                     if (cashiers)
                     {

@@ -1,8 +1,8 @@
 ﻿using ClickBar.Enums.AppMain.Admin;
 using ClickBar.Models.TableOverview;
 using ClickBar.ViewModels.AppMain;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -50,37 +50,33 @@ namespace ClickBar.Commands.AppMain.Admin
 
                     if (paymentPlace != null)
                     {
-                        using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                        PaymentPlaceDB? paymentPlaceDB = _currentViewModel.DbContext.PaymentPlaces.Find(id);
+
+                        if (paymentPlaceDB != null)
                         {
+                            _currentViewModel.DbContext.PaymentPlaces.Remove(paymentPlaceDB);
+                            _currentViewModel.DbContext.SaveChanges();
 
-                            PaymentPlaceDB? paymentPlaceDB = sqliteDbContext.PaymentPlaces.Find(id);
+                            MessageBox.Show("Uspešno ste obrisali platno mesto!", "Uspešno brisanje", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                            if (paymentPlaceDB != null)
+                            if (paymentPlace.Type == PaymentPlaceTypeEnumeration.Normal)
                             {
-                                sqliteDbContext.PaymentPlaces.Remove(paymentPlaceDB);
-                                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                                var payment = _currentViewModel.AllNormalPaymentPlaces.FirstOrDefault(p => p.Id == paymentPlace.Id);
 
-                                MessageBox.Show("Uspešno ste obrisali platno mesto!", "Uspešno brisanje", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                                if (paymentPlace.Type == PaymentPlaceTypeEnumeration.Normal)
+                                if (payment != null)
                                 {
-                                    var payment = _currentViewModel.AllNormalPaymentPlaces.FirstOrDefault(p => p.Id == paymentPlace.Id);
-
-                                    if (payment != null)
-                                    {
-                                        _currentViewModel.AllNormalPaymentPlaces.Remove(payment);
-                                        _currentViewModel.NormalPaymentPlaces.Remove(paymentPlace);
-                                    }
+                                    _currentViewModel.AllNormalPaymentPlaces.Remove(payment);
+                                    _currentViewModel.NormalPaymentPlaces.Remove(paymentPlace);
                                 }
-                                else
-                                {
-                                    var payment = _currentViewModel.AllRoundPaymentPlaces.FirstOrDefault(p => p.Id == paymentPlace.Id);
+                            }
+                            else
+                            {
+                                var payment = _currentViewModel.AllRoundPaymentPlaces.FirstOrDefault(p => p.Id == paymentPlace.Id);
 
-                                    if (payment != null)
-                                    {
-                                        _currentViewModel.AllRoundPaymentPlaces.Remove(payment);
-                                        _currentViewModel.RoundPaymentPlaces.Remove(paymentPlace);
-                                    }
+                                if (payment != null)
+                                {
+                                    _currentViewModel.AllRoundPaymentPlaces.Remove(payment);
+                                    _currentViewModel.RoundPaymentPlaces.Remove(paymentPlace);
                                 }
                             }
                         }

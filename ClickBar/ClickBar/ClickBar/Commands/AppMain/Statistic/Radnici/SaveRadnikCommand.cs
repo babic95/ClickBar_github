@@ -2,8 +2,8 @@
 using ClickBar.Models.AppMain.Statistic;
 using ClickBar.ViewModels.AppMain.Statistic;
 using ClickBar_Common.Enums;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -47,144 +47,140 @@ namespace ClickBar.Commands.AppMain.Statistic.Radnici
         }
         private void AddEditRadnik()
         {
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            if (!_currentViewModel.IsEdited)
             {
-
-                if (!_currentViewModel.IsEdited)
+                try
                 {
-                    try
-                    {
-                        var r = sqliteDbContext.Cashiers.Find(_currentViewModel.CurrentRadnik.Id);
+                    var r = _currentViewModel.DbContext.Cashiers.Find(_currentViewModel.CurrentRadnik.Id);
 
-                        if (r != null)
+                    if (r != null)
+                    {
+                        MessageBox.Show("Radnik sa zadatom šifrom već postoji! Promenite šifru.", "Greška",
+                            MessageBoxButton.OK, MessageBoxImage.Error);
+
+                        return;
+                    }
+
+                    if (!string.IsNullOrEmpty(_currentViewModel.CurrentRadnik.SmartCardNumber))
+                    {
+                        var s = _currentViewModel.DbContext.Cashiers.FirstOrDefault(card => card.SmartCardNumber == _currentViewModel.CurrentRadnik.SmartCardNumber);
+
+                        if (s != null)
                         {
-                            MessageBox.Show("Radnik sa zadatom šifrom već postoji! Promenite šifru.", "Greška",
+                            MessageBox.Show("Radnik sa zadatim brojem kartice već postoji! Promenite karticu.", "Greška",
                                 MessageBoxButton.OK, MessageBoxImage.Error);
 
                             return;
                         }
-
-                        if (!string.IsNullOrEmpty(_currentViewModel.CurrentRadnik.SmartCardNumber))
-                        {
-                            var s = sqliteDbContext.Cashiers.FirstOrDefault(card => card.SmartCardNumber == _currentViewModel.CurrentRadnik.SmartCardNumber);
-
-                            if (s != null)
-                            {
-                                MessageBox.Show("Radnik sa zadatim brojem kartice već postoji! Promenite karticu.", "Greška",
-                                    MessageBoxButton.OK, MessageBoxImage.Error);
-
-                                return;
-                            }
-                        }
-
-                        CashierDB radnikDB = new CashierDB()
-                        {
-                            Id = _currentViewModel.CurrentRadnik.Id,
-                            Name = _currentViewModel.CurrentRadnik.Name,
-                            Address = _currentViewModel.CurrentRadnik.Address,
-                            City = _currentViewModel.CurrentRadnik.City,
-                            ContactNumber = _currentViewModel.CurrentRadnik.ContractNumber,
-                            Email = _currentViewModel.CurrentRadnik.Email,
-                            Jmbg = _currentViewModel.CurrentRadnik.Jmbg,
-                            SmartCardNumber = _currentViewModel.CurrentRadnik.SmartCardNumber,
-                            Type = _currentViewModel.CurrentRadnik.RadnikStateEnumeration == RadnikStateEnumeration.Konobar ? CashierTypeEnumeration.Worker :
-                            CashierTypeEnumeration.Moderator,
-                        };
-
-                        sqliteDbContext.Cashiers.Add(radnikDB);
-                        RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                        MessageBox.Show("Uspešno ste dodali radnika!", "Uspešno dodavanje", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                        _currentViewModel.Window.Close();
                     }
-                    catch
+
+                    CashierDB radnikDB = new CashierDB()
                     {
-                        MessageBox.Show("Greška prilikom dodavanja radnika!", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
+                        Id = _currentViewModel.CurrentRadnik.Id,
+                        Name = _currentViewModel.CurrentRadnik.Name,
+                        Address = _currentViewModel.CurrentRadnik.Address,
+                        City = _currentViewModel.CurrentRadnik.City,
+                        ContactNumber = _currentViewModel.CurrentRadnik.ContractNumber,
+                        Email = _currentViewModel.CurrentRadnik.Email,
+                        Jmbg = _currentViewModel.CurrentRadnik.Jmbg,
+                        SmartCardNumber = _currentViewModel.CurrentRadnik.SmartCardNumber,
+                        Type = _currentViewModel.CurrentRadnik.RadnikStateEnumeration == RadnikStateEnumeration.Konobar ? CashierTypeEnumeration.Worker :
+                        CashierTypeEnumeration.Moderator,
+                    };
+
+                    _currentViewModel.DbContext.Cashiers.Add(radnikDB);
+                    _currentViewModel.DbContext.SaveChanges();
+
+                    MessageBox.Show("Uspešno ste dodali radnika!", "Uspešno dodavanje", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    _currentViewModel.Window.Close();
                 }
-                else
+                catch
                 {
-                    var result = MessageBox.Show("Da li ste sigurni da želite da izmenite radnika?", "Izmena radnika",
-                                MessageBoxButton.YesNo,
-                                MessageBoxImage.Question);
+                    MessageBox.Show("Greška prilikom dodavanja radnika!", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                var result = MessageBox.Show("Da li ste sigurni da želite da izmenite radnika?", "Izmena radnika",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Question);
 
-                    if (result == MessageBoxResult.Yes)
+                if (result == MessageBoxResult.Yes)
+                {
+                    try
                     {
-                        try
+                        var radnikDB = _currentViewModel.DbContext.Cashiers.Find(_currentViewModel.CurrentRadnik.OriginalId);
+
+                        if (radnikDB != null)
                         {
-                            var radnikDB = sqliteDbContext.Cashiers.Find(_currentViewModel.CurrentRadnik.OriginalId);
-
-                            if (radnikDB != null)
+                            if (_currentViewModel.CurrentRadnik.Id != _currentViewModel.CurrentRadnik.OriginalId)
                             {
-                                if (_currentViewModel.CurrentRadnik.Id != _currentViewModel.CurrentRadnik.OriginalId)
+                                var r = _currentViewModel.DbContext.Cashiers.Find(_currentViewModel.CurrentRadnik.Id);
+
+                                if (r != null)
                                 {
-                                    var r = sqliteDbContext.Cashiers.Find(_currentViewModel.CurrentRadnik.Id);
+                                    MessageBox.Show("Radnik sa zadatom šifrom već postoji! Promenite šifru.", "Greška",
+                                        MessageBoxButton.OK, MessageBoxImage.Error);
 
-                                    if (r != null)
+                                    return;
+                                }
+                            }
+
+                            if (!string.IsNullOrEmpty(_currentViewModel.CurrentRadnik.SmartCardNumber))
+                            {
+                                var s = _currentViewModel.DbContext.Cashiers.FirstOrDefault(card => card.SmartCardNumber == _currentViewModel.CurrentRadnik.SmartCardNumber);
+
+                                if (s != null)
+                                {
+                                    if (s.Id != radnikDB.Id)
                                     {
-                                        MessageBox.Show("Radnik sa zadatom šifrom već postoji! Promenite šifru.", "Greška",
+                                        MessageBox.Show("Radnik sa zadatim brojem kartice već postoji! Promenite karticu.", "Greška",
                                             MessageBoxButton.OK, MessageBoxImage.Error);
-
                                         return;
                                     }
                                 }
-
-                                if (!string.IsNullOrEmpty(_currentViewModel.CurrentRadnik.SmartCardNumber))
-                                {
-                                    var s = sqliteDbContext.Cashiers.FirstOrDefault(card => card.SmartCardNumber == _currentViewModel.CurrentRadnik.SmartCardNumber);
-
-                                    if (s != null)
-                                    {
-                                        if (s.Id != radnikDB.Id)
-                                        {
-                                            MessageBox.Show("Radnik sa zadatim brojem kartice već postoji! Promenite karticu.", "Greška",
-                                                MessageBoxButton.OK, MessageBoxImage.Error);
-                                            return;
-                                        }
-                                    }
-                                }
-
-                                radnikDB.Id = _currentViewModel.CurrentRadnik.Id;
-                                radnikDB.Name = _currentViewModel.CurrentRadnik.Name;
-                                radnikDB.Jmbg = _currentViewModel.CurrentRadnik.Jmbg;
-                                radnikDB.Address = _currentViewModel.CurrentRadnik.Address;
-                                radnikDB.City = _currentViewModel.CurrentRadnik.City;
-                                radnikDB.ContactNumber = _currentViewModel.CurrentRadnik.ContractNumber;
-                                radnikDB.Email = _currentViewModel.CurrentRadnik.Email;
-                                radnikDB.SmartCardNumber = _currentViewModel.CurrentRadnik.SmartCardNumber;
-                                radnikDB.Type = _currentViewModel.CurrentRadnik.RadnikStateEnumeration == RadnikStateEnumeration.Konobar ? CashierTypeEnumeration.Worker :
-                                    CashierTypeEnumeration.Moderator;
-
-                                sqliteDbContext.Cashiers.Update(radnikDB);
-                                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                                MessageBox.Show("Uspešno ste izmenili radnika!", "Uspešna izmena", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                                _currentViewModel.Window.Close();
                             }
-                            else
-                            {
-                                MessageBox.Show("Ne postoji radnik!", "Ne postoji", MessageBoxButton.OK, MessageBoxImage.Warning);
-                            }
+
+                            radnikDB.Id = _currentViewModel.CurrentRadnik.Id;
+                            radnikDB.Name = _currentViewModel.CurrentRadnik.Name;
+                            radnikDB.Jmbg = _currentViewModel.CurrentRadnik.Jmbg;
+                            radnikDB.Address = _currentViewModel.CurrentRadnik.Address;
+                            radnikDB.City = _currentViewModel.CurrentRadnik.City;
+                            radnikDB.ContactNumber = _currentViewModel.CurrentRadnik.ContractNumber;
+                            radnikDB.Email = _currentViewModel.CurrentRadnik.Email;
+                            radnikDB.SmartCardNumber = _currentViewModel.CurrentRadnik.SmartCardNumber;
+                            radnikDB.Type = _currentViewModel.CurrentRadnik.RadnikStateEnumeration == RadnikStateEnumeration.Konobar ? CashierTypeEnumeration.Worker :
+                                CashierTypeEnumeration.Moderator;
+
+                            _currentViewModel.DbContext.Cashiers.Update(radnikDB);
+                            _currentViewModel.DbContext.SaveChanges();
+
+                            MessageBox.Show("Uspešno ste izmenili radnika!", "Uspešna izmena", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                            _currentViewModel.Window.Close();
                         }
-                        catch
+                        else
                         {
-                            MessageBox.Show("Greška prilikom izmene firme partnera!", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+                            MessageBox.Show("Ne postoji radnik!", "Ne postoji", MessageBoxButton.OK, MessageBoxImage.Warning);
                         }
                     }
+                    catch
+                    {
+                        MessageBox.Show("Greška prilikom izmene firme partnera!", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
-
-                _currentViewModel.RadniciAll = new List<Radnik>();
-                sqliteDbContext.Cashiers.ToList().ForEach(x =>
-                {
-                    _currentViewModel.RadniciAll.Add(new Radnik(x));
-                });
-
-                _currentViewModel.Radnici = new ObservableCollection<Radnik>(_currentViewModel.RadniciAll);
-                _currentViewModel.CurrentRadnik = new Radnik();
-                _currentViewModel.IsEdited = false;
             }
+
+            _currentViewModel.RadniciAll = new List<Radnik>();
+            _currentViewModel.DbContext.Cashiers.ToList().ForEach(x =>
+            {
+                _currentViewModel.RadniciAll.Add(new Radnik(x));
+            });
+
+            _currentViewModel.Radnici = new ObservableCollection<Radnik>(_currentViewModel.RadniciAll);
+            _currentViewModel.CurrentRadnik = new Radnik();
+            _currentViewModel.IsEdited = false;
         }
     }
 }

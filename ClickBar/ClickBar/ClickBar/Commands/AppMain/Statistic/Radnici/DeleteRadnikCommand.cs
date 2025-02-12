@@ -1,6 +1,6 @@
 ﻿using ClickBar.Models.AppMain.Statistic;
 using ClickBar.ViewModels.AppMain.Statistic;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -38,31 +38,27 @@ namespace ClickBar.Commands.AppMain.Statistic.Radnici
             {
                 try
                 {
-                    using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                    var radnik = _currentViewModel.DbContext.Cashiers.Find(parameter.ToString());
+
+                    if (radnik != null)
                     {
+                        _currentViewModel.DbContext.Cashiers.Remove(radnik);
+                        _currentViewModel.DbContext.SaveChanges();
 
-                        var radnik = sqliteDbContext.Cashiers.Find(parameter.ToString());
-
-                        if (radnik != null)
+                        _currentViewModel.RadniciAll = new List<Radnik>();
+                        _currentViewModel.DbContext.Cashiers.ToList().ForEach(x =>
                         {
-                            sqliteDbContext.Cashiers.Remove(radnik);
-                            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                            _currentViewModel.RadniciAll.Add(new Radnik(x));
+                        });
 
-                            _currentViewModel.RadniciAll = new List<Radnik>();
-                            sqliteDbContext.Cashiers.ToList().ForEach(x =>
-                            {
-                                _currentViewModel.RadniciAll.Add(new Radnik(x));
-                            });
+                        _currentViewModel.Radnici = new ObservableCollection<Radnik>(_currentViewModel.RadniciAll);
+                        _currentViewModel.CurrentRadnik = new Radnik();
 
-                            _currentViewModel.Radnici = new ObservableCollection<Radnik>(_currentViewModel.RadniciAll);
-                            _currentViewModel.CurrentRadnik = new Radnik();
-
-                            MessageBox.Show("Uspešno ste obrisali radnika!", "Uspešno brisanje", MessageBoxButton.OK, MessageBoxImage.Information);
-                        }
-                        else
-                        {
-                            MessageBox.Show("Ne postoji radnik!", "Ne postoji", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        }
+                        MessageBox.Show("Uspešno ste obrisali radnika!", "Uspešno brisanje", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Ne postoji radnik!", "Ne postoji", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                 }
                 catch

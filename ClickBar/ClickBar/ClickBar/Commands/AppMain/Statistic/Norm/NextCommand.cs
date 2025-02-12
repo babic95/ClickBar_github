@@ -3,8 +3,8 @@ using ClickBar.Models.Sale;
 using ClickBar.ViewModels;
 using ClickBar.ViewModels.AppMain.Statistic;
 using ClickBar.Views.AppMain.AuxiliaryWindows.Statistic;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using SQLitePCL;
 using System;
 using System.Collections.Generic;
@@ -67,29 +67,25 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                                     }
                                     else
                                     {
-                                        using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                                        var group = inventoryStatusViewModel.DbContext.ItemGroups.Find(inventoryStatusViewModel.CurrentInventoryStatusNorm.IdGroupItems);
+
+                                        if (group != null)
                                         {
+                                            bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
 
-                                            var group = sqliteDbContext.ItemGroups.Find(inventoryStatusViewModel.CurrentInventoryStatusNorm.IdGroupItems);
-
-                                            if (group != null)
-                                            {
-                                                bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
-
-                                                inventoryStatusViewModel.Norma.Add(new Invertory(inventoryStatusViewModel.CurrentInventoryStatusNorm.Item,
-                                                inventoryStatusViewModel.CurrentInventoryStatusNorm.IdGroupItems,
-                                                inventoryStatusViewModel.NormQuantity,
-                                                0,
-                                                0,
-                                                isSirovina));
-                                            }
-                                            else
-                                            {
-                                                MessageBox.Show("Artikal ne pripada ni jednoj grupi!!!",
-                                                    "Greška",
-                                                    MessageBoxButton.OK,
-                                                    MessageBoxImage.Error);
-                                            }
+                                            inventoryStatusViewModel.Norma.Add(new Invertory(inventoryStatusViewModel.CurrentInventoryStatusNorm.Item,
+                                            inventoryStatusViewModel.CurrentInventoryStatusNorm.IdGroupItems,
+                                            inventoryStatusViewModel.NormQuantity,
+                                            0,
+                                            0,
+                                            isSirovina));
+                                        }
+                                        else
+                                        {
+                                            MessageBox.Show("Artikal ne pripada ni jednoj grupi!!!",
+                                                "Greška",
+                                                MessageBoxButton.OK,
+                                                MessageBoxImage.Error);
                                         }
                                     }
                                     inventoryStatusViewModel.NormQuantityString = "0";
@@ -121,41 +117,37 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                         calculationViewModel.Window.Close();
 
                         calculationViewModel.QuantityCommandParameter = "Quantity";
-                        using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                        var group = calculationViewModel.DbContext.ItemGroups.Find(calculationViewModel.CurrentInventoryStatusCalculation.IdGroupItems);
+
+                        if (group == null)
                         {
+                            MessageBox.Show("ARTIKAL MORA DA PRIPADA NEKOJ GRUPI!",
+                                "Greška",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
 
-                            var group = sqliteDbContext.ItemGroups.Find(calculationViewModel.CurrentInventoryStatusCalculation.IdGroupItems);
-
-                            if (group == null)
-                            {
-                                MessageBox.Show("ARTIKAL MORA DA PRIPADA NEKOJ GRUPI!",
-                                    "Greška",
-                                    MessageBoxButton.OK,
-                                    MessageBoxImage.Error);
-
-                                return;
-                            }
-
-                            if (group.Name.ToLower().Contains("sirovine") ||
-                                group.Name.ToLower().Contains("sirovina"))
-                            {
-                                calculationViewModel.VisibilityProsecnaPrice = Visibility.Visible;
-
-                                calculationViewModel.ProsecnaPrice = calculationViewModel.CurrentInventoryStatusCalculation.Item.InputUnitPrice != null &&
-                                    calculationViewModel.CurrentInventoryStatusCalculation.Item.InputUnitPrice.HasValue ? calculationViewModel.CurrentInventoryStatusCalculation.Item.InputUnitPrice.Value : 0;
-                            }
-                            else
-                            {
-                                calculationViewModel.VisibilityProsecnaPrice = Visibility.Hidden;
-
-                                calculationViewModel.OldPrice = calculationViewModel.CurrentInventoryStatusCalculation.Item.SellingUnitPrice;
-                                calculationViewModel.NewPrice = calculationViewModel.CurrentInventoryStatusCalculation.Item.SellingUnitPrice;
-                            }
-
-                            AddQuantityToCalculationWindow addQuantityToCalculationWindow = new AddQuantityToCalculationWindow(calculationViewModel);
-                            calculationViewModel.Window = addQuantityToCalculationWindow;
-                            addQuantityToCalculationWindow.ShowDialog();
+                            return;
                         }
+
+                        if (group.Name.ToLower().Contains("sirovine") ||
+                            group.Name.ToLower().Contains("sirovina"))
+                        {
+                            calculationViewModel.VisibilityProsecnaPrice = Visibility.Visible;
+
+                            calculationViewModel.ProsecnaPrice = calculationViewModel.CurrentInventoryStatusCalculation.Item.InputUnitPrice != null &&
+                                calculationViewModel.CurrentInventoryStatusCalculation.Item.InputUnitPrice.HasValue ? calculationViewModel.CurrentInventoryStatusCalculation.Item.InputUnitPrice.Value : 0;
+                        }
+                        else
+                        {
+                            calculationViewModel.VisibilityProsecnaPrice = Visibility.Hidden;
+
+                            calculationViewModel.OldPrice = calculationViewModel.CurrentInventoryStatusCalculation.Item.SellingUnitPrice;
+                            calculationViewModel.NewPrice = calculationViewModel.CurrentInventoryStatusCalculation.Item.SellingUnitPrice;
+                        }
+
+                        AddQuantityToCalculationWindow addQuantityToCalculationWindow = new AddQuantityToCalculationWindow(calculationViewModel);
+                        calculationViewModel.Window = addQuantityToCalculationWindow;
+                        addQuantityToCalculationWindow.ShowDialog();
                     }
                     else if (parameter.ToString().Contains("Quantity"))
                     {
@@ -174,44 +166,41 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                                 }
                                 else
                                 {
-                                    using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                                    var group = calculationViewModel.DbContext.ItemGroups.Find(calculationViewModel.CurrentInventoryStatusCalculation.IdGroupItems);
+
+                                    if (group == null)
                                     {
-                                        var group = sqliteDbContext.ItemGroups.Find(calculationViewModel.CurrentInventoryStatusCalculation.IdGroupItems);
+                                        MessageBox.Show("ARTIKAL MORA DA PRIPADA NEKOJ GRUPI!",
+                                            "Greška",
+                                            MessageBoxButton.OK,
+                                            MessageBoxImage.Error);
 
-                                        if (group == null)
-                                        {
-                                            MessageBox.Show("ARTIKAL MORA DA PRIPADA NEKOJ GRUPI!",
-                                                "Greška",
-                                                MessageBoxButton.OK,
-                                                MessageBoxImage.Error);
-
-                                            return;
-                                        }
-
-                                        bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
-                                        if (isSirovina)
-                                        {
-
-                                        }
-                                        else
-                                        {
-                                            if (calculationViewModel.OldPrice != calculationViewModel.NewPrice)
-                                            {
-                                                calculationViewModel.CurrentInventoryStatusCalculation.Item.SellingUnitPrice = calculationViewModel.NewPrice;
-                                            }
-                                        }
-
-                                        Invertory invertory = new Invertory(
-                                        calculationViewModel.CurrentInventoryStatusCalculation.Item,
-                                        calculationViewModel.CurrentInventoryStatusCalculation.IdGroupItems,
-                                        calculationViewModel.CalculationQuantity,
-                                        calculationViewModel.CalculationPrice,
-                                        0,
-                                        isSirovina);
-
-                                        calculationViewModel.Calculations.Add(invertory);
-                                        calculationViewModel.TotalCalculation += calculationViewModel.CalculationPrice;
+                                        return;
                                     }
+
+                                    bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
+                                    if (isSirovina)
+                                    {
+
+                                    }
+                                    else
+                                    {
+                                        if (calculationViewModel.OldPrice != calculationViewModel.NewPrice)
+                                        {
+                                            calculationViewModel.CurrentInventoryStatusCalculation.Item.SellingUnitPrice = calculationViewModel.NewPrice;
+                                        }
+                                    }
+
+                                    Invertory invertory = new Invertory(
+                                    calculationViewModel.CurrentInventoryStatusCalculation.Item,
+                                    calculationViewModel.CurrentInventoryStatusCalculation.IdGroupItems,
+                                    calculationViewModel.CalculationQuantity,
+                                    calculationViewModel.CalculationPrice,
+                                    0,
+                                    isSirovina);
+
+                                    calculationViewModel.Calculations.Add(invertory);
+                                    calculationViewModel.TotalCalculation += calculationViewModel.CalculationPrice;
                                 }
 
                                 calculationViewModel.CalculationQuantityString = "0";

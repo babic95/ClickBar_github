@@ -64,7 +64,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Nivelacija
                     });
                 });
 
-                PrinterManager.Instance.PrintNivelacija(nivelacijaGlobal);
+                PrinterManager.Instance.PrintNivelacija(_currentViewModel.DbContext, nivelacijaGlobal);
             }
         }
     }

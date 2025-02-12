@@ -15,6 +15,9 @@ using System.Windows.Input;
 using ClickBar.Commands.AppMain.Statistic.Refaund;
 using System.Windows.Media;
 using ClickBar_Common.Enums;
+using ClickBar_DatabaseSQLManager;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ClickBar.ViewModels.AppMain.Statistic
 {
@@ -38,90 +41,24 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         private string _journal;
 
         private Visibility _isRefundationCash;
+
+        private readonly IServiceProvider _serviceProvider; // Dodato za korišćenje IServiceProvider
         #endregion Fields
 
         #region Constructors
-        public PayRefaundViewModel(Window window, RefaundViewModel refaundViewModel)
+        public PayRefaundViewModel(IServiceProvider serviceProvider)
         {
-            Window = window;
-            RefaundViewModel = refaundViewModel;
-
-            Payment = new List<Payment>();
-
-            Amount = 0;
-
-            BuyerIdElements = new ObservableCollection<BuyerIdElement>();
-            var buyerIdElements = Enum.GetValues(typeof(BuyerIdElementEnumeration));
-
-            foreach (var buyerIdElement in buyerIdElements)
-            {
-                BuyerIdElements.Add(new BuyerIdElement((BuyerIdElementEnumeration)buyerIdElement));
-            }
-            CurrentBuyerIdElement = BuyerIdElements.FirstOrDefault();
-
-            AmountBorderBrush = Brushes.Red;
-
-            Cash = "0";
-            Card = "0";
-            WireTransfer = "0";
-
-            RefaundViewModel.CurrentInvoiceRequest.Payment.ToList().ForEach(pay =>
-            {
-                if(pay != null)
-                {
-                    switch (pay.PaymentType)
-                    {
-                        case PaymentTypeEnumeration.Cash:
-                            Cash = pay.Amount.ToString().Replace(',', '.');
-                            break;
-                        case PaymentTypeEnumeration.Card:
-                            Card = pay.Amount.ToString().Replace(',', '.');
-                            break;
-                        case PaymentTypeEnumeration.WireTransfer:
-                            WireTransfer = pay.Amount.ToString().Replace(',', '.');
-                            break;
-                    }
-                }
-            });
-
-            if (!string.IsNullOrEmpty(RefaundViewModel.CurrentInvoiceRequest.BuyerId))
-            {
-                BuyerId = RefaundViewModel.CurrentInvoiceRequest.BuyerId;
-            }
-
-            InvoiceRequest invoiceRequest = new InvoiceRequest()
-            {
-                Cashier = RefaundViewModel.CurrentInvoiceRequest.Cashier,
-                TransactionType = RefaundViewModel.CurrentInvoiceRequest.TransactionType,
-                InvoiceType = RefaundViewModel.CurrentInvoiceRequest.InvoiceType,
-                BuyerId = RefaundViewModel.CurrentInvoiceRequest.BuyerId,
-                BuyerName = RefaundViewModel.CurrentInvoiceRequest.BuyerName,
-                BuyerAddress = RefaundViewModel.CurrentInvoiceRequest.BuyerAddress,
-                Payment = RefaundViewModel.CurrentInvoiceRequest.Payment,
-                ReferentDocumentDT = RefaundViewModel.CurrentInvoiceRequest.ReferentDocumentDT,
-                ReferentDocumentNumber = RefaundViewModel.CurrentInvoiceRequest.ReferentDocumentNumber,
-            };
-            List<Item> items = new List<Item>();
-            RefaundViewModel.CurrentInvoiceRequest.Items.ToList().ForEach(item =>
-            {
-                items.Add(new Item()
-                {
-                    ItemCode = item.Id,
-                    Jm = item.Jm,
-                    Name= item.Name,
-                    Quantity = item.Quantity,
-                    UnitPrice = item.UnitPrice,
-                    TotalAmount = item.TotalAmount,
-                    Labels = new List<string>() { item.Label}
-                });
-            });
-
-            invoiceRequest.Items = items;
-            Journal = JournalHelper.CreateJournal(invoiceRequest, RefaundViewModel.CurrentInvoiceResult);
+            _serviceProvider = serviceProvider;
+            RefaundCommand = _serviceProvider.GetRequiredService<RefaundCommand>();
         }
+
         #endregion Constructors
 
         #region Properties Internal
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
         #endregion Properties Internal
 
         #region Properties
@@ -175,7 +112,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             {
                 if (value)
                 {
-                    if(Rest != 0)
+                    if (Rest != 0)
                     {
                         value = false;
                     }
@@ -185,7 +122,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                     }
                     else
                     {
-                        if(BuyerId.Length < 9)
+                        if (BuyerId.Length < 9)
                         {
                             value = false;
                         }
@@ -221,7 +158,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                 _buyerId = value;
                 OnPropertyChange(nameof(BuyerId));
 
-                if(value.Length > 8)
+                if (value.Length > 8)
                 {
                     IsEnableRefaund = true;
                 }
@@ -356,10 +293,89 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #endregion Properties
 
         #region Commands
-        public ICommand RefaundCommand => new RefaundCommand(this);
+        public ICommand RefaundCommand { get; }
         #endregion Commands
 
         #region Public methods
+        public void Initialize(SqlServerDbContext dbContext, Window window, RefaundViewModel refaundViewModel)
+        {
+            DbContext = dbContext;
+            Window = window;
+            RefaundViewModel = refaundViewModel;
+
+            Payment = new List<Payment>();
+
+            Amount = 0;
+
+            BuyerIdElements = new ObservableCollection<BuyerIdElement>();
+            var buyerIdElements = Enum.GetValues(typeof(BuyerIdElementEnumeration));
+
+            foreach (var buyerIdElement in buyerIdElements)
+            {
+                BuyerIdElements.Add(new BuyerIdElement((BuyerIdElementEnumeration)buyerIdElement));
+            }
+            CurrentBuyerIdElement = BuyerIdElements.FirstOrDefault();
+
+            AmountBorderBrush = Brushes.Red;
+
+            Cash = "0";
+            Card = "0";
+            WireTransfer = "0";
+
+            RefaundViewModel.CurrentInvoiceRequest.Payment.ToList().ForEach(pay =>
+            {
+                if (pay != null)
+                {
+                    switch (pay.PaymentType)
+                    {
+                        case PaymentTypeEnumeration.Cash:
+                            Cash = pay.Amount.ToString().Replace(',', '.');
+                            break;
+                        case PaymentTypeEnumeration.Card:
+                            Card = pay.Amount.ToString().Replace(',', '.');
+                            break;
+                        case PaymentTypeEnumeration.WireTransfer:
+                            WireTransfer = pay.Amount.ToString().Replace(',', '.');
+                            break;
+                    }
+                }
+            });
+
+            if (!string.IsNullOrEmpty(RefaundViewModel.CurrentInvoiceRequest.BuyerId))
+            {
+                BuyerId = RefaundViewModel.CurrentInvoiceRequest.BuyerId;
+            }
+
+            InvoiceRequest invoiceRequest = new InvoiceRequest()
+            {
+                Cashier = RefaundViewModel.CurrentInvoiceRequest.Cashier,
+                TransactionType = RefaundViewModel.CurrentInvoiceRequest.TransactionType,
+                InvoiceType = RefaundViewModel.CurrentInvoiceRequest.InvoiceType,
+                BuyerId = RefaundViewModel.CurrentInvoiceRequest.BuyerId,
+                BuyerName = RefaundViewModel.CurrentInvoiceRequest.BuyerName,
+                BuyerAddress = RefaundViewModel.CurrentInvoiceRequest.BuyerAddress,
+                Payment = RefaundViewModel.CurrentInvoiceRequest.Payment,
+                ReferentDocumentDT = RefaundViewModel.CurrentInvoiceRequest.ReferentDocumentDT,
+                ReferentDocumentNumber = RefaundViewModel.CurrentInvoiceRequest.ReferentDocumentNumber,
+            };
+            List<Item> items = new List<Item>();
+            RefaundViewModel.CurrentInvoiceRequest.Items.ToList().ForEach(item =>
+            {
+                items.Add(new Item()
+                {
+                    ItemCode = item.Id,
+                    Jm = item.Jm,
+                    Name = item.Name,
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice,
+                    TotalAmount = item.TotalAmount,
+                    Labels = new List<string>() { item.Label }
+                });
+            });
+
+            invoiceRequest.Items = items;
+            Journal = JournalHelper.CreateJournal(invoiceRequest, RefaundViewModel.CurrentInvoiceResult);
+        }
         #endregion Public methods
 
         #region Private methods

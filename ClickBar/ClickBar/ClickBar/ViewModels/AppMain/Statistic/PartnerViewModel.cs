@@ -1,7 +1,8 @@
 ﻿using ClickBar.Commands.AppMain.Statistic.Parner;
 using ClickBar.Models.AppMain.Statistic;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -22,26 +23,31 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         private string _searchText;
 
         private string _title;
+
+        private readonly IServiceProvider _serviceProvider; // Dodato za korišćenje IServiceProvider
         #endregion Fields
 
         #region Constructors
-        public PartnerViewModel()
+        public PartnerViewModel(IServiceProvider serviceProvider)
         {
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+
+            DbContext.Partners.ToList().ForEach(x =>
             {
+                PartnersAll.Add(new Partner(x));
+            });
 
-                sqliteDbContext.Partners.ToList().ForEach(x =>
-                {
-                    PartnersAll.Add(new Partner(x));
-                });
-
-                Partners = new ObservableCollection<Partner>(PartnersAll);
-                CurrentPartner = new Partner();
-            }
+            Partners = new ObservableCollection<Partner>(PartnersAll);
+            CurrentPartner = new Partner();
         }
         #endregion Constructors
 
         #region Properties internal
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
         internal List<Partner> PartnersAll = new List<Partner>();
         internal Window Window { get; set; }
         #endregion Properties internal

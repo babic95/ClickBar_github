@@ -1,6 +1,6 @@
 ﻿using ClickBar.ViewModels.AppMain.Statistic;
-using ClickBar_Database.Models;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager.Models;
+using ClickBar_DatabaseSQLManager;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,65 +34,61 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
         {
             try
             {
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                PocetnoStanjeDB? pocetnoStanjeDB = null;
+
+                if (_viewModel.DbContext.PocetnaStanja != null &&
+                    _viewModel.DbContext.PocetnaStanja.Any())
                 {
-                    PocetnoStanjeDB? pocetnoStanjeDB = null;
-
-                    if (sqliteDbContext.PocetnaStanja != null &&
-                        sqliteDbContext.PocetnaStanja.Any())
-                    {
-                        pocetnoStanjeDB = sqliteDbContext.PocetnaStanja
-                            .Where(p => p.PopisDate.Year == DateTime.Now.Year)
-                            .OrderByDescending(p => p.PopisDate).FirstOrDefault();
-                    }
-
-                    IQueryable<ItemDB> items = sqliteDbContext.Items;
-
-                    if (_viewModel.CurrentSupergroupSearch != null &&
-                        _viewModel.CurrentSupergroupSearch.Id != -1)
-                    {
-                        items = items.Join(sqliteDbContext.ItemGroups,
-                            item => item.IdItemGroup,
-                            itemGroup => itemGroup.Id,
-                            (item, itemGroup) => new { Item = item, ItemGroup = itemGroup })
-                            .Where(item => item.ItemGroup.IdSupergroup == _viewModel.CurrentSupergroupSearch.Id)
-                            .Select(item => item.Item);
-                    }
-
-                    await items.ForEachAsync(itemDB =>
-                    {
-                        if (itemDB.Id == "000024")
-                        {
-                            int a = 2;
-                        }
-
-                        decimal quantityPocetnoStanje = 0;
-                        decimal inputPricePocetnoStanje = 0;
-
-                        DateTime pocetnoStanjeDate = new DateTime(DateTime.Now.Year, 1, 1, 0, 0, 0);
-
-                        if(pocetnoStanjeDB != null)
-                        {
-                            pocetnoStanjeDate = pocetnoStanjeDB.PopisDate;
-
-                            quantityPocetnoStanje = sqliteDbContext.PocetnaStanjaItems
-                                .Where(p => p.IdItem == itemDB.Id && p.IdPocetnoStanje == pocetnoStanjeDB.Id)
-                                .Select(p => p.NewQuantity)
-                                .FirstOrDefault();
-
-                            inputPricePocetnoStanje = sqliteDbContext.PocetnaStanjaItems
-                                .Where(p => p.IdItem == itemDB.Id && p.IdPocetnoStanje == pocetnoStanjeDB.Id)
-                                .Select(p => p.InputPrice)
-                                .FirstOrDefault();
-                        }
-
-                        FixInputPrice(sqliteDbContext,
-                            pocetnoStanjeDate,
-                            itemDB,
-                            quantityPocetnoStanje,
-                            inputPricePocetnoStanje);
-                    });
+                    pocetnoStanjeDB = _viewModel.DbContext.PocetnaStanja
+                        .Where(p => p.PopisDate.Year == DateTime.Now.Year)
+                        .OrderByDescending(p => p.PopisDate).FirstOrDefault();
                 }
+
+                IQueryable<ItemDB> items = _viewModel.DbContext.Items;
+
+                if (_viewModel.CurrentSupergroupSearch != null &&
+                    _viewModel.CurrentSupergroupSearch.Id != -1)
+                {
+                    items = items.Join(_viewModel.DbContext.ItemGroups,
+                        item => item.IdItemGroup,
+                        itemGroup => itemGroup.Id,
+                        (item, itemGroup) => new { Item = item, ItemGroup = itemGroup })
+                        .Where(item => item.ItemGroup.IdSupergroup == _viewModel.CurrentSupergroupSearch.Id)
+                        .Select(item => item.Item);
+                }
+
+                await items.ForEachAsync(itemDB =>
+                {
+                    if (itemDB.Id == "000024")
+                    {
+                        int a = 2;
+                    }
+
+                    decimal quantityPocetnoStanje = 0;
+                    decimal inputPricePocetnoStanje = 0;
+
+                    DateTime pocetnoStanjeDate = new DateTime(DateTime.Now.Year, 1, 1, 0, 0, 0);
+
+                    if (pocetnoStanjeDB != null)
+                    {
+                        pocetnoStanjeDate = pocetnoStanjeDB.PopisDate;
+
+                        quantityPocetnoStanje = _viewModel.DbContext.PocetnaStanjaItems
+                            .Where(p => p.IdItem == itemDB.Id && p.IdPocetnoStanje == pocetnoStanjeDB.Id)
+                            .Select(p => p.NewQuantity)
+                            .FirstOrDefault();
+
+                        inputPricePocetnoStanje = _viewModel.DbContext.PocetnaStanjaItems
+                            .Where(p => p.IdItem == itemDB.Id && p.IdPocetnoStanje == pocetnoStanjeDB.Id)
+                            .Select(p => p.InputPrice)
+                            .FirstOrDefault();
+                    }
+
+                    FixInputPrice(pocetnoStanjeDate,
+                        itemDB,
+                        quantityPocetnoStanje,
+                        inputPricePocetnoStanje);
+                });
 
                 MessageBox.Show("Uspešno sređivanje prosečnih ulaznih cena!",
                     "Uspešno",
@@ -105,28 +101,27 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                 MessageBox.Show("Greška prilikom popravke ulaznih cena!", "", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        private async void FixInputPrice(SqliteDbContext sqliteDbContext,
-            DateTime pocetniDatum,
+        private async void FixInputPrice(DateTime pocetniDatum,
             ItemDB itemDB,
             decimal popisQuantity,
             decimal popisInputPrice)
         {
-            var proknjizeniPazari = sqliteDbContext.KnjizenjePazara.Join(sqliteDbContext.Invoices,
-                knjizenje => knjizenje.Id,
-                invoice => invoice.KnjizenjePazaraId,
-                (knjizenje, invoice) => new { Knji = knjizenje, Invoice = invoice })
-                .Where(pazar => pazar.Knji.IssueDateTime.Date > pocetniDatum.Date)
-                .Join(sqliteDbContext.ItemInvoices,
-                invoice => invoice.Invoice.Id,
-                invoiceItem => invoiceItem.InvoiceId,
-                (invoice, invoiceItem) => new { KnjizenjeInvoice = invoice, InvItem = invoiceItem })
-                .Where(pazar => pazar.KnjizenjeInvoice.Invoice.SdcDateTime != null &&
-                pazar.KnjizenjeInvoice.Invoice.SdcDateTime.HasValue &&
-                pazar.KnjizenjeInvoice.Invoice.SdcDateTime.Value.Date > pocetniDatum.Date &&
-                pazar.InvItem.ItemCode == itemDB.Id)
-                .OrderBy(item => item.KnjizenjeInvoice.Knji.IssueDateTime);
+            var proknjizeniPazari = _viewModel.DbContext.KnjizenjePazara.Join(_viewModel.DbContext.Invoices,
+            knjizenje => knjizenje.Id,
+            invoice => invoice.KnjizenjePazaraId,
+            (knjizenje, invoice) => new { Knji = knjizenje, Invoice = invoice })
+            .Where(pazar => pazar.Knji.IssueDateTime.Date > pocetniDatum.Date)
+            .Join(_viewModel.DbContext.ItemInvoices,
+            invoice => invoice.Invoice.Id,
+            invoiceItem => invoiceItem.InvoiceId,
+            (invoice, invoiceItem) => new { KnjizenjeInvoice = invoice, InvItem = invoiceItem })
+            .Where(pazar => pazar.KnjizenjeInvoice.Invoice.SdcDateTime != null &&
+            pazar.KnjizenjeInvoice.Invoice.SdcDateTime.HasValue &&
+            pazar.KnjizenjeInvoice.Invoice.SdcDateTime.Value.Date > pocetniDatum.Date &&
+            pazar.InvItem.ItemCode == itemDB.Id)
+            .OrderBy(item => item.KnjizenjeInvoice.Knji.IssueDateTime);
 
-            var neproknjizeniPazari = sqliteDbContext.Invoices.Join(sqliteDbContext.ItemInvoices,
+            var neproknjizeniPazari = _viewModel.DbContext.Invoices.Join(_viewModel.DbContext.ItemInvoices,
                 invoice => invoice.Id,
                 invoiceItem => invoiceItem.InvoiceId,
                 (invoice, invoiceItem) => new { Inv = invoice, InvItem = invoiceItem })
@@ -137,7 +132,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                 pazar.InvItem.ItemCode == itemDB.Id)
                 .OrderBy(item => item.Inv.SdcDateTime);
 
-            var kalkulacije = sqliteDbContext.Calculations.Join(sqliteDbContext.CalculationItems,
+            var kalkulacije = _viewModel.DbContext.Calculations.Join(_viewModel.DbContext.CalculationItems,
                 calculacion => calculacion.Id,
                 calculationItem => calculationItem.CalculationId,
                 (calculacion, calculationItem) => new { Cal = calculacion, CalItem = calculationItem })
@@ -187,8 +182,8 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                             }
 
                             i.InvItem.InputUnitPrice = prosecnaCena;
-                            sqliteDbContext.ItemInvoices.Update(i.InvItem);
-                            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                            _viewModel.DbContext.ItemInvoices.Update(i.InvItem);
+                            _viewModel.DbContext.SaveChanges();
                         }
                     }
 
@@ -222,8 +217,8 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                             }
 
                             i.InvItem.InputUnitPrice = prosecnaCena;
-                            sqliteDbContext.ItemInvoices.Update(i.InvItem);
-                            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                            _viewModel.DbContext.ItemInvoices.Update(i.InvItem);
+                            _viewModel.DbContext.SaveChanges();
                         }
                     }
 
@@ -255,8 +250,8 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                     }
 
                     i.InvItem.InputUnitPrice = prosecnaCena;
-                    sqliteDbContext.ItemInvoices.Update(i.InvItem);
-                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                    _viewModel.DbContext.ItemInvoices.Update(i.InvItem);
+                    _viewModel.DbContext.SaveChanges();
                 }
             }
 
@@ -277,17 +272,16 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                     }
 
                     i.InvItem.InputUnitPrice = prosecnaCena;
-                    sqliteDbContext.ItemInvoices.Update(i.InvItem);
-                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                    _viewModel.DbContext.ItemInvoices.Update(i.InvItem);
+                    _viewModel.DbContext.SaveChanges();
                 }
             }
 
             itemDB.InputUnitPrice = prosecnaCena;
-            sqliteDbContext.Items.Update(itemDB);
-            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+            _viewModel.DbContext.Items.Update(itemDB);
+            _viewModel.DbContext.SaveChanges();
         }
-        private async void StarijaKalkulacija(SqliteDbContext sqliteDbContext,
-            DateTime pocetniDatum,
+        private async void StarijaKalkulacija(DateTime pocetniDatum,
             Invertory calculationItem,
             ItemDB itemDB,
             bool isSirovina,
@@ -302,25 +296,24 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
             if (itemDB.TotalQuantity != 0 &&
                 unitPrice == 0)
             {
-                unitPrice = await SrediProsecnuCenu(sqliteDbContext, itemDB, isSirovina);
+                unitPrice = await SrediProsecnuCenu(itemDB, isSirovina);
             }
+            var proknjizeniPazari = _viewModel.DbContext.KnjizenjePazara.Join(_viewModel.DbContext.Invoices,
+            knjizenje => knjizenje.Id,
+            invoice => invoice.KnjizenjePazaraId,
+            (knjizenje, invoice) => new { Knji = knjizenje, Invoice = invoice })
+            .Where(pazar => pazar.Knji.IssueDateTime.Date > pocetniDatum.Date)
+            .Join(_viewModel.DbContext.ItemInvoices,
+            invoice => invoice.Invoice.Id,
+            invoiceItem => invoiceItem.InvoiceId,
+            (invoice, invoiceItem) => new { KnjizenjeInvoice = invoice, InvItem = invoiceItem })
+            .Where(pazar => pazar.KnjizenjeInvoice.Invoice.SdcDateTime != null &&
+            pazar.KnjizenjeInvoice.Invoice.SdcDateTime.HasValue &&
+            pazar.KnjizenjeInvoice.Invoice.SdcDateTime.Value.Date > pocetniDatum.Date &&
+            pazar.InvItem.ItemCode == itemDB.Id)
+            .OrderByDescending(item => item.KnjizenjeInvoice.Knji.IssueDateTime);
 
-            var proknjizeniPazari = sqliteDbContext.KnjizenjePazara.Join(sqliteDbContext.Invoices,
-                knjizenje => knjizenje.Id,
-                invoice => invoice.KnjizenjePazaraId,
-                (knjizenje, invoice) => new { Knji = knjizenje, Invoice = invoice })
-                .Where(pazar => pazar.Knji.IssueDateTime.Date > pocetniDatum.Date)
-                .Join(sqliteDbContext.ItemInvoices,
-                invoice => invoice.Invoice.Id,
-                invoiceItem => invoiceItem.InvoiceId,
-                (invoice, invoiceItem) => new { KnjizenjeInvoice = invoice, InvItem = invoiceItem })
-                .Where(pazar => pazar.KnjizenjeInvoice.Invoice.SdcDateTime != null &&
-                pazar.KnjizenjeInvoice.Invoice.SdcDateTime.HasValue &&
-                pazar.KnjizenjeInvoice.Invoice.SdcDateTime.Value.Date > pocetniDatum.Date &&
-                pazar.InvItem.ItemCode == itemDB.Id)
-                .OrderByDescending(item => item.KnjizenjeInvoice.Knji.IssueDateTime);
-
-            var neproknjizeniPazari = sqliteDbContext.Invoices.Join(sqliteDbContext.ItemInvoices,
+            var neproknjizeniPazari = _viewModel.DbContext.Invoices.Join(_viewModel.DbContext.ItemInvoices,
                 invoice => invoice.Id,
                 invoiceItem => invoiceItem.InvoiceId,
                 (invoice, invoiceItem) => new { Inv = invoice, InvItem = invoiceItem })
@@ -331,7 +324,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                 pazar.InvItem.ItemCode == itemDB.Id)
                 .OrderByDescending(item => item.Inv.SdcDateTime);
 
-            var kalkulacije = sqliteDbContext.Calculations.Join(sqliteDbContext.CalculationItems,
+            var kalkulacije = _viewModel.DbContext.Calculations.Join(_viewModel.DbContext.CalculationItems,
                 calculacion => calculacion.Id,
                 calculationItem => calculationItem.CalculationId,
                 (calculacion, calculationItem) => new { Cal = calculacion, CalItem = calculationItem })
@@ -596,7 +589,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                                             paz.InvItem.TotalAmout = Decimal.Round(itemDB.InputUnitPrice.Value * paz.InvItem.Quantity.Value, 2);
                                         }
                                         paz.InvItem.InputUnitPrice = itemDB.InputUnitPrice;
-                                        sqliteDbContext.ItemInvoices.Update(paz.InvItem);
+                                        _viewModel.DbContext.ItemInvoices.Update(paz.InvItem);
 
                                         neproknjizeni.Add(paz.Inv.Id);
                                     }
@@ -616,7 +609,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                             prPazar.InvItem.TotalAmout = Decimal.Round(itemDB.InputUnitPrice.Value * prPazar.InvItem.Quantity.Value);
                         }
                         prPazar.InvItem.InputUnitPrice = itemDB.InputUnitPrice;
-                        sqliteDbContext.ItemInvoices.Update(prPazar.InvItem);
+                        _viewModel.DbContext.ItemInvoices.Update(prPazar.InvItem);
                     }
                 });
             }
@@ -675,7 +668,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                             pazar.InvItem.OriginalUnitPrice = itemDB.InputUnitPrice;
                             pazar.InvItem.TotalAmout = Decimal.Round(itemDB.InputUnitPrice.Value * pazar.InvItem.Quantity.Value, 2);
                         }
-                        sqliteDbContext.ItemInvoices.Update(pazar.InvItem);
+                        _viewModel.DbContext.ItemInvoices.Update(pazar.InvItem);
                     }
                 });
             }
@@ -706,31 +699,29 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                     }
                 });
 
-                sqliteDbContext.Items.Update(itemDB);
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                _viewModel.DbContext.Items.Update(itemDB);
+                _viewModel.DbContext.SaveChanges();
             }
         }
-        private async Task<decimal> SrediProsecnuCenu(SqliteDbContext sqliteDbContext,
-            ItemDB itemDB,
+        private async Task<decimal> SrediProsecnuCenu(ItemDB itemDB,
             bool isSirovina)
         {
             decimal prosecnaCena = 0;
             decimal quantity = 0;
-
-            var proknjizeniPazari = sqliteDbContext.KnjizenjePazara.Join(sqliteDbContext.Invoices,
+            var proknjizeniPazari = _viewModel.DbContext.KnjizenjePazara.Join(_viewModel.DbContext.Invoices,
             knjizenje => knjizenje.Id,
-                invoice => invoice.KnjizenjePazaraId,
-                (knjizenje, invoice) => new { Knji = knjizenje, Invoice = invoice })
-                .Join(sqliteDbContext.ItemInvoices,
-                invoice => invoice.Invoice.Id,
-                invoiceItem => invoiceItem.InvoiceId,
-                (invoice, invoiceItem) => new { KnjizenjeInvoice = invoice, InvItem = invoiceItem })
-                .Where(pazar => pazar.KnjizenjeInvoice.Invoice.SdcDateTime != null &&
-                pazar.KnjizenjeInvoice.Invoice.SdcDateTime.HasValue &&
-                pazar.InvItem.ItemCode == itemDB.Id)
-                .OrderBy(item => item.KnjizenjeInvoice.Knji.IssueDateTime);
+            invoice => invoice.KnjizenjePazaraId,
+            (knjizenje, invoice) => new { Knji = knjizenje, Invoice = invoice })
+            .Join(_viewModel.DbContext.ItemInvoices,
+            invoice => invoice.Invoice.Id,
+            invoiceItem => invoiceItem.InvoiceId,
+            (invoice, invoiceItem) => new { KnjizenjeInvoice = invoice, InvItem = invoiceItem })
+            .Where(pazar => pazar.KnjizenjeInvoice.Invoice.SdcDateTime != null &&
+            pazar.KnjizenjeInvoice.Invoice.SdcDateTime.HasValue &&
+            pazar.InvItem.ItemCode == itemDB.Id)
+            .OrderBy(item => item.KnjizenjeInvoice.Knji.IssueDateTime);
 
-            var neproknjizeniPazari = sqliteDbContext.Invoices.Join(sqliteDbContext.ItemInvoices,
+            var neproknjizeniPazari = _viewModel.DbContext.Invoices.Join(_viewModel.DbContext.ItemInvoices,
             invoice => invoice.Id,
                 invoiceItem => invoiceItem.InvoiceId,
                 (invoice, invoiceItem) => new { Inv = invoice, InvItem = invoiceItem })
@@ -739,7 +730,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                 pazar.InvItem.ItemCode == itemDB.Id)
                 .OrderBy(item => item.Inv.SdcDateTime);
 
-            var kalkulacije = sqliteDbContext.Calculations.Join(sqliteDbContext.CalculationItems,
+            var kalkulacije = _viewModel.DbContext.Calculations.Join(_viewModel.DbContext.CalculationItems,
             calculacion => calculacion.Id,
                 calculationItem => calculationItem.CalculationId,
                 (calculacion, calculationItem) => new { Cal = calculacion, CalItem = calculationItem })
@@ -824,7 +815,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                                             paz.InvItem.UnitPrice = prosecnaCena;
                                         }
                                         paz.InvItem.InputUnitPrice = prosecnaCena;
-                                        sqliteDbContext.ItemInvoices.Update(paz.InvItem);
+                                        _viewModel.DbContext.ItemInvoices.Update(paz.InvItem);
                                         neproknjizeni.Add(paz.Inv.Id);
                                     }
                                 }
@@ -842,7 +833,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                             prPazar.InvItem.UnitPrice = prosecnaCena;
                         }
                         prPazar.InvItem.InputUnitPrice = prosecnaCena;
-                        sqliteDbContext.ItemInvoices.Update(prPazar.InvItem);
+                        _viewModel.DbContext.ItemInvoices.Update(prPazar.InvItem);
                     }
                 });
             }
@@ -904,7 +895,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                                 pazar.InvItem.UnitPrice = prosecnaCena;
                             }
                             pazar.InvItem.InputUnitPrice = prosecnaCena;
-                            sqliteDbContext.ItemInvoices.Update(pazar.InvItem);
+                            _viewModel.DbContext.ItemInvoices.Update(pazar.InvItem);
                         }
                     });
                 }

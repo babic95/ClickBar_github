@@ -1,11 +1,10 @@
 ﻿using ClickBar.Commands.Activation;
 using ClickBar_API;
+using ClickBar_DatabaseSQLManager;
 using ClickBar_Settings;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
@@ -19,24 +18,27 @@ namespace ClickBar.ViewModels.Activation
         FourPart = 3,
         FivePart = 4
     }
+
     public class ActivationViewModel : ViewModelBase
     {
-        private MainViewModel _viewModel;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly MainViewModel _mainViewModel;
         private string _firstPart;
         private string _secondPart;
         private string _thirdPart;
         private string _fourPart;
         private string _fivePart;
-
         private string _activationCodeNumber;
-
         private bool _isEnable;
         private ActivationCodePartEnumeration _activationCode;
-        public ActivationViewModel(MainViewModel viewModel)
-        {
-            _viewModel = viewModel;
-            IsEnable = false;
 
+        public ActivationViewModel(IServiceProvider serviceProvider, MainViewModel mainViewModel)
+        {
+            _serviceProvider = serviceProvider;
+            _mainViewModel = mainViewModel;
+            ActivationCommand = _serviceProvider.GetRequiredService<ActivationCommand>();
+
+            IsEnable = false;
             ActivationCode = ActivationCodePartEnumeration.FirstPart;
 
             if (SettingsManager.Instance.GetEnableCCS_Server())
@@ -54,6 +56,8 @@ namespace ClickBar.ViewModels.Activation
                 }
             }
         }
+
+        #region Properties
         public ActivationCodePartEnumeration ActivationCode
         {
             get { return _activationCode; }
@@ -63,6 +67,7 @@ namespace ClickBar.ViewModels.Activation
                 OnPropertyChange(nameof(ActivationCode));
             }
         }
+
         public string FirstPart
         {
             get { return _firstPart; }
@@ -77,6 +82,7 @@ namespace ClickBar.ViewModels.Activation
                 SetActivationCodeNumber();
             }
         }
+
         public string SecondPart
         {
             get { return _secondPart; }
@@ -95,6 +101,7 @@ namespace ClickBar.ViewModels.Activation
                 SetActivationCodeNumber();
             }
         }
+
         public string ThirdPart
         {
             get { return _thirdPart; }
@@ -113,6 +120,7 @@ namespace ClickBar.ViewModels.Activation
                 SetActivationCodeNumber();
             }
         }
+
         public string FourPart
         {
             get { return _fourPart; }
@@ -131,6 +139,7 @@ namespace ClickBar.ViewModels.Activation
                 SetActivationCodeNumber();
             }
         }
+
         public string FivePart
         {
             get { return _fivePart; }
@@ -145,6 +154,7 @@ namespace ClickBar.ViewModels.Activation
                 SetActivationCodeNumber();
             }
         }
+
         public string ActivationCodeNumber
         {
             get { return _activationCodeNumber; }
@@ -163,10 +173,12 @@ namespace ClickBar.ViewModels.Activation
                 }
             }
         }
+
         private void SetActivationCodeNumber()
         {
             ActivationCodeNumber = $"{FirstPart}-{SecondPart}-{ThirdPart}-{FourPart}-{FivePart}";
         }
+
         public bool IsEnable
         {
             get { return _isEnable; }
@@ -176,6 +188,8 @@ namespace ClickBar.ViewModels.Activation
                 OnPropertyChange(nameof(IsEnable));
             }
         }
-        public ICommand ActivationCommand => new ActivationCommand(_viewModel);
+        #endregion Properties
+
+        public ICommand ActivationCommand { get; }
     }
 }

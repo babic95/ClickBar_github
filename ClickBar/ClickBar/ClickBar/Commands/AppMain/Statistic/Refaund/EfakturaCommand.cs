@@ -1,7 +1,7 @@
 ﻿using ClickBar.Enums.Sale;
 using ClickBar.Models.Sale;
 using ClickBar.ViewModels.AppMain.Statistic;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,7 +16,7 @@ using DocumentFormat.OpenXml.Office2010.Excel;
 using ClickBar_eFaktura.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Drawing;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager.Models;
 using ClickBar.Models.AppMain.Statistic;
 using System.Xml.Serialization;
 using System.Xml;
@@ -145,143 +145,140 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
                 MessageBox.Show("eFaktura može da se pošalje samo pravnim licima ili budžetskim korisnicima!", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
                 return null;
             }
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            var sender = _currentViewModel.DbContext.Firmas.FirstOrDefault();
+
+            if (sender == null ||
+                string.IsNullOrEmpty(sender.Pib) ||
+                string.IsNullOrEmpty(sender.BankAcc) ||
+                string.IsNullOrEmpty(sender.AuthenticationKey))
             {
-                var sender = sqliteDbContext.Firmas.FirstOrDefault();
+                MessageBox.Show("Morate unite podatke Vaše firme!", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+                return null;
+            }
 
-                if (sender == null ||
-                    string.IsNullOrEmpty(sender.Pib) ||
-                    string.IsNullOrEmpty(sender.BankAcc) ||
-                    string.IsNullOrEmpty(sender.AuthenticationKey))
+            _apyKey = sender.AuthenticationKey;
+            DateTime date = DateTime.Now;
+            ClickBar_eFaktura.Models.Invoice? invoice = new ClickBar_eFaktura.Models.Invoice()
+            {
+                CustomizationID = "urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.rs:srbdt:2021",
+                ProfileID = "CCS eFaktura",
+                ID = _currentViewModel.CurrentInvoice.InvoiceNumber,
+                IssueDate = date.ToString("yyyy-MM-dd"),
+                DueDate = date.AddDays(15).ToString("yyyy-MM-dd"),
+                InvoiceTypeCode = 380,
+                DocumentCurrencyCode = "RSD",
+                InvoicePeriod = new InvoicePeriod()
                 {
-                    MessageBox.Show("Morate unite podatke Vaše firme!", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return null;
+                    DescriptionCode = 35
+                },
+                Delivery = new Delivery()
+                {
+                    ActualDeliveryDate = _currentViewModel.CurrentInvoice.SdcDateTime.Date.ToString("yyyy-MM-dd"),
+                },
+                PaymentMeans = new PaymentMeans()
+                {
+                    PaymentMeansCode = "30",
+                    InstructionNote = "Plaćanje po računu",
+                    PaymentID = $"{_currentViewModel.CurrentInvoice.InvoiceNumber}",
+                    PayeeFinancialAccount = new PaymentMeansPayeeFinancialAccount()
+                    {
+                        ID = sender.BankAcc
+                    }
+                },
+            };
+
+            ClickBar_eFaktura.Models.Request.Envelope requestSender = new ClickBar_eFaktura.Models.Request.Envelope()
+            {
+                Header = new ClickBar_eFaktura.Models.Request.EnvelopeHeader()
+                {
+                    AuthenticationHeader = new ClickBar_eFaktura.Models.Request.AuthenticationHeader()
+                    {
+                        LicenceID = "ef42df23-7658-418d-991e-3f9f6fdc37f4",
+                        Password = "U3XKag3b",
+                        UserName = "cleancodesirmium"
+                    }
+                },
+                Body = new ClickBar_eFaktura.Models.Request.EnvelopeBody()
+                {
+                    GetCompany = new ClickBar_eFaktura.Models.Request.GetCompany()
+                    {
+                        taxIdentificationNumber = $"{sender.Pib}"
+                    }
                 }
+            };
 
-                _apyKey = sender.AuthenticationKey;
-                DateTime date = DateTime.Now;
-                ClickBar_eFaktura.Models.Invoice? invoice = new ClickBar_eFaktura.Models.Invoice()
+            var responseSender = await eFakturaManager.Instance.GetPravnaLica(requestSender);
+
+            if (responseSender == null)
+            {
+                MessageBox.Show("Greška u podacima Vaše firme!", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+                return null;
+            }
+
+            invoice.AccountingSupplierParty = new ClickBar_eFaktura.Models.AccountingSupplierParty()
+            {
+                Party = new ClickBar_eFaktura.Models.AccountingSupplierPartyParty()
                 {
-                    CustomizationID = "urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.rs:srbdt:2021",
-                    ProfileID = "CCS eFaktura",
-                    ID = _currentViewModel.CurrentInvoice.InvoiceNumber,
-                    IssueDate = date.ToString("yyyy-MM-dd"),
-                    DueDate = date.AddDays(15).ToString("yyyy-MM-dd"),
-                    InvoiceTypeCode = 380,
-                    DocumentCurrencyCode = "RSD",
-                    InvoicePeriod = new InvoicePeriod()
+                    EndpointID = new ClickBar_eFaktura.Models.EndpointID()
                     {
-                        DescriptionCode = 35
+                        schemeID = 9948,
+                        Value = responseSender.pib
                     },
-                    Delivery = new Delivery()
+                    PartyName = new ClickBar_eFaktura.Models.AccountingSupplierPartyPartyPartyName()
                     {
-                        ActualDeliveryDate = _currentViewModel.CurrentInvoice.SdcDateTime.Date.ToString("yyyy-MM-dd"),
+                        Name = responseSender.naziv
                     },
-                    PaymentMeans = new PaymentMeans()
+                    PartyTaxScheme = new ClickBar_eFaktura.Models.AccountingSupplierPartyPartyPartyTaxScheme()
                     {
-                        PaymentMeansCode = "30",
-                        InstructionNote = "Plaćanje po računu",
-                        PaymentID = $"{_currentViewModel.CurrentInvoice.InvoiceNumber}",
-                        PayeeFinancialAccount = new PaymentMeansPayeeFinancialAccount()
+                        CompanyID = $"RS{responseSender.pib}",
+                        TaxScheme = new ClickBar_eFaktura.Models.AccountingSupplierPartyPartyPartyTaxSchemeTaxScheme()
                         {
-                            ID = sender.BankAcc
+                            ID = "VAT"
                         }
                     },
-                };
-
-                ClickBar_eFaktura.Models.Request.Envelope requestSender = new ClickBar_eFaktura.Models.Request.Envelope()
-                {
-                    Header = new ClickBar_eFaktura.Models.Request.EnvelopeHeader()
+                    PartyLegalEntity = new ClickBar_eFaktura.Models.AccountingSupplierPartyPartyPartyLegalEntity()
                     {
-                        AuthenticationHeader = new ClickBar_eFaktura.Models.Request.AuthenticationHeader()
-                        {
-                            LicenceID = "ef42df23-7658-418d-991e-3f9f6fdc37f4",
-                            Password = "U3XKag3b",
-                            UserName = "cleancodesirmium"
-                        }
+                        RegistrationName = responseSender.naziv,
+                        CompanyID = responseSender.mb,
                     },
-                    Body = new ClickBar_eFaktura.Models.Request.EnvelopeBody()
+                    PostalAddress = new ClickBar_eFaktura.Models.AccountingSupplierPartyPartyPostalAddress()
                     {
-                        GetCompany = new ClickBar_eFaktura.Models.Request.GetCompany()
+                        CityName = responseSender.mesto,
+                        StreetName = responseSender.adresa,
+                        Country = new ClickBar_eFaktura.Models.AccountingSupplierPartyPartyPostalAddressCountry()
                         {
-                            taxIdentificationNumber = $"{sender.Pib}"
+                            IdentificationCode = "RS"
                         }
                     }
+                },
+            };
+
+            if (_currentViewModel.CurrentInvoice.BuyerId.Contains("12:"))
+            {
+                invoice.ContractDocumentReference = new ContractDocumentReference()
+                {
+                    ID = invoice.ID
                 };
-
-                var responseSender = await eFakturaManager.Instance.GetPravnaLica(requestSender);
-
-                if (responseSender == null)
-                {
-                    MessageBox.Show("Greška u podacima Vaše firme!", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return null;
-                }
-
-                invoice.AccountingSupplierParty = new ClickBar_eFaktura.Models.AccountingSupplierParty()
-                {
-                    Party = new ClickBar_eFaktura.Models.AccountingSupplierPartyParty()
-                    {
-                        EndpointID = new ClickBar_eFaktura.Models.EndpointID()
-                        {
-                            schemeID = 9948,
-                            Value = responseSender.pib
-                        },
-                        PartyName = new ClickBar_eFaktura.Models.AccountingSupplierPartyPartyPartyName()
-                        {
-                            Name = responseSender.naziv
-                        },
-                        PartyTaxScheme = new ClickBar_eFaktura.Models.AccountingSupplierPartyPartyPartyTaxScheme()
-                        {
-                            CompanyID = $"RS{responseSender.pib}",
-                            TaxScheme = new ClickBar_eFaktura.Models.AccountingSupplierPartyPartyPartyTaxSchemeTaxScheme()
-                            {
-                                ID = "VAT"
-                            }
-                        },
-                        PartyLegalEntity = new ClickBar_eFaktura.Models.AccountingSupplierPartyPartyPartyLegalEntity()
-                        {
-                            RegistrationName = responseSender.naziv,
-                            CompanyID = responseSender.mb,
-                        },
-                        PostalAddress = new ClickBar_eFaktura.Models.AccountingSupplierPartyPartyPostalAddress()
-                        {
-                            CityName = responseSender.mesto,
-                            StreetName = responseSender.adresa,
-                            Country = new ClickBar_eFaktura.Models.AccountingSupplierPartyPartyPostalAddressCountry()
-                            {
-                                IdentificationCode = "RS"
-                            }
-                        }
-                    },
-                };
-
-                if (_currentViewModel.CurrentInvoice.BuyerId.Contains("12:"))
-                {
-                    invoice.ContractDocumentReference = new ContractDocumentReference()
-                    {
-                        ID = invoice.ID
-                    };
-                    invoice = await CreateInvoiceBudzetskiKorisnik(invoice);
-                }
-                else
-                {
-                    invoice = await CreateInvoicePravniKorisnik(invoice);
-                }
-
-                if (invoice == null)
-                {
-                    return null;
-                }
-
-                invoice = await SetTax(sqliteDbContext, invoice);
-
-                if (invoice != null)
-                {
-                    invoice = await SetItems(sqliteDbContext, invoice);
-                }
-
-                return invoice;
+                invoice = await CreateInvoiceBudzetskiKorisnik(invoice);
             }
+            else
+            {
+                invoice = await CreateInvoicePravniKorisnik(invoice);
+            }
+
+            if (invoice == null)
+            {
+                return null;
+            }
+
+            invoice = await SetTax(invoice);
+
+            if (invoice != null)
+            {
+                invoice = await SetItems(invoice);
+            }
+
+            return invoice;
         }
         private string GetTaxID(string label)
         {
@@ -323,12 +320,11 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
 
             return string.Empty;
         }
-        private async Task<ClickBar_eFaktura.Models.Invoice?> SetTax(SqliteDbContext sqliteDbContext, 
-            ClickBar_eFaktura.Models.Invoice? invoice)
+        private async Task<ClickBar_eFaktura.Models.Invoice?> SetTax(ClickBar_eFaktura.Models.Invoice? invoice)
         {
             if (invoice != null)
             {
-                var taxDB = sqliteDbContext.TaxItemInvoices.Where(tax => tax.InvoiceId == _currentViewModel.CurrentInvoice.Id);
+                var taxDB = _currentViewModel.DbContext.TaxItemInvoices.Where(tax => tax.InvoiceId == _currentViewModel.CurrentInvoice.Id);
 
                 if (taxDB == null ||
                     !taxDB.Any())
@@ -383,7 +379,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
                                 ID = $"{taxID}"
                             }
                         };
-                        if(taxID == "SS")
+                        if (taxID == "SS")
                         {
                             taxTotalTaxSubtotal.TaxCategory.TaxExemptionReasonCode = "PDV-RS-33";
                         }
@@ -393,13 +389,11 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
                     }
                 });
             }
-
             return invoice;
         }
-        private async Task<ClickBar_eFaktura.Models.Invoice?> SetItems(SqliteDbContext sqliteDbContext, 
-            ClickBar_eFaktura.Models.Invoice invoice)
+        private async Task<ClickBar_eFaktura.Models.Invoice?> SetItems(ClickBar_eFaktura.Models.Invoice invoice)
         {
-            var itemInInvoiceDB = sqliteDbContext.ItemInvoices.Where(item => 
+            var itemInInvoiceDB = _currentViewModel.DbContext.ItemInvoices.Where(item =>
             item.InvoiceId == _currentViewModel.CurrentInvoice.Id &&
             (item.IsSirovina == null || item.IsSirovina == 0));
 
@@ -496,7 +490,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
                             break;
                         case "F":
                             taxAmount = 11;
-                            netoIznos += Decimal.Round(item.TotalAmout.Value,2 );
+                            netoIznos += Decimal.Round(item.TotalAmout.Value, 2);
                             break;
                         case "39":
                             taxAmount = 11;
@@ -504,7 +498,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
                             break;
                     }
 
-                    string jm = SetJM(sqliteDbContext, item);
+                    string jm = SetJM(item);
 
                     if (string.IsNullOrEmpty(jm))
                     {
@@ -596,13 +590,14 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
                     Value = Decimal.Round(payableRoundingAmount, 2).ToString()
                 }
             };
+
             return invoice;
         }
-        private string SetJM(SqliteDbContext sqliteDbContext, ItemInvoiceDB itemInvoice)
+        private string SetJM(ItemInvoiceDB itemInvoice)
         {
-            var itemDB = sqliteDbContext.Items.Find(itemInvoice.ItemCode);
+            var itemDB = _currentViewModel.DbContext.Items.Find(itemInvoice.ItemCode);
 
-            if(itemDB != null )
+            if (itemDB != null)
             {
                 switch (itemDB.Jm.ToLower())
                 {

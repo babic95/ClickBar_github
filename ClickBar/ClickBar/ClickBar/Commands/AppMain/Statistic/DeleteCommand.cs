@@ -2,7 +2,7 @@
 using ClickBar.Models.Sale;
 using ClickBar.ViewModels;
 using ClickBar.ViewModels.AppMain.Statistic;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -42,31 +42,27 @@ namespace ClickBar.Commands.AppMain.Statistic
                 {
                     try
                     {
-                        using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                        var supplier = addEditSupplierViewModel.DbContext.Suppliers.Find(Convert.ToInt32(parameter));
+
+                        if (supplier != null)
                         {
+                            addEditSupplierViewModel.DbContext.Suppliers.Remove(supplier);
+                            addEditSupplierViewModel.DbContext.SaveChanges();
 
-                            var supplier = sqliteDbContext.Suppliers.Find(Convert.ToInt32(parameter));
-
-                            if (supplier != null)
+                            addEditSupplierViewModel.SuppliersAll = new List<Supplier>();
+                            addEditSupplierViewModel.DbContext.Suppliers.ToList().ForEach(x =>
                             {
-                                sqliteDbContext.Suppliers.Remove(supplier);
-                                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                                addEditSupplierViewModel.SuppliersAll.Add(new Supplier(x));
+                            });
 
-                                addEditSupplierViewModel.SuppliersAll = new List<Supplier>();
-                                sqliteDbContext.Suppliers.ToList().ForEach(x =>
-                                {
-                                    addEditSupplierViewModel.SuppliersAll.Add(new Supplier(x));
-                                });
+                            addEditSupplierViewModel.Suppliers = new ObservableCollection<Supplier>(addEditSupplierViewModel.SuppliersAll);
+                            addEditSupplierViewModel.CurrentSupplier = new Supplier();
 
-                                addEditSupplierViewModel.Suppliers = new ObservableCollection<Supplier>(addEditSupplierViewModel.SuppliersAll);
-                                addEditSupplierViewModel.CurrentSupplier = new Supplier();
-
-                                MessageBox.Show("Uspešno ste obrisali dobavljača!", "", MessageBoxButton.OK, MessageBoxImage.Information);
-                            }
-                            else
-                            {
-                                MessageBox.Show("Ne postoji dobavljač!", "", MessageBoxButton.OK, MessageBoxImage.Warning);
-                            }
+                            MessageBox.Show("Uspešno ste obrisali dobavljača!", "", MessageBoxButton.OK, MessageBoxImage.Information);
+                        }
+                        else
+                        {
+                            MessageBox.Show("Ne postoji dobavljač!", "", MessageBoxButton.OK, MessageBoxImage.Warning);
                         }
                     }
                     catch
@@ -85,46 +81,42 @@ namespace ClickBar.Commands.AppMain.Statistic
                 {
                     try
                     {
-                        using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                        var item = inventoryStatusViewModel.DbContext.Items.Find(parameter.ToString());
+
+                        if (item != null)
                         {
+                            inventoryStatusViewModel.DbContext.Items.Remove(item);
+                            inventoryStatusViewModel.DbContext.SaveChanges();
 
-                            var item = sqliteDbContext.Items.Find(parameter.ToString());
-
-                            if (item != null)
+                            inventoryStatusViewModel.InventoryStatusAll = new List<Invertory>();
+                            inventoryStatusViewModel.DbContext.Items.ToList().ForEach(x =>
                             {
-                                sqliteDbContext.Items.Remove(item);
-                                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                                Item item = new Item(x);
+                                var group = inventoryStatusViewModel.DbContext.ItemGroups.Find(x.IdItemGroup);
 
-                                inventoryStatusViewModel.InventoryStatusAll = new List<Invertory>();
-                                sqliteDbContext.Items.ToList().ForEach(x =>
+                                if (group != null)
                                 {
-                                    Item item = new Item(x);
-                                    var group = sqliteDbContext.ItemGroups.Find(x.IdItemGroup);
-
-                                    if (group != null)
-                                    {
-                                        bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
-                                        inventoryStatusViewModel.InventoryStatusAll.Add(new Invertory(item, x.IdItemGroup, x.TotalQuantity, 0, x.AlarmQuantity, isSirovina));
-                                    }
-                                });
-                                inventoryStatusViewModel.InventoryStatus = new ObservableCollection<Invertory>(inventoryStatusViewModel.InventoryStatusAll);
-                                inventoryStatusViewModel.InventoryStatusNorm = new ObservableCollection<Invertory>(inventoryStatusViewModel.InventoryStatusAll);
-                                inventoryStatusViewModel.Norma = new ObservableCollection<Invertory>();
-                                inventoryStatusViewModel.NormQuantity = 0;
-                                inventoryStatusViewModel.VisibilityNext = Visibility.Hidden;
-                                inventoryStatusViewModel.SearchItems = string.Empty;
-                                inventoryStatusViewModel.CurrentInventoryStatusNorm = null;
-                                if (inventoryStatusViewModel.WindowHelper != null)
-                                {
-                                    inventoryStatusViewModel.WindowHelper.Close();
+                                    bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
+                                    inventoryStatusViewModel.InventoryStatusAll.Add(new Invertory(item, x.IdItemGroup, x.TotalQuantity, 0, x.AlarmQuantity, isSirovina));
                                 }
-
-                                MessageBox.Show("Uspešno ste obrisali artikal!", "", MessageBoxButton.OK, MessageBoxImage.Information);
-                            }
-                            else
+                            });
+                            inventoryStatusViewModel.InventoryStatus = new ObservableCollection<Invertory>(inventoryStatusViewModel.InventoryStatusAll);
+                            inventoryStatusViewModel.InventoryStatusNorm = new ObservableCollection<Invertory>(inventoryStatusViewModel.InventoryStatusAll);
+                            inventoryStatusViewModel.Norma = new ObservableCollection<Invertory>();
+                            inventoryStatusViewModel.NormQuantity = 0;
+                            inventoryStatusViewModel.VisibilityNext = Visibility.Hidden;
+                            inventoryStatusViewModel.SearchItems = string.Empty;
+                            inventoryStatusViewModel.CurrentInventoryStatusNorm = null;
+                            if (inventoryStatusViewModel.WindowHelper != null)
                             {
-                                MessageBox.Show("Ne postoji artikal!", "", MessageBoxButton.OK, MessageBoxImage.Warning);
+                                inventoryStatusViewModel.WindowHelper.Close();
                             }
+
+                            MessageBox.Show("Uspešno ste obrisali artikal!", "", MessageBoxButton.OK, MessageBoxImage.Information);
+                        }
+                        else
+                        {
+                            MessageBox.Show("Ne postoji artikal!", "", MessageBoxButton.OK, MessageBoxImage.Warning);
                         }
                     }
                     catch

@@ -1,7 +1,7 @@
 ﻿using ClickBar.Enums.AppMain.Statistic;
 using ClickBar.Models.Sale;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -22,7 +22,8 @@ namespace ClickBar.Models.AppMain.Statistic
         private string? _description;
         private ObservableCollection<NivelacijaItem> _nivelacijaItems;
 
-        public Nivelacija(NivelacijaDB nivelacijaDB)
+        public Nivelacija(SqlServerDbContext sqliteDbContext,
+            NivelacijaDB nivelacijaDB)
         {
             Id = nivelacijaDB.Id;
             NivelacijaDate = Convert.ToDateTime(nivelacijaDB.DateNivelacije);
@@ -33,27 +34,27 @@ namespace ClickBar.Models.AppMain.Statistic
 
             NivelacijaItems = new ObservableCollection<NivelacijaItem>();
 
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            var nivelacijaItems = sqliteDbContext.ItemsNivelacija.Where(item => item.IdNivelacija == nivelacijaDB.Id);
+
+            if (nivelacijaItems != null &&
+                nivelacijaItems.Any())
             {
-                var nivelacijaItems = sqliteDbContext.ItemsNivelacija.Where(item => item.IdNivelacija == nivelacijaDB.Id);
-
-                if (nivelacijaItems != null &&
-                    nivelacijaItems.Any())
+                nivelacijaItems.ForEachAsync(nivelacijaItemDB =>
                 {
-                    nivelacijaItems.ForEachAsync(nivelacijaItemDB =>
-                    {
-                        var nivelacijaItem = new NivelacijaItem(sqliteDbContext, nivelacijaItemDB);
+                    var nivelacijaItem = new NivelacijaItem(sqliteDbContext, nivelacijaItemDB);
 
-                        NivelacijaItems.Add(nivelacijaItem);
-                    });
-                }
+                    NivelacijaItems.Add(nivelacijaItem);
+                });
             }
         }
 
-        public Nivelacija(SqliteDbContext sqliteDbContext, NivelacijaStateEnumeration type, DateTime? nivelacijaDate = null)
+        public Nivelacija(SqlServerDbContext sqliteDbContext,
+            NivelacijaStateEnumeration type,
+            DateTime? nivelacijaDate = null)
         {
             Id = Guid.NewGuid().ToString();
             NivelacijaDate = nivelacijaDate == null && !nivelacijaDate.HasValue ? DateTime.Now : nivelacijaDate.Value;
+
             var allNivelacijeInYear = sqliteDbContext.Nivelacijas.Where(nivelacija => nivelacija.DateNivelacije.Year == NivelacijaDate.Year);
 
             int counterNivelacije = 1;

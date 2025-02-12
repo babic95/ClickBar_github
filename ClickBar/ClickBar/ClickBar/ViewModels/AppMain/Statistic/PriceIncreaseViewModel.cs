@@ -1,8 +1,9 @@
 ﻿using ClickBar.Commands.AppMain.Statistic.PriceIncrease;
 using ClickBar.Models.Sale;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using DocumentFormat.OpenXml.Spreadsheet;
 using SQLitePCL;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -22,33 +23,38 @@ namespace ClickBar.ViewModels.AppMain.Statistic
 
         private ObservableCollection<Models.Sale.GroupItems> _allGroups;
         private Models.Sale.GroupItems _currentGroup;
+
+        private readonly IServiceProvider _serviceProvider; // Dodato za korišćenje IServiceProvider
         #endregion Fields
 
         #region Constructors
-        public PriceIncreaseViewModel()
+        public PriceIncreaseViewModel(IServiceProvider serviceProvider)
         {
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+
+            AllGroups = new ObservableCollection<Models.Sale.GroupItems>() { new Models.Sale.GroupItems(-1, -1, "Sve grupe") };
+
+            if (DbContext.ItemGroups != null &&
+                DbContext.ItemGroups.Any())
             {
-
-                AllGroups = new ObservableCollection<Models.Sale.GroupItems>() { new Models.Sale.GroupItems(-1, -1, "Sve grupe") };
-
-                if (sqliteDbContext.ItemGroups != null &&
-                    sqliteDbContext.ItemGroups.Any())
+                DbContext.ItemGroups.ToList().ForEach(gropu =>
                 {
-                    sqliteDbContext.ItemGroups.ToList().ForEach(gropu =>
-                    {
-                        AllGroups.Add(new Models.Sale.GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
-                    });
-                }
-
-                CurrentGroup = AllGroups.FirstOrDefault();
-
-                Total = 0;
+                    AllGroups.Add(new Models.Sale.GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
+                });
             }
+
+            CurrentGroup = AllGroups.FirstOrDefault();
+
+            Total = 0;
         }
         #endregion Constructors
 
         #region Properties internal
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
         #endregion Properties internal
 
         #region Properties
@@ -60,11 +66,11 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                 _total = value;
                 OnPropertyChange(nameof(Total));
 
-                if(value > 0)
+                if (value > 0)
                 {
                     ForegroundTotal = Brushes.Green;
                 }
-                else if(value == 0)
+                else if (value == 0)
                 {
                     ForegroundTotal = Brushes.Black;
                 }

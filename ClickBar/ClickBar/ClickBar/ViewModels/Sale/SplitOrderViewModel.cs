@@ -2,7 +2,11 @@
 using ClickBar.Commands.Sale.Pay;
 using ClickBar.Commands.Sale.Pay.SplitOrder;
 using ClickBar.Models.Sale;
-using ClickBar_Database.Models;
+using ClickBar_Database_Drlja;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -25,19 +29,36 @@ namespace ClickBar.ViewModels.Sale
         private decimal _totalAmountForPay;
         private string _quantity;
         private bool _firstChangeQuantity;
+        private readonly IServiceProvider _serviceProvider;
         #endregion Fields
 
         #region Constructors
-        public SplitOrderViewModel(PaySaleViewModel paySaleViewModel)
+        public SplitOrderViewModel(IServiceProvider serviceProvider)
         {
-            PaySaleViewModel = paySaleViewModel;
-            ItemsInvoice = paySaleViewModel.ItemsInvoice;
-            TotalAmount = paySaleViewModel.TotalAmount;
+            _serviceProvider = serviceProvider;
+            DbContext = _serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DrljaDbContext = _serviceProvider.GetRequiredService<SqliteDrljaDbContext>();
+            PaySaleViewModel = _serviceProvider.GetRequiredService<PaySaleViewModel>();
+            ItemsInvoice = PaySaleViewModel.ItemsInvoice;
+            TotalAmount = PaySaleViewModel.TotalAmount;
             ItemsInvoiceForPay = new ObservableCollection<ItemInvoice>();
+            PayCommand = _serviceProvider.GetRequiredService<PayCommand<SplitOrderViewModel>>();
+            ChangePaymentPlaceCommand = _serviceProvider.GetRequiredService<ChangePaymentPlaceCommand>();
 
             Quantity = "1";
         }
         #endregion Constructors
+
+        #region Internal Properties
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
+        internal SqliteDrljaDbContext DrljaDbContext
+        {
+            get; private set;
+        }
+        #endregion Internal Properties
 
         #region Properties
         public ObservableCollection<ItemInvoice> ItemsInvoice
@@ -113,9 +134,9 @@ namespace ClickBar.ViewModels.Sale
 
         #region Commands
         public ICommand CancelCommand => new CancelCommand(this);
-        public ICommand PayCommand => new PayCommand(this);
+        public ICommand PayCommand { get; }
         public ICommand StornoKuhinjaCommand => new StornoKuhinjaCommand(this);
-        public ICommand ChangePaymentPlaceCommand => new ChangePaymentPlaceCommand(this);
+        public ICommand ChangePaymentPlaceCommand { get; }
         public ICommand MoveToOrderCommand => new MoveToOrderCommand(this);
         public ICommand MoveToPaymentCommand => new MoveToPaymentCommand(this);
         public ICommand MoveAllToPaymentCommand => new MoveAllToPaymentCommand(this);

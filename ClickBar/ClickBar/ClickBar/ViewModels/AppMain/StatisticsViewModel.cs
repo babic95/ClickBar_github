@@ -2,7 +2,10 @@
 using ClickBar.Commands.AppMain.Statistic;
 using ClickBar.ViewModels.AppMain.Statistic;
 using ClickBar.ViewModels.Sale;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,6 +18,8 @@ namespace ClickBar.ViewModels.AppMain
     public class StatisticsViewModel : ViewModelBase
     {
         #region Fields
+        private IServiceProvider _serviceProvider;
+
         private CashierDB _loggedCashier;
         private AppMainViewModel _mainViewModel;
         private ViewModelBase _currentViewModel;
@@ -41,14 +46,22 @@ namespace ClickBar.ViewModels.AppMain
         #endregion Fields
 
         #region Constructors
-        public StatisticsViewModel(CashierDB loggedCashier, AppMainViewModel mainViewModel)
+        public StatisticsViewModel(IServiceProvider serviceProvider)
         {
-            _loggedCashier = loggedCashier;
-            _mainViewModel = mainViewModel;
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            _loggedCashier = serviceProvider.GetRequiredService<CashierDB>();
+            _mainViewModel = serviceProvider.GetRequiredService<AppMainViewModel>();
             //CheckedInventoryStatus();
         }
         #endregion Constructors
 
+        #region Internal Properties
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
+        #endregion Internal Properties
         #region Properties
         public ViewModelBase CurrentViewModel
         {
@@ -244,7 +257,7 @@ namespace ClickBar.ViewModels.AppMain
         #region Public methods
         public void CheckedInventoryStatus()
         {
-            CurrentViewModel = new InventoryStatusViewModel();
+            CurrentViewModel = new InventoryStatusViewModel(_serviceProvider);
             IsCheckedInventoryStatus = true;
             IsCheckedAddEditSupplier = false;
             IsCheckedCalculation = false;
@@ -267,7 +280,7 @@ namespace ClickBar.ViewModels.AppMain
         }
         public void CheckedAddEditSupplier()
         {
-            CurrentViewModel = new AddEditSupplierViewModel();
+            CurrentViewModel = new AddEditSupplierViewModel(_serviceProvider);
             IsCheckedInventoryStatus = false;
             IsCheckedAddEditSupplier = true;
             IsCheckedCalculation = false;
@@ -290,7 +303,7 @@ namespace ClickBar.ViewModels.AppMain
         }
         public void CheckedCalculation()
         {
-            CurrentViewModel = new CalculationViewModel(_loggedCashier);
+            CurrentViewModel = new CalculationViewModel(_serviceProvider);
             IsCheckedInventoryStatus = false;
             IsCheckedAddEditSupplier = false;
             IsCheckedCalculation = true;
@@ -313,7 +326,7 @@ namespace ClickBar.ViewModels.AppMain
         }
         public void CheckedViewCalculation()
         {
-            CurrentViewModel = new ViewCalculationViewModel();
+            CurrentViewModel = new ViewCalculationViewModel(_serviceProvider);
             IsCheckedInventoryStatus = false;
             IsCheckedAddEditSupplier = false;
             IsCheckedCalculation = false;
@@ -336,7 +349,7 @@ namespace ClickBar.ViewModels.AppMain
         }
         public void CheckedPriceIncrease()
         {
-            CurrentViewModel = new PriceIncreaseViewModel();
+            CurrentViewModel = new PriceIncreaseViewModel(_serviceProvider);
             IsCheckedInventoryStatus = false;
             IsCheckedAddEditSupplier = false;
             IsCheckedCalculation = false;
@@ -359,7 +372,7 @@ namespace ClickBar.ViewModels.AppMain
         }
         public void CheckedNivelacija()
         {
-            CurrentViewModel = new NivelacijaViewModel();
+            CurrentViewModel = new NivelacijaViewModel(_serviceProvider);
             IsCheckedInventoryStatus = false;
             IsCheckedAddEditSupplier = false;
             IsCheckedCalculation = false;
@@ -382,7 +395,7 @@ namespace ClickBar.ViewModels.AppMain
         }
         public void CheckedViewNivelacija()
         {
-            CurrentViewModel = new ViewNivelacijaViewModel();
+            CurrentViewModel = new ViewNivelacijaViewModel(_serviceProvider);
             IsCheckedInventoryStatus = false;
             IsCheckedAddEditSupplier = false;
             IsCheckedCalculation = false;
@@ -405,7 +418,7 @@ namespace ClickBar.ViewModels.AppMain
         }
         public void CheckedKnjizenje()
         {
-            CurrentViewModel = new KnjizenjeViewModel();
+            CurrentViewModel = new KnjizenjeViewModel(_serviceProvider);
             IsCheckedInventoryStatus = false;
             IsCheckedAddEditSupplier = false;
             IsCheckedCalculation = false;
@@ -428,7 +441,7 @@ namespace ClickBar.ViewModels.AppMain
         }
         public void CheckedKEP()
         {
-            CurrentViewModel = new KEPViewModel();
+            CurrentViewModel = new KEPViewModel(_serviceProvider);
             IsCheckedInventoryStatus = false;
             IsCheckedAddEditSupplier = false;
             IsCheckedCalculation = false;
@@ -451,7 +464,7 @@ namespace ClickBar.ViewModels.AppMain
         }
         public void CheckedViewKnjizenje()
         {
-            CurrentViewModel = new PregledPazaraViewModel();
+            CurrentViewModel = new PregledPazaraViewModel(_serviceProvider);
             IsCheckedInventoryStatus = false;
             IsCheckedAddEditSupplier = false;
             IsCheckedCalculation = false;
@@ -474,7 +487,7 @@ namespace ClickBar.ViewModels.AppMain
         }
         public void CheckedRefaund()
         {
-            CurrentViewModel = new RefaundViewModel(_loggedCashier, _mainViewModel);
+            CurrentViewModel = new RefaundViewModel(_serviceProvider);
             IsCheckedInventoryStatus = false;
             IsCheckedAddEditSupplier = false;
             IsCheckedCalculation = false;
@@ -497,7 +510,7 @@ namespace ClickBar.ViewModels.AppMain
         }
         public void CheckedPocetnoStanje()
         {
-            CurrentViewModel = new PocetnoStanjeViewModel();
+            CurrentViewModel = new PocetnoStanjeViewModel(_serviceProvider);
             IsCheckedInventoryStatus = false;
             IsCheckedAddEditSupplier = false;
             IsCheckedCalculation = false;
@@ -520,7 +533,7 @@ namespace ClickBar.ViewModels.AppMain
         }
         public void CheckedNorm()
         {
-            CurrentViewModel = new NormViewModel();
+            CurrentViewModel = new NormViewModel(_serviceProvider);
             IsCheckedInventoryStatus = false;
             IsCheckedAddEditSupplier = false;
             IsCheckedCalculation = false;
@@ -543,7 +556,7 @@ namespace ClickBar.ViewModels.AppMain
         }
         public void CheckedFirma()
         {
-            CurrentViewModel = new FirmaViewModel();
+            CurrentViewModel = new FirmaViewModel(_serviceProvider);
             IsCheckedInventoryStatus = false;
             IsCheckedAddEditSupplier = false;
             IsCheckedCalculation = false;
@@ -566,7 +579,7 @@ namespace ClickBar.ViewModels.AppMain
         }
         public void CheckedPartner()
         {
-            CurrentViewModel = new PartnerViewModel();
+            CurrentViewModel = new PartnerViewModel(_serviceProvider);
             IsCheckedInventoryStatus = false;
             IsCheckedAddEditSupplier = false;
             IsCheckedCalculation = false;
@@ -589,7 +602,7 @@ namespace ClickBar.ViewModels.AppMain
         }
         public void CheckedLagerLista()
         {
-            CurrentViewModel = new LagerListaViewModel();
+            CurrentViewModel = new LagerListaViewModel(_serviceProvider);
             IsCheckedInventoryStatus = false;
             IsCheckedAddEditSupplier = false;
             IsCheckedCalculation = false;
@@ -612,7 +625,7 @@ namespace ClickBar.ViewModels.AppMain
         }
         public void CheckedRadnici()
         {
-            CurrentViewModel = new RadniciViewModel();
+            CurrentViewModel = new RadniciViewModel(_serviceProvider);
             IsCheckedInventoryStatus = false;
             IsCheckedAddEditSupplier = false;
             IsCheckedCalculation = false;
@@ -635,7 +648,7 @@ namespace ClickBar.ViewModels.AppMain
         }
         public void CheckedOtpis()
         {
-            CurrentViewModel = new OtpisViewModel(_loggedCashier);
+            CurrentViewModel = new OtpisViewModel(_serviceProvider);
             IsCheckedInventoryStatus = false;
             IsCheckedAddEditSupplier = false;
             IsCheckedCalculation = false;
@@ -658,7 +671,7 @@ namespace ClickBar.ViewModels.AppMain
         }
         public void CheckedOtpisPreview()
         {
-            CurrentViewModel = new OtpisPreviewViewModel();
+            CurrentViewModel = new OtpisPreviewViewModel(_serviceProvider);
             IsCheckedInventoryStatus = false;
             IsCheckedAddEditSupplier = false;
             IsCheckedCalculation = false;

@@ -1,7 +1,7 @@
 ﻿using ClickBar.Models.AppMain.Statistic;
 using ClickBar.ViewModels.AppMain.Statistic;
 using ClickBar.Views.AppMain.AuxiliaryWindows.Statistic.ViewCalculation;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -37,18 +37,14 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
 
                 if (calculation != null)
                 {
-                    using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                    var calculationDB = _currentViewModel.DbContext.Calculations.Find(calculationId);
+
+                    if (calculationDB != null)
                     {
-
-                        var calculationDB = sqliteDbContext.Calculations.Find(calculationId);
-
-                        if (calculationDB != null)
-                        {
-                            calculation.CalculationItems = await _currentViewModel.GetAllItemsInCalculation(calculationDB);
-                            _currentViewModel.CurrentCalculation = calculation;
-                            _currentViewModel.CurrentWindow = new ViewCalculationItemsWindow(_currentViewModel);
-                            _currentViewModel.CurrentWindow.ShowDialog();
-                        }
+                        calculation.CalculationItems = await _currentViewModel.GetAllItemsInCalculation(calculationDB);
+                        _currentViewModel.CurrentCalculation = calculation;
+                        _currentViewModel.CurrentWindow = new ViewCalculationItemsWindow(_currentViewModel);
+                        _currentViewModel.CurrentWindow.ShowDialog();
                     }
                 }
             }

@@ -3,8 +3,9 @@ using ClickBar.Commands.AppMain.Admin.Rooms;
 using ClickBar.Enums.AppMain.Admin;
 using ClickBar.Models.Sale;
 using ClickBar.Models.TableOverview;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -14,6 +15,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ClickBar.ViewModels.AppMain
 {
@@ -39,14 +41,18 @@ namespace ClickBar.ViewModels.AppMain
         private Visibility _normalPaymentPlace;
 
         private bool _isCheckedRoundPaymentPlace;
+        private readonly IServiceProvider _serviceProvider; // Dodato za korišćenje IServiceProvider
         #endregion Fields
 
         #region Constructors
-        public AdminViewModel(CashierDB loggedCashier)
+        public AdminViewModel(IServiceProvider serviceProvider)
         {
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            _loggedCashier = serviceProvider.GetRequiredService<CashierDB>();
+
             IsCheckedRoundPaymentPlace = false;
             Change = false;
-            _loggedCashier = loggedCashier;
 
             CurrentPartHall = null;
             Rooms = new ObservableCollection<PartHall>();
@@ -57,6 +63,10 @@ namespace ClickBar.ViewModels.AppMain
             SetDefaultValueFromDB();
         }
         #endregion Constructors
+
+        #region Internal Properties
+        internal SqlServerDbContext DbContext { get; private set; }
+        #endregion Internal Properties
 
         #region Properties
         public Window? AddNewPaymentPlaceWindow { get; set; }
@@ -232,91 +242,87 @@ namespace ClickBar.ViewModels.AppMain
         #region Private methods
         private void SetDefaultValueFromDB()
         {
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            DbContext.PartHalls.ToList().ForEach(part =>
             {
-
-                sqliteDbContext.PartHalls.ToList().ForEach(part =>
+                PartHall partHall = new PartHall()
                 {
-                    PartHall partHall = new PartHall()
-                    {
-                        Id = part.Id,
-                        Name = part.Name,
-                        Image = part.Image
-                    };
+                    Id = part.Id,
+                    Name = part.Name,
+                    Image = part.Image
+                };
 
-                    Rooms.Add(partHall);
-                });
+                Rooms.Add(partHall);
+            });
 
-                sqliteDbContext.PaymentPlaces.ToList().ForEach(payment =>
+            DbContext.PaymentPlaces.ToList().ForEach(payment =>
+            {
+                PaymentPlace paymentPlace = new PaymentPlace()
                 {
-                    PaymentPlace paymentPlace = new PaymentPlace()
-                    {
-                        Id = payment.Id,
-                        PartHallId = payment.PartHallId,
-                        Left = payment.LeftCanvas.Value,
-                        Top = payment.TopCanvas.Value,
-                        Type = payment.Type.HasValue ? (PaymentPlaceTypeEnumeration)payment.Type.Value : PaymentPlaceTypeEnumeration.Normal,
-                        Popust = payment.Popust,
-                        Name = !string.IsNullOrEmpty(payment.Name) ? payment.Name : payment.Id.ToString()
-                    };
+                    Id = payment.Id,
+                    PartHallId = payment.PartHallId,
+                    Left = payment.LeftCanvas.Value,
+                    Top = payment.TopCanvas.Value,
+                    Type = payment.Type.HasValue ? (PaymentPlaceTypeEnumeration)payment.Type.Value : PaymentPlaceTypeEnumeration.Normal,
+                    Popust = payment.Popust,
+                    Name = !string.IsNullOrEmpty(payment.Name) ? payment.Name : payment.Id.ToString()
+                };
 
-                    if (paymentPlace.Type == PaymentPlaceTypeEnumeration.Normal)
-                    {
-                        paymentPlace.Width = payment.Width.Value;
-                        paymentPlace.Height = payment.Height.Value;
-                    }
-                    else
-                    {
-                        paymentPlace.Diameter = payment.Width.Value;
-                    }
+                if (paymentPlace.Type == PaymentPlaceTypeEnumeration.Normal)
+                {
+                    paymentPlace.Width = payment.Width.Value;
+                    paymentPlace.Height = payment.Height.Value;
+                }
+                else
+                {
+                    paymentPlace.Diameter = payment.Width.Value;
+                }
 
-                    var unprocessedOrders = sqliteDbContext.UnprocessedOrders.FirstOrDefault(order => order.PaymentPlaceId == payment.Id);
+                var unprocessedOrders = DbContext.UnprocessedOrders.FirstOrDefault(order => order.PaymentPlaceId == payment.Id);
 
-                    if (unprocessedOrders != null)
+                if (unprocessedOrders != null)
+                {
+                    CashierDB? cashierDB = DbContext.Cashiers.Find(unprocessedOrders.CashierId);
+                    var itemsInUnprocessedOrder = DbContext.Items.Join(DbContext.ItemsInUnprocessedOrder,
+                        item => item.Id,
+                        itemInUnprocessedOrder => itemInUnprocessedOrder.ItemId,
+                        (item, itemInUnprocessedOrder) => new { Item = item, ItemInUnprocessedOrder = itemInUnprocessedOrder })
+                    .Where(item => item.ItemInUnprocessedOrder.UnprocessedOrderId == unprocessedOrders.Id);
+
+                    if (cashierDB != null && itemsInUnprocessedOrder.Any())
                     {
-                        CashierDB? cashierDB = sqliteDbContext.Cashiers.Find(unprocessedOrders.CashierId);
-                        var itemsInUnprocessedOrder = sqliteDbContext.Items.Join(sqliteDbContext.ItemsInUnprocessedOrder,
-                            item => item.Id,
-                            itemInUnprocessedOrder => itemInUnprocessedOrder.ItemId,
-                            (item, itemInUnprocessedOrder) => new { Item = item, ItemInUnprocessedOrder = itemInUnprocessedOrder })
-                        .Where(item => item.ItemInUnprocessedOrder.UnprocessedOrderId == unprocessedOrders.Id);
+                        ObservableCollection<ItemInvoice> items = new ObservableCollection<ItemInvoice>();
+                        decimal total = 0;
 
-                        if (cashierDB != null && itemsInUnprocessedOrder.Any())
+                        itemsInUnprocessedOrder.ToList().ForEach(item =>
                         {
-                            ObservableCollection<ItemInvoice> items = new ObservableCollection<ItemInvoice>();
-                            decimal total = 0;
+                            ItemInvoice itemInvoice = new ItemInvoice(new Item(item.Item), item.ItemInUnprocessedOrder.Quantity);
+                            items.Add(itemInvoice);
+                            total += itemInvoice.TotalAmout;
+                        });
 
-                            itemsInUnprocessedOrder.ToList().ForEach(item =>
-                            {
-                                ItemInvoice itemInvoice = new ItemInvoice(new Item(item.Item), item.ItemInUnprocessedOrder.Quantity);
-                                items.Add(itemInvoice);
-                                total += itemInvoice.TotalAmout;
-                            });
+                        paymentPlace.Order = new Order(cashierDB, items);
+                        paymentPlace.Background = Brushes.Red;
+                        paymentPlace.Total = total;
+                    }
+                }
+                else
+                {
+                    paymentPlace.Order = new Order(payment.Id, payment.PartHallId);
+                    paymentPlace.Background = Brushes.Green;
+                    paymentPlace.Total = 0;
+                }
 
-                            paymentPlace.Order = new Order(cashierDB, items);
-                            paymentPlace.Background = Brushes.Red;
-                            paymentPlace.Total = total;
-                        }
-                    }
-                    else
-                    {
-                        paymentPlace.Order = new Order(payment.Id, payment.PartHallId);
-                        paymentPlace.Background = Brushes.Green;
-                        paymentPlace.Total = 0;
-                    }
-
-                    switch (paymentPlace.Type)
-                    {
-                        case PaymentPlaceTypeEnumeration.Normal:
-                            AllNormalPaymentPlaces.Add(paymentPlace);
-                            break;
-                        case PaymentPlaceTypeEnumeration.Round:
-                            AllRoundPaymentPlaces.Add(paymentPlace);
-                            break;
-                    }
-                });
-            }
-            #endregion Private methods
+                switch (paymentPlace.Type)
+                {
+                    case PaymentPlaceTypeEnumeration.Normal:
+                        AllNormalPaymentPlaces.Add(paymentPlace);
+                        break;
+                    case PaymentPlaceTypeEnumeration.Round:
+                        AllRoundPaymentPlaces.Add(paymentPlace);
+                        break;
+                }
+            });
         }
+        #endregion Private methods
     }
 }

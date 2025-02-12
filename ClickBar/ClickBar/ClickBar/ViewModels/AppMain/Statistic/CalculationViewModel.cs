@@ -3,8 +3,10 @@ using ClickBar.Commands.AppMain.Statistic.Calculation;
 using ClickBar.Commands.AppMain.Statistic.Norm;
 using ClickBar.Models.AppMain.Statistic;
 using ClickBar.Models.Sale;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -19,6 +21,8 @@ namespace ClickBar.ViewModels.AppMain.Statistic
     public class CalculationViewModel : ViewModelBase
     {
         #region Fields
+        private IServiceProvider _serviceProvider;
+
         private ObservableCollection<Supplier> _suppliers;
         private Supplier _selectedSupplier;
 
@@ -52,66 +56,69 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #endregion Fields
 
         #region Constructors
-        public CalculationViewModel(CashierDB cashierDB)
+        public CalculationViewModel(IServiceProvider serviceProvider)
         {
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            LoggedCashier = serviceProvider.GetRequiredService<CashierDB>();
+
             CalculationDate = DateTime.Now;
             Groups = new List<GroupItems>() { new GroupItems(-1, -1, "Sve grupe") };
-            LoggedCashier = cashierDB;
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            Suppliers = new ObservableCollection<Supplier>();
+            InventoryStatusCalculation = new ObservableCollection<Invertory>();
+
+            Calculations = new ObservableCollection<Invertory>();
+
+            CalculationQuantity = 0;
+            CalculationPrice = 0;
+            NewPrice = 0;
+            OldPrice = 0;
+            VisibilityNext = Visibility.Hidden;
+
+            DbContext.Suppliers.ToList().ForEach(x =>
             {
+                SuppliersAll.Add(new Supplier(x));
+            });
+            DbContext.Items.ToList().ForEach(x =>
+            {
+                Item item = new Item(x);
 
-                Suppliers = new ObservableCollection<Supplier>();
-                InventoryStatusCalculation = new ObservableCollection<Invertory>();
-
-                Calculations = new ObservableCollection<Invertory>();
-
-                CalculationQuantity = 0;
-                CalculationPrice = 0;
-                NewPrice = 0;
-                OldPrice = 0;
-                VisibilityNext = Visibility.Hidden;
-
-                sqliteDbContext.Suppliers.ToList().ForEach(x =>
+                var group = DbContext.ItemGroups.Find(x.IdItemGroup);
+                if (group != null)
                 {
-                    SuppliersAll.Add(new Supplier(x));
-                });
-                sqliteDbContext.Items.ToList().ForEach(x =>
-                {
-                    Item item = new Item(x);
+                    bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
 
-                    var group = sqliteDbContext.ItemGroups.Find(x.IdItemGroup);
-                    if (group != null)
-                    {
-                        bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
-
-                        InventoryStatusAll.Add(new Invertory(item, x.IdItemGroup, x.TotalQuantity, 0, x.AlarmQuantity, isSirovina));
-                    }
-                });
-                SearchItems = new List<Invertory>(InventoryStatusAll);
-
-                if (sqliteDbContext.ItemGroups != null &&
-                    sqliteDbContext.ItemGroups.Any())
-                {
-                    sqliteDbContext.ItemGroups.ToList().ForEach(gropu =>
-                    {
-                        Groups.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
-                    });
+                    InventoryStatusAll.Add(new Invertory(item, x.IdItemGroup, x.TotalQuantity, 0, x.AlarmQuantity, isSirovina));
                 }
-                AllGroups = new ObservableCollection<GroupItems>(Groups);
-                CurrentGroup = AllGroups.FirstOrDefault();
+            });
+            SearchItems = new List<Invertory>(InventoryStatusAll);
 
-                Suppliers = new ObservableCollection<Supplier>(SuppliersAll);
-                InventoryStatusCalculation = new ObservableCollection<Invertory>(InventoryStatusAll);
-
-                if (Suppliers.Any())
+            if (DbContext.ItemGroups != null &&
+                DbContext.ItemGroups.Any())
+            {
+                DbContext.ItemGroups.ToList().ForEach(gropu =>
                 {
-                    SelectedSupplier = Suppliers.FirstOrDefault();
-                }
+                    Groups.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
+                });
+            }
+            AllGroups = new ObservableCollection<GroupItems>(Groups);
+            CurrentGroup = AllGroups.FirstOrDefault();
+
+            Suppliers = new ObservableCollection<Supplier>(SuppliersAll);
+            InventoryStatusCalculation = new ObservableCollection<Invertory>(InventoryStatusAll);
+
+            if (Suppliers.Any())
+            {
+                SelectedSupplier = Suppliers.FirstOrDefault();
             }
         }
         #endregion Constructors
 
         #region Properties internal
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
         internal List<GroupItems> Groups;
         internal List<Invertory> SearchItems = new List<Invertory>();
         internal CashierDB LoggedCashier;

@@ -35,30 +35,48 @@ namespace ClickBar.Commands.Login
 
                 if (result == MessageBoxResult.Yes)
                 {
-                    AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.Login, null);
                     if (_currentView is AppMainViewModel)
                     {
                         AppMainViewModel appMainViewModel = (AppMainViewModel)_currentView;
+
+                        AppStateParameter appStateParameter = new AppStateParameter(appMainViewModel.DbContext,
+                            appMainViewModel.DrljaDbContext,
+                            AppStateEnumerable.Login, null);
+
                         appMainViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
                     }
                     else if (_currentView is SaleViewModel)
                     {
                         SaleViewModel saleViewModel = (SaleViewModel)_currentView;
+
+                        AppStateParameter appStateParameter = new AppStateParameter(saleViewModel.DbContext,
+                            saleViewModel.DrljaDbContext,
+                            AppStateEnumerable.Login, null);
+
                         saleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
                     }
                 }
             }
             else
             {
-                AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.Login, null);
                 if (_currentView is AppMainViewModel)
                 {
                     AppMainViewModel appMainViewModel = (AppMainViewModel)_currentView;
+
+                    AppStateParameter appStateParameter = new AppStateParameter(appMainViewModel.DbContext,
+                            appMainViewModel.DrljaDbContext, 
+                            AppStateEnumerable.Login, null);
+
                     appMainViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
                 }
                 else if (_currentView is SaleViewModel)
                 {
                     SaleViewModel saleViewModel = (SaleViewModel)_currentView;
+
+                    AppStateParameter appStateParameter = new AppStateParameter(saleViewModel.DbContext,
+                            saleViewModel.DrljaDbContext,
+                            AppStateEnumerable.Login, null);
+
                     saleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
                 }
             }

@@ -1,13 +1,12 @@
 ﻿using ClickBar.Commands.AppMain.Report;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Report;
+using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ClickBar.ViewModels.AppMain
 {
@@ -24,14 +23,21 @@ namespace ClickBar.ViewModels.AppMain
 
         private bool _items;
         private string _smartCard;
+        private readonly IServiceProvider _serviceProvider; // Dodato za korišćenje IServiceProvider
         #endregion Fields
 
         #region Constructors
-        public ReportViewModel(CashierDB loggedCashier)
+        public ReportViewModel(IServiceProvider serviceProvider)
         {
-            _loggedCashier = loggedCashier;
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            _loggedCashier = serviceProvider.GetRequiredService<CashierDB>();
         }
         #endregion Constructors
+
+        #region Internal Properties
+        internal SqlServerDbContext DbContext { get; private set; }
+        #endregion Internal Properties
 
         #region Properties
         public Window AuxiliaryWindow { get; set; }

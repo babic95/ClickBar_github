@@ -1,15 +1,13 @@
 ﻿using ClickBar.Commands.AppMain.Statistic;
 using ClickBar.Models.AppMain.Statistic;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ClickBar.ViewModels.AppMain.Statistic
 {
@@ -20,28 +18,28 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         private ObservableCollection<Supplier> _suppliers;
 
         private string _searchText;
-
         private string _title;
+
+        private readonly IServiceProvider _serviceProvider;  // Dodato za korišćenje IServiceProvider
         #endregion Fields
 
         #region Constructors
-        public AddEditSupplierViewModel()
+        public AddEditSupplierViewModel(IServiceProvider serviceProvider)
         {
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            DbContext.Suppliers.ToList().ForEach(x =>
             {
+                SuppliersAll.Add(new Supplier(x));
+            });
 
-                sqliteDbContext.Suppliers.ToList().ForEach(x =>
-                {
-                    SuppliersAll.Add(new Supplier(x));
-                });
-
-                Suppliers = new ObservableCollection<Supplier>(SuppliersAll);
-                CurrentSupplier = new Supplier();
-            }
+            Suppliers = new ObservableCollection<Supplier>(SuppliersAll);
+            CurrentSupplier = new Supplier();
         }
         #endregion Constructors
 
         #region Properties internal
+        internal SqlServerDbContext DbContext { get; private set; }
         internal List<Supplier> SuppliersAll = new List<Supplier>();
         internal Window Window { get; set; }
         #endregion Properties internal
@@ -81,7 +79,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                 else
                 {
                     Suppliers = new ObservableCollection<Supplier>(SuppliersAll.Where(supplier => supplier.Name.ToLower().Contains(value.ToLower())));
-                    if(!Suppliers.Any())
+                    if (!Suppliers.Any())
                     {
                         Suppliers = new ObservableCollection<Supplier>(SuppliersAll.Where(supplier => supplier.Pib.Contains(value)));
                     }

@@ -15,11 +15,11 @@ namespace ClickBar.Models.TableOverview
         private int _id;
         private int _partHallId;
         private Order _order;
-        private decimal _left;
-        private decimal _top;
-        private decimal _width;
-        private decimal _height;
-        private decimal _diameter;
+        private float _left;
+        private float _top;
+        private float _width;
+        private float _height;
+        private float _diameter;
         private decimal _total;
         private decimal _popust;
         private string _name;
@@ -72,7 +72,7 @@ namespace ClickBar.Models.TableOverview
                 OnPropertyChange(nameof(Order));
             }
         }
-        public decimal Left
+        public float Left
         {
             get { return _left; }
             set
@@ -81,7 +81,7 @@ namespace ClickBar.Models.TableOverview
                 OnPropertyChange(nameof(Left));
             }
         }
-        public decimal Top
+        public float Top
         {
             get { return _top; }
             set
@@ -90,7 +90,7 @@ namespace ClickBar.Models.TableOverview
                 OnPropertyChange(nameof(Top));
             }
         }
-        public decimal Width
+        public float Width
         {
             get { return _width; }
             set
@@ -99,7 +99,7 @@ namespace ClickBar.Models.TableOverview
                 OnPropertyChange(nameof(Width));
             }
         }
-        public decimal Height
+        public float Height
         {
             get { return _height; }
             set
@@ -108,7 +108,7 @@ namespace ClickBar.Models.TableOverview
                 OnPropertyChange(nameof(Height));
             }
         }
-        public decimal Diameter
+        public float Diameter
         {
             get { return _diameter; }
             set

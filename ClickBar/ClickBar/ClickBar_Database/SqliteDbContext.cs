@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Data;
 using ClickBar_Common.Enums;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager.Models;
+
+//using ClickBar_Database.Models;
 using ClickBar_Logging;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -1008,13 +1010,13 @@ namespace ClickBar_Database
             {
                 FileStream fs = File.Create(databaseFilePath);
                 fs.Close();
-                //Log.Debug("SqliteDbContext - CreateDatabaseFile - Database created. Path: " + databaseFilePath);
+                //Log.Debug("SqlServerDbContext - CreateDatabaseFile - Database created. Path: " + databaseFilePath);
                 return true;
             }
             catch (Exception ex)
             {
-                Log.Error("SqliteDbContext - CreateDatabaseFile - Database creation failed. Path: " + databaseFilePath);
-                Log.Error("SqliteDbContext - CreateDatabaseFile - Exception: ", ex);
+                Log.Error("SqlServerDbContext - CreateDatabaseFile - Database creation failed. Path: " + databaseFilePath);
+                Log.Error("SqlServerDbContext - CreateDatabaseFile - Exception: ", ex);
                 return false;
             }
         }
@@ -1029,19 +1031,19 @@ namespace ClickBar_Database
             {
                 if (!System.IO.File.Exists(filePath))
                 {
-                    //Log.Debug(string.Format("SqliteDbContext - OpenConnection - File '{0}' doesn't exist.", filePath));
+                    //Log.Debug(string.Format("SqlServerDbContext - OpenConnection - File '{0}' doesn't exist.", filePath));
                     return false;
                 }
 
                 _sqliteConnection = new SqliteConnection(string.Format(_connectionString, _fileDestination));
                 await _sqliteConnection.OpenAsync();
 
-                //Log.Debug("SqliteDbContext - OpenConnection - Connection to sqlite database opened...");
+                //Log.Debug("SqlServerDbContext - OpenConnection - Connection to sqlite database opened...");
                 return true;
             }
             catch (Exception ex)
             {
-                Log.Error("SqliteDbContext - OpenConnection - Open conn  :  " + ex);
+                Log.Error("SqlServerDbContext - OpenConnection - Open conn  :  " + ex);
                 return false;
             }
         }
@@ -1231,7 +1233,7 @@ namespace ClickBar_Database
                     }
                     catch (Exception e)
                     {
-                        Log.Error("SqliteDbContext - CreateTables - Invoice - Polje 'KnjizenjePazaraId' je vec dodato -> ", e);
+                        Log.Error("SqlServerDbContext - CreateTables - Invoice - Polje 'KnjizenjePazaraId' je vec dodato -> ", e);
                     }
                 }
                 if (!TableExists(SQLiteManagerTableNames.ItemInvoice, _sqliteConnection))
@@ -1276,7 +1278,7 @@ namespace ClickBar_Database
                     }
                     catch(Exception e)
                     {
-                        Log.Error("SqliteDbContext - CreateTables - ItemInvoice - Polje 'OriginalUnitPrice' je vec dodato -> ", e);
+                        Log.Error("SqlServerDbContext - CreateTables - ItemInvoice - Polje 'OriginalUnitPrice' je vec dodato -> ", e);
                     }
                 }
                 if (!TableExists(SQLiteManagerTableNames.PaymentInvoice, _sqliteConnection))
@@ -1430,7 +1432,7 @@ namespace ClickBar_Database
                     }
                     catch (Exception e)
                     {
-                        Log.Error("SqliteDbContext - CreateTables - PaymentPlace - Polje je vec dodato -> ", e);
+                        Log.Error("SqlServerDbContext - CreateTables - PaymentPlace - Polje je vec dodato -> ", e);
                     }
                 }
                 if (!TableExists(SQLiteManagerTableNames.Order, _sqliteConnection))
@@ -1563,7 +1565,7 @@ namespace ClickBar_Database
                     }
                     catch (Exception e)
                     {
-                        Log.Error("SqliteDbContext - CreateTables - Calculation - Polje 'Counter' je vec dodato -> ", e);
+                        Log.Error("SqlServerDbContext - CreateTables - Calculation - Polje 'Counter' je vec dodato -> ", e);
                     }
                 }
                 if (!TableExists(SQLiteManagerTableNames.CalculationItem, _sqliteConnection))
@@ -1752,7 +1754,7 @@ namespace ClickBar_Database
                     }
                     catch (Exception e)
                     {
-                        Log.Error("SqliteDbContext - CreateTables - OrderToday - Polje 'TableId' je vec dodato -> ", e);
+                        Log.Error("SqlServerDbContext - CreateTables - OrderToday - Polje 'TableId' je vec dodato -> ", e);
                     }
                 }
                 if (!TableExists(SQLiteManagerTableNames.OrderTodayItem, _sqliteConnection))
@@ -1861,7 +1863,7 @@ namespace ClickBar_Database
             }
             catch (Exception ex)
             {
-                Log.Error(string.Format("SqliteDbContext - TableExists - Error occurred while checking if the table {0} exists.", tableName), ex);
+                Log.Error(string.Format("SqlServerDbContext - TableExists - Error occurred while checking if the table {0} exists.", tableName), ex);
                 return false;
             }
         }
@@ -1886,7 +1888,7 @@ namespace ClickBar_Database
                 if (!ex.Message.Contains("duplicate column name") &&
                     !ex.Message.Contains("no such column"))
                 {
-                    Log.Error(string.Format("SqliteDbContext - CreateTable - Error occurred while creating table {0}.", tableName), ex);
+                    Log.Error(string.Format("SqlServerDbContext - CreateTable - Error occurred while creating table {0}.", tableName), ex);
                 }
                 return false;
             }

@@ -1,6 +1,6 @@
 ﻿using ClickBar.Enums;
 using ClickBar.ViewModels;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using DocumentFormat.OpenXml.Office2010.CustomUI;
 using System;
 using System.Collections.Generic;

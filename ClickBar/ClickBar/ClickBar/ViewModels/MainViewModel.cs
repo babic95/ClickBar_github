@@ -2,135 +2,78 @@
 using ClickBar.State.Navigators;
 using ClickBar.ViewModels.Activation;
 using ClickBar.ViewModels.Login;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Settings;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using System.Threading;
 using System.IO;
 using System.Diagnostics;
 using ClickBar_Logging;
 using ClickBar_Database_Drlja;
-
+using ClickBar.Commands.AppMain;
 
 namespace ClickBar.ViewModels
 {
     public class MainViewModel : ViewModelBase, INavigator
     {
+        private readonly IServiceProvider _serviceProvider;
         private ProcessManager _processManager;
-
         private ViewModelBase _currentViewModel;
-
         private System.Windows.Forms.NotifyIcon _notifyIcon;
-        public MainViewModel(Window window)
+
+        public MainViewModel(IServiceProvider serviceProvider)
         {
-            Window = window;
-            string pathToDB = SettingsManager.Instance.GetPathToDB();
+            _serviceProvider = serviceProvider;
 
-            string? pathToMainDB = SettingsManager.Instance.GetPathToMainDB();
+            bool isActivationCodeNumberRequired = SettingsManager.Instance.IsActivationCodeNumberRequired();
 
-            if (!string.IsNullOrEmpty(pathToMainDB))
+            if (isActivationCodeNumberRequired)
             {
-                if (File.Exists(pathToMainDB))
+                CurrentViewModel = _serviceProvider.GetRequiredService<ActivationViewModel>();
+            }
+            else
+            {
+                if (SettingsManager.Instance.EnableSmartCard())
                 {
-                    pathToDB = pathToMainDB;
+                    CurrentViewModel = _serviceProvider.GetRequiredService<LoginCardViewModel>();
                 }
                 else
                 {
-                    MessageBox.Show("Greška u konfiguraciji putanje do baze podataka!\nProverite da li je GLAVNI računar pokrenut.",
-                        "Greška u konfiguraciji",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
-                    return;
+                    CurrentViewModel = _serviceProvider.GetRequiredService<LoginViewModel>();
                 }
             }
 
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            _notifyIcon = new System.Windows.Forms.NotifyIcon();
+            _notifyIcon.DoubleClick += (s, args) => ShowMainWindow();
+            _notifyIcon.Icon = new Icon("icon.ico");
+            _notifyIcon.Visible = true;
+            CreateContextMenu();
+
+            try
             {
-                var isConnected = sqliteDbContext.ConfigureDatabase(pathToDB).Result;
-
-                if (!isConnected)
+                if (SettingsManager.Instance.GetRunPorudzbineServis())
                 {
-                    MessageBox.Show("Greška u konekciji sa bazom podataka!\nObratite se serviseru.",
-                        "Greška u konekciji",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
-                    return;
+                    backgroundWorker_DoWork();
                 }
-
-                string? pathToDrljaDB = SettingsManager.Instance.GetPathToDrljaKuhinjaDB();
-                if (!string.IsNullOrEmpty(pathToDrljaDB))
-                {
-                    using (SqliteDrljaDbContext sqliteDrljaDbContext = new SqliteDrljaDbContext())
-                    {
-                        var isConnectedDrlja = sqliteDrljaDbContext.ConfigureDatabase(pathToDrljaDB).Result;
-
-                        if (!isConnectedDrlja)
-                        {
-                            MessageBox.Show("Greška u konekciji sa bazom podataka KUHINJE!\nObratite se serviseru.",
-                                "Greška u konekciji",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Error);
-                            return;
-                        }
-                    }
-                }
-
-                bool isActivationCodeNumberRequired = SettingsManager.Instance.IsActivationCodeNumberRequired();
-
-                if (isActivationCodeNumberRequired)
-                {
-                    CurrentViewModel = new ActivationViewModel(this);
-                }
-                else
-                {
-                    if (SettingsManager.Instance.EnableSmartCard())
-                    {
-                        CurrentViewModel = new LoginCardViewModel(UpdateCurrentViewModelCommand);
-                    }
-                    else
-                    {
-                        CurrentViewModel = new LoginViewModel(UpdateCurrentViewModelCommand);
-                    }
-                }
-
-                _notifyIcon = new System.Windows.Forms.NotifyIcon();
-                _notifyIcon.DoubleClick += (s, args) => ShowMainWindow();
-                _notifyIcon.Icon = new Icon("icon.ico");
-                _notifyIcon.Visible = true;
-                CreateContextMenu();
-
-                try
-                {
-                    if (SettingsManager.Instance.GetRunPorudzbineServis())
-                    {
-                        backgroundWorker_DoWork();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(string.Format("MainViewModel - MainViewModel -> greska prilikom pokretanja servera za porudzbine: "), ex);
-                }
-                //try
-                //{
-                //    ApiHelper.StartApi(new string[] { });
-                //}
-                //catch (Exception ex)
-                //{
-                //    MessageBox.Show($"An error occurred: {ex.Message}");
-                //}
             }
+            catch (Exception ex)
+            {
+                Log.Error(string.Format("MainViewModel - MainViewModel -> greska prilikom pokretanja servera za porudzbine: "), ex);
+            }
+
+            UpdateCurrentViewModelCommand = serviceProvider.GetRequiredService<UpdateCurrentAppStateViewModelCommand>();
         }
 
+        #region Properties
         public bool IsExit { get; private set; }
-        public Window Window { get; private set; }
+        public Window Window { get; set; }
 
         public ViewModelBase CurrentViewModel
         {
@@ -141,7 +84,9 @@ namespace ClickBar.ViewModels
                 OnPropertyChange(nameof(CurrentViewModel));
             }
         }
-        public ICommand UpdateCurrentViewModelCommand => new UpdateCurrentAppStateViewModelCommand(this);
+        #endregion Properties
+
+        public ICommand UpdateCurrentViewModelCommand { get; }
         public ICommand HiddenWindowCommand => new HiddenWindowCommand(Window);
 
         public CashierDB LoggedCashier { get; set; }
@@ -164,7 +109,6 @@ namespace ClickBar.ViewModels
                     _processManager.KillProcess();
                 }
             }
-            //ApiHelper.StopApi();
             IsExit = true;
             Application.Current.Shutdown();
             _notifyIcon.Dispose();
@@ -197,13 +141,11 @@ namespace ClickBar.ViewModels
 
                 if (!string.IsNullOrEmpty(adminPath) && File.Exists(processPath))
                 {
-                    // If process is already running, kill it
                     if (_processManager.IsProcessRunning())
                     {
                         _processManager.KillProcess();
                     }
 
-                    // Start new process and store its GUID
                     var isRuning = _processManager.StartProcess(
                         arguments: "--urls \"https://*:44323;http://*:5000\"",
                         workingDirectory: adminPath

@@ -7,13 +7,13 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Common.Models.Statistic.Nivelacija;
 using ClickBar_Report.Models;
 using System.Security.Cryptography.X509Certificates;
 using ClickBar_Common.Models.Statistic.Norm;
 using ClickBar_Common.Models.Invoice;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using System.Diagnostics.Metrics;
 using System.Reflection.Metadata.Ecma335;
 using ClickBar_Common.Models.Statistic;
@@ -74,85 +74,83 @@ namespace ClickBar_Printer.PaperFormat
         #endregion Constructors
 
         #region Public methods
-        public static void PrintA4InventoryStatus(List<InvertoryGlobal> inventoryStatusAll,
+        public static void PrintA4InventoryStatus(SqlServerDbContext sqliteDbContext,
+            List<InvertoryGlobal> inventoryStatusAll,
             string title,
             DateTime dateTime,
             SupplierGlobal? supplierGlobal = null)
         {
             try
             {
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                var firma = sqliteDbContext.Firmas.FirstOrDefault();
+
+                _firma = string.Empty;
+                if (firma != null)
                 {
-                    var firma = sqliteDbContext.Firmas.FirstOrDefault();
+                    _firma += " \r\n";
+                    _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
+                    _firma += " \r\n";
+                    _firma += " \r\n";
+                }
 
-                    _firma = string.Empty;
-                    if (firma != null)
+                _start = $"Stanje magacina na dan: {dateTime.ToString("dd.MM.yyyy HH:mm")}";
+
+                _dnevniPazarFix = "-----------------------------------------------------------------------------------------------------\r\n";
+
+                _dnevniPazarFix += "                          \r\n";
+                _dnevniPazarFix += "                          \r\n";
+                _dnevniPazarFix += "                          \r\n";
+                _dnevniPazarFix += $"Artikli - {title}:\r\n";
+
+                _dnevniPazarItemsFix = "Br.-"; //CenterString("Br.", 4, false) + "-";
+                _dnevniPazarItemsFix += $"{CenterString("Artikal", 36, false)}-".PadRight(50);
+                _dnevniPazarItemsFix += $"{CenterString("Prosečna", 16)}".PadRight(28);
+                _dnevniPazarItemsFix += $"{CenterString("ulazna cena", 16, false)}-".PadLeft(20);
+
+                _dnevniPazarItemsFix += $"{CenterString("Količina", 20, false)}-".PadRight(25);
+                _dnevniPazarItemsFix += $"JM-";
+
+                _dnevniPazarItemsFix += $"{CenterString("Prodajna", 16)}";
+                _dnevniPazarItemsFix += $"{CenterString("cena", 16, false)}-".PadLeft(10);
+
+                _dnevniPazarItemsFix += $"{CenterString("Ukupna", 22)}";
+                _dnevniPazarItemsFix += $"{CenterString("vrednost", 22, false)}-".PadLeft(20);
+
+                _dnevniPazarCounter = 1;
+
+                _dnevniPazarItemsProdaja = GetItemA4InventoryStatus(inventoryStatusAll);
+
+                _end = "";
+
+                string? prName = null;
+                foreach (string printer in PrinterSettings.InstalledPrinters)
+                {
+                    if (printer.ToLower().Contains("pdf"))
                     {
-                        _firma += " \r\n";
-                        _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
-                        _firma += " \r\n";
-                        _firma += " \r\n";
+                        prName = printer;
+                        break;
                     }
+                }
 
-                    _start = $"Stanje magacina na dan: {dateTime.ToString("dd.MM.yyyy HH:mm")}";
+                if (!string.IsNullOrEmpty(prName))
+                {
+                    var pdoc = new PrintDocument();
+                    pdoc.PrinterSettings.PrinterName = prName;
+                    _width = pdoc.PrinterSettings.DefaultPageSettings.PaperSize.Width;
 
-                    _dnevniPazarFix = "-----------------------------------------------------------------------------------------------------\r\n";
-
-                    _dnevniPazarFix += "                          \r\n";
-                    _dnevniPazarFix += "                          \r\n";
-                    _dnevniPazarFix += "                          \r\n";
-                    _dnevniPazarFix += $"Artikli - {title}:\r\n";
-
-                    _dnevniPazarItemsFix = "Br.-"; //CenterString("Br.", 4, false) + "-";
-                    _dnevniPazarItemsFix += $"{CenterString("Artikal", 36, false)}-".PadRight(50);
-                    _dnevniPazarItemsFix += $"{CenterString("Prosečna", 16)}".PadRight(28);
-                    _dnevniPazarItemsFix += $"{CenterString("ulazna cena", 16, false)}-".PadLeft(20);
-
-                    _dnevniPazarItemsFix += $"{CenterString("Količina", 20, false)}-".PadRight(25);
-                    _dnevniPazarItemsFix += $"JM-";
-
-                    _dnevniPazarItemsFix += $"{CenterString("Prodajna", 16)}";
-                    _dnevniPazarItemsFix += $"{CenterString("cena", 16, false)}-".PadLeft(10);
-
-                    _dnevniPazarItemsFix += $"{CenterString("Ukupna", 22)}";
-                    _dnevniPazarItemsFix += $"{CenterString("vrednost", 22, false)}-".PadLeft(20);
-
-                    _dnevniPazarCounter = 1;
-
-                    _dnevniPazarItemsProdaja = GetItemA4InventoryStatus(inventoryStatusAll);
-
-                    _end = "";
-
-                    string? prName = null;
-                    foreach (string printer in PrinterSettings.InstalledPrinters)
-                    {
-                        if (printer.ToLower().Contains("pdf"))
-                        {
-                            prName = printer;
-                            break;
-                        }
-                    }
-
-                    if (!string.IsNullOrEmpty(prName))
-                    {
-                        var pdoc = new PrintDocument();
-                        pdoc.PrinterSettings.PrinterName = prName;
-                        _width = pdoc.PrinterSettings.DefaultPageSettings.PaperSize.Width;
-
-                        _morePage = null;
-                        //pdoc.PrinterSettings.PrintFileName = nivelacija.NameNivelacije.Replace('-', '_');
-                        //pdoc.PrinterSettings.PrintToFile = true;
-                        pdoc.PrintPage += new PrintPageEventHandler(printStanjeArtikla);
-                        pdoc.Print();
-                        pdoc.PrintPage -= new PrintPageEventHandler(printStanjeArtikla);
-                        _morePage = null;
-                    }
+                    _morePage = null;
+                    //pdoc.PrinterSettings.PrintFileName = nivelacija.NameNivelacije.Replace('-', '_');
+                    //pdoc.PrinterSettings.PrintToFile = true;
+                    pdoc.PrintPage += new PrintPageEventHandler(printStanjeArtikla);
+                    pdoc.Print();
+                    pdoc.PrintPage -= new PrintPageEventHandler(printStanjeArtikla);
+                    _morePage = null;
                 }
             }
             catch (Exception ex)
@@ -160,75 +158,75 @@ namespace ClickBar_Printer.PaperFormat
                 ClickBar_Logging.Log.Error("FormatA4 - PrintA4InventoryStatus - Greska prilokom stampe stanja artikala: ", ex);
             }
         }
-        public static void Print1010(DateTime fromDateTime, DateTime toDateTime, List<ItemKEP> kep)
+        public static void Print1010(SqlServerDbContext sqliteDbContext,
+            DateTime fromDateTime,
+            DateTime toDateTime,
+            List<ItemKEP> kep)
         {
             try
             {
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                var firma = sqliteDbContext.Firmas.FirstOrDefault();
+
+                _firma = string.Empty;
+                if (firma != null)
                 {
-                    var firma = sqliteDbContext.Firmas.FirstOrDefault();
+                    _firma += " \r\n";
+                    _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
+                    _firma += " \r\n";
+                    _firma += " \r\n";
+                }
 
-                    _firma = string.Empty;
-                    if (firma != null)
+                _start = $"KARTICA KONTA";
+                _kepFix = "-----------------------------------------------------------------------------------------------------\r\n";
+                _kepFix += $"Konto: 1010\r\n";
+                _kepFix += $"Period: {fromDateTime.ToString("dd.MM.yyyy")} - {toDateTime.ToString("dd.MM.yyyy")}\r\n";
+                _kepFix += $" \r\n";
+                _kepFix += $"1010 Sirovine i osnovni materijal";
+
+                _kepZaduzenje = 0;
+                _kepRazduzenje = 0;
+
+                _kepItemsFix = "Datum-";// $"{CenterString("Datum", 10, false)}-";
+                _kepItemsFix += $"{CenterString("Opis", 42, false)}-".PadLeft(42);
+                _kepItemsFix += $"{CenterString("Duguje", 16, false)}-".PadLeft(35);
+                _kepItemsFix += $"{CenterString("Potražuje", 16, false)}-".PadLeft(24);
+                _kepItemsFix += $"{CenterString("Saldo", 16, false)}-".PadLeft(27);
+
+                _kepItems = GetKepItems(kep);
+
+                _end = $"UKUPNO {string.Format("{0:#,##0.00}", Decimal.Round(_kepZaduzenje, 2)).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(53)}" +
+                    $"{string.Format("{0:#,##0.00}", Decimal.Round(_kepRazduzenje, 2)).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(20)}" +
+                    $"{string.Format("{0:#,##0.00}", (Decimal.Round(_kepZaduzenje - _kepRazduzenje, 2))).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(20)}";
+
+                string? prName = null;
+                foreach (string printer in PrinterSettings.InstalledPrinters)
+                {
+                    if (printer.ToLower().Contains("pdf"))
                     {
-                        _firma += " \r\n";
-                        _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
-                        _firma += " \r\n";
-                        _firma += " \r\n";
+                        prName = printer;
+                        break;
                     }
+                }
 
-                    _start = $"KARTICA KONTA";
-                    _kepFix = "-----------------------------------------------------------------------------------------------------\r\n";
-                    _kepFix += $"Konto: 1010\r\n";
-                    _kepFix += $"Period: {fromDateTime.ToString("dd.MM.yyyy")} - {toDateTime.ToString("dd.MM.yyyy")}\r\n";
-                    _kepFix += $" \r\n";
-                    _kepFix += $"1010 Sirovine i osnovni materijal";
+                if (!string.IsNullOrEmpty(prName))
+                {
+                    var pdoc = new PrintDocument();
+                    pdoc.PrinterSettings.PrinterName = prName;
+                    _width = pdoc.PrinterSettings.DefaultPageSettings.PaperSize.Width;
 
-                    _kepZaduzenje = 0;
-                    _kepRazduzenje = 0;
-
-                    _kepItemsFix = "Datum-";// $"{CenterString("Datum", 10, false)}-";
-                    _kepItemsFix += $"{CenterString("Opis", 42, false)}-".PadLeft(42);
-                    _kepItemsFix += $"{CenterString("Duguje", 16, false)}-".PadLeft(35);
-                    _kepItemsFix += $"{CenterString("Potražuje", 16, false)}-".PadLeft(24);
-                    _kepItemsFix += $"{CenterString("Saldo", 16, false)}-".PadLeft(27);
-
-                    _kepItems = GetKepItems(kep);
-
-                    _end = $"UKUPNO {string.Format("{0:#,##0.00}", Decimal.Round(_kepZaduzenje, 2)).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(53)}" +
-                        $"{string.Format("{0:#,##0.00}", Decimal.Round(_kepRazduzenje, 2)).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(20)}" +
-                        $"{string.Format("{0:#,##0.00}", (Decimal.Round(_kepZaduzenje - _kepRazduzenje, 2))).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(20)}";
-
-                    string? prName = null;
-                    foreach (string printer in PrinterSettings.InstalledPrinters)
-                    {
-                        if (printer.ToLower().Contains("pdf"))
-                        {
-                            prName = printer;
-                            break;
-                        }
-                    }
-
-                    if (!string.IsNullOrEmpty(prName))
-                    {
-                        var pdoc = new PrintDocument();
-                        pdoc.PrinterSettings.PrinterName = prName;
-                        _width = pdoc.PrinterSettings.DefaultPageSettings.PaperSize.Width;
-
-                        _morePage = null;
-                        //pdoc.PrinterSettings.PrintFileName = nivelacija.NameNivelacije.Replace('-', '_');
-                        //pdoc.PrinterSettings.PrintToFile = true;
-                        pdoc.PrintPage += new PrintPageEventHandler(print1010);
-                        pdoc.Print();
-                        pdoc.PrintPage -= new PrintPageEventHandler(print1010);
-                        _morePage = null;
-                    }
+                    _morePage = null;
+                    //pdoc.PrinterSettings.PrintFileName = nivelacija.NameNivelacije.Replace('-', '_');
+                    //pdoc.PrinterSettings.PrintToFile = true;
+                    pdoc.PrintPage += new PrintPageEventHandler(print1010);
+                    pdoc.Print();
+                    pdoc.PrintPage -= new PrintPageEventHandler(print1010);
+                    _morePage = null;
                 }
             }
             catch (Exception ex)
@@ -236,72 +234,72 @@ namespace ClickBar_Printer.PaperFormat
                 ClickBar_Logging.Log.Error("FormatA4 - Print1010 - Greska prilokom stampe salda 1010: ", ex);
             }
         }
-        public static void PrintKEP(DateTime fromDateTime, DateTime toDateTime, List<ItemKEP> kep)
+        public static void PrintKEP(SqlServerDbContext sqliteDbContext,
+            DateTime fromDateTime, 
+            DateTime toDateTime, 
+            List<ItemKEP> kep)
         {
             try
             {
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                var firma = sqliteDbContext.Firmas.FirstOrDefault();
+
+                _firma = string.Empty;
+                if (firma != null)
                 {
-                    var firma = sqliteDbContext.Firmas.FirstOrDefault();
+                    _firma += " \r\n";
+                    _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
+                    _firma += " \r\n";
+                    _firma += " \r\n";
+                }
 
-                    _firma = string.Empty;
-                    if (firma != null)
+                _start = $"KEP KNJIGA";
+                _kepFix = "-----------------------------------------------------------------------------------------------------\r\n";
+                _kepFix += $"Kep knjiga za period: {fromDateTime.ToString("dd.MM.yyyy")} - {toDateTime.ToString("dd.MM.yyyy")}\r\n".PadLeft(103);
+
+                _kepZaduzenje = 0;
+                _kepRazduzenje = 0;
+
+                _kepItemsFix = "Datum-";// $"{CenterString("Datum", 10, false)}-";
+                _kepItemsFix += $"{CenterString("Opis", 42, false)}-".PadLeft(42);
+                _kepItemsFix += $"{CenterString("Zaduženje", 16, false)}-".PadLeft(35);
+                _kepItemsFix += $"{CenterString("Razduženje", 16, false)}-".PadLeft(24);
+                _kepItemsFix += $"{CenterString("Saldo", 16, false)}-".PadLeft(27);
+
+                _kepItems = GetKepItems(kep);
+
+                _end = $"UKUPNO {string.Format("{0:#,##0.00}", _kepZaduzenje).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(53)}" +
+                    $"{string.Format("{0:#,##0.00}", _kepRazduzenje).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(20)}" +
+                    $"{string.Format("{0:#,##0.00}", (_kepZaduzenje - _kepRazduzenje)).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(20)}";
+
+                string? prName = null;
+                foreach (string printer in PrinterSettings.InstalledPrinters)
+                {
+                    if (printer.ToLower().Contains("pdf"))
                     {
-                        _firma += " \r\n";
-                        _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
-                        _firma += " \r\n";
-                        _firma += " \r\n";
+                        prName = printer;
+                        break;
                     }
+                }
 
-                    _start = $"KEP KNJIGA";
-                    _kepFix = "-----------------------------------------------------------------------------------------------------\r\n";
-                    _kepFix += $"Kep knjiga za period: {fromDateTime.ToString("dd.MM.yyyy")} - {toDateTime.ToString("dd.MM.yyyy")}\r\n".PadLeft(103);
+                if (!string.IsNullOrEmpty(prName))
+                {
+                    var pdoc = new PrintDocument();
+                    pdoc.PrinterSettings.PrinterName = prName;
+                    _width = pdoc.PrinterSettings.DefaultPageSettings.PaperSize.Width;
 
-                    _kepZaduzenje = 0;
-                    _kepRazduzenje = 0;
-
-                    _kepItemsFix = "Datum-";// $"{CenterString("Datum", 10, false)}-";
-                    _kepItemsFix += $"{CenterString("Opis", 42, false)}-".PadLeft(42);
-                    _kepItemsFix += $"{CenterString("Zaduženje", 16, false)}-".PadLeft(35);
-                    _kepItemsFix += $"{CenterString("Razduženje", 16, false)}-".PadLeft(24);
-                    _kepItemsFix += $"{CenterString("Saldo", 16, false)}-".PadLeft(27);
-
-                    _kepItems = GetKepItems(kep);
-
-                    _end = $"UKUPNO {string.Format("{0:#,##0.00}", _kepZaduzenje).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(53)}" +
-                        $"{string.Format("{0:#,##0.00}", _kepRazduzenje).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(20)}" +
-                        $"{string.Format("{0:#,##0.00}", (_kepZaduzenje - _kepRazduzenje)).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(20)}";
-
-                    string? prName = null;
-                    foreach (string printer in PrinterSettings.InstalledPrinters)
-                    {
-                        if (printer.ToLower().Contains("pdf"))
-                        {
-                            prName = printer;
-                            break;
-                        }
-                    }
-
-                    if (!string.IsNullOrEmpty(prName))
-                    {
-                        var pdoc = new PrintDocument();
-                        pdoc.PrinterSettings.PrinterName = prName;
-                        _width = pdoc.PrinterSettings.DefaultPageSettings.PaperSize.Width;
-
-                        _morePage = null;
-                        //pdoc.PrinterSettings.PrintFileName = nivelacija.NameNivelacije.Replace('-', '_');
-                        //pdoc.PrinterSettings.PrintToFile = true;
-                        pdoc.PrintPage += new PrintPageEventHandler(printKep);
-                        pdoc.Print();
-                        pdoc.PrintPage -= new PrintPageEventHandler(printKep);
-                        _morePage = null;
-                    }
+                    _morePage = null;
+                    //pdoc.PrinterSettings.PrintFileName = nivelacija.NameNivelacije.Replace('-', '_');
+                    //pdoc.PrinterSettings.PrintToFile = true;
+                    pdoc.PrintPage += new PrintPageEventHandler(printKep);
+                    pdoc.Print();
+                    pdoc.PrintPage -= new PrintPageEventHandler(printKep);
+                    _morePage = null;
                 }
             }
             catch (Exception ex)
@@ -309,7 +307,9 @@ namespace ClickBar_Printer.PaperFormat
                 ClickBar_Logging.Log.Error("FormatA4 - PrintKEP - Greska prilokom stampe KEP: ", ex);
             }
         }
-        public static void PrintDnevniPazar(DateTime fromDateTime, DateTime? toDateTime,
+        public static void PrintDnevniPazar(SqlServerDbContext sqliteDbContext,
+            DateTime fromDateTime, 
+            DateTime? toDateTime,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems20PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems10PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems0PDV,
@@ -322,24 +322,21 @@ namespace ClickBar_Printer.PaperFormat
             try
             {
                 _enableSirovina = true;
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
-                {
-                    var firma = sqliteDbContext.Firmas.FirstOrDefault();
+                var firma = sqliteDbContext.Firmas.FirstOrDefault();
 
-                    _firma = string.Empty;
-                    if (firma != null)
-                    {
-                        _firma += " \r\n";
-                        _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
-                        _firma += " \r\n";
-                        _firma += " \r\n";
-                    }
+                _firma = string.Empty;
+                if (firma != null)
+                {
+                    _firma += " \r\n";
+                    _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
+                    _firma += " \r\n";
+                    _firma += " \r\n";
                 }
                 _dnevniPazarCounter = 1;
                 _dnevniPazarTotalAmountProdaja = 0;
@@ -437,7 +434,8 @@ namespace ClickBar_Printer.PaperFormat
                 ClickBar_Logging.Log.Error("FormatA4 - PrintDnevniPazar - Greska prilokom stampe dnevnog pazara: ", ex);
             }
         }
-        public static void LagerListaNaDan(DateTime dateTime,
+        public static void LagerListaNaDan(SqlServerDbContext sqliteDbContext,
+            DateTime dateTime,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems20PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems10PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems0PDV,
@@ -450,24 +448,21 @@ namespace ClickBar_Printer.PaperFormat
             try
             {
                 _enableSirovina = true;
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
-                {
-                    var firma = sqliteDbContext.Firmas.FirstOrDefault();
+                var firma = sqliteDbContext.Firmas.FirstOrDefault();
 
-                    _firma = string.Empty;
-                    if (firma != null)
-                    {
-                        _firma += " \r\n";
-                        _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
-                        _firma += " \r\n";
-                        _firma += " \r\n";
-                    }
+                _firma = string.Empty;
+                if (firma != null)
+                {
+                    _firma += " \r\n";
+                    _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
+                    _firma += " \r\n";
+                    _firma += " \r\n";
                 }
                 _dnevniPazarCounter = 1;
                 _dnevniPazarTotalAmountProdaja = 0;
@@ -541,7 +536,9 @@ namespace ClickBar_Printer.PaperFormat
                 ClickBar_Logging.Log.Error("FormatA4 - LagerListaNaDan - Greska prilokom stampe Lager Liste Na Dan: ", ex);
             }
         }
-        public static void PrintIzlaz1010(DateTime fromDateTime, DateTime? toDateTime,
+        public static void PrintIzlaz1010(SqlServerDbContext sqliteDbContext,
+            DateTime fromDateTime, 
+            DateTime? toDateTime,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems20PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems10PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems0PDV,
@@ -554,24 +551,21 @@ namespace ClickBar_Printer.PaperFormat
             try
             {
                 _enableSirovina = true;
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
-                {
-                    var firma = sqliteDbContext.Firmas.FirstOrDefault();
+                var firma = sqliteDbContext.Firmas.FirstOrDefault();
 
-                    _firma = string.Empty;
-                    if (firma != null)
-                    {
-                        _firma += " \r\n";
-                        _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
-                        _firma += " \r\n";
-                        _firma += " \r\n";
-                    }
+                _firma = string.Empty;
+                if (firma != null)
+                {
+                    _firma += " \r\n";
+                    _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
+                    _firma += " \r\n";
+                    _firma += " \r\n";
                 }
                 _dnevniPazarCounter = 1;
                 _dnevniPazarTotalAmountProdaja = 0;
@@ -659,7 +653,9 @@ namespace ClickBar_Printer.PaperFormat
                 ClickBar_Logging.Log.Error("FormatA4 - PrintIzlaz1010 - Greska prilokom stampe dnevnog pazara: ", ex);
             }
         }
-        public static void PrintKuhinja(DateTime fromDateTime, DateTime? toDateTime,
+        public static void PrintKuhinja(SqlServerDbContext sqliteDbContext,
+            DateTime fromDateTime,
+            DateTime? toDateTime,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems20PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems10PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems0PDV,
@@ -673,24 +669,21 @@ namespace ClickBar_Printer.PaperFormat
             try
             {
                 _enableSirovina = enableSirovine;
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
-                {
-                    var firma = sqliteDbContext.Firmas.FirstOrDefault();
+                var firma = sqliteDbContext.Firmas.FirstOrDefault();
 
-                    _firma = string.Empty;
-                    if (firma != null)
-                    {
-                        _firma += " \r\n";
-                        _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
-                        _firma += " \r\n";
-                        _firma += " \r\n";
-                    }
+                _firma = string.Empty;
+                if (firma != null)
+                {
+                    _firma += " \r\n";
+                    _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
+                    _firma += " \r\n";
+                    _firma += " \r\n";
                 }
                 _dnevniPazarCounter = 1;
                 _dnevniPazarTotalAmountProdaja = 0;
@@ -797,7 +790,9 @@ namespace ClickBar_Printer.PaperFormat
                 ClickBar_Logging.Log.Error("FormatA4 - PrintSank - Greska prilokom stampe dnevnog pazara: ", ex);
             }
         }
-        public static void PrintSank(DateTime fromDateTime, DateTime? toDateTime,
+        public static void PrintSank(SqlServerDbContext sqliteDbContext,
+            DateTime fromDateTime,
+            DateTime? toDateTime,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems20PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems10PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems0PDV,
@@ -811,24 +806,21 @@ namespace ClickBar_Printer.PaperFormat
             try
             {
                 _enableSirovina = enableSirovine;
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
-                {
-                    var firma = sqliteDbContext.Firmas.FirstOrDefault();
+                var firma = sqliteDbContext.Firmas.FirstOrDefault();
 
-                    _firma = string.Empty;
-                    if (firma != null)
-                    {
-                        _firma += " \r\n";
-                        _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
-                        _firma += " \r\n";
-                        _firma += " \r\n";
-                    }
+                _firma = string.Empty;
+                if (firma != null)
+                {
+                    _firma += " \r\n";
+                    _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
+                    _firma += " \r\n";
+                    _firma += " \r\n";
                 }
                 _dnevniPazarCounter = 1;
                 _dnevniPazarTotalAmountProdaja = 0;
@@ -934,28 +926,26 @@ namespace ClickBar_Printer.PaperFormat
                 ClickBar_Logging.Log.Error("FormatA4 - PrintSank - Greska prilokom stampe dnevnog pazara: ", ex);
             }
         }
-        public static void PrintNorms(Dictionary<string, Dictionary<string, List<NormGlobal>>> norms)
+        public static void PrintNorms(SqlServerDbContext sqliteDbContext,
+            Dictionary<string, Dictionary<string, List<NormGlobal>>> norms)
         {
             try
             {
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
-                {
-                    var firma = sqliteDbContext.Firmas.FirstOrDefault();
+                var firma = sqliteDbContext.Firmas.FirstOrDefault();
 
-                    _firma = string.Empty;
-                    if (firma != null)
-                    {
-                        _firma += " \r\n";
-                        _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
-                        _firma += " \r\n";
-                        _firma += " \r\n";
-                    }
+                _firma = string.Empty;
+                if (firma != null)
+                {
+                    _firma += " \r\n";
+                    _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
+                    _firma += " \r\n";
+                    _firma += " \r\n";
                 }
                 _start = "NORMATIVI:";
 
@@ -1019,28 +1009,26 @@ namespace ClickBar_Printer.PaperFormat
                 ClickBar_Logging.Log.Error("FormatA4 - PrintNorms - Greska prilokom stampe svih normi: ", ex);
             }
         }
-        public static void PrintNivelacija(NivelacijaGlobal nivelacija)
+        public static void PrintNivelacija(SqlServerDbContext sqliteDbContext,
+            NivelacijaGlobal nivelacija)
         {
             try
             {
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
-                {
-                    var firma = sqliteDbContext.Firmas.FirstOrDefault();
+                var firma = sqliteDbContext.Firmas.FirstOrDefault();
 
-                    _firma = string.Empty;
-                    if (firma != null)
-                    {
-                        _firma += " \r\n";
-                        _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
-                        _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
-                        _firma += " \r\n";
-                        _firma += " \r\n";
-                    }
+                _firma = string.Empty;
+                if (firma != null)
+                {
+                    _firma += " \r\n";
+                    _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
+                    _firma += " \r\n";
+                    _firma += " \r\n";
                 }
                 _start = $"{nivelacija.NameNivelacije}";
 

@@ -43,7 +43,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Nivelacija
                         _currentViewModel.ProcenatNaDosadasnjuCenu = 0;
                         _currentViewModel.MarzaLastCalculation = 0;
 
-                        _currentViewModel.CurrentItemsToNivelacija = new NivelacijaItem(item.Item);
+                        _currentViewModel.CurrentItemsToNivelacija = new NivelacijaItem(_currentViewModel.DbContext, item.Item);
 
                         _currentViewModel.NivelacijaItemWindow = new AddEditNivelacijaItemWindow(_currentViewModel);
                         _currentViewModel.NivelacijaItemWindow.ShowDialog();

@@ -5,8 +5,8 @@ using ClickBar.Models.Sale;
 using ClickBar.Models.TableOverview;
 using ClickBar.Models.TableOverview.Kuhinja;
 using ClickBar_Common.Enums;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Printer.PaperFormat;
 using ClickBar_Settings;
 using System;
@@ -29,6 +29,8 @@ using ClickBar_Database_Drlja.Models;
 using Microsoft.EntityFrameworkCore;
 using ClickBar_Logging;
 using System.Media;
+using Microsoft.Extensions.DependencyInjection;
+using System.Security.Policy;
 
 namespace ClickBar.ViewModels
 {
@@ -57,10 +59,12 @@ namespace ClickBar.ViewModels
         #endregion Fields
 
         #region Constructors
-        public TableOverviewViewModel(SaleViewModel saleViewModel)
+        public TableOverviewViewModel(IServiceProvider serviceProvider, IDbContextFactory<SqlServerDbContext> dbContextFactory, IDbContextFactory<SqliteDrljaDbContext> drljaDbContextFactory)
         {
-            SaleViewModel = saleViewModel;
-            Order = saleViewModel.CurrentOrder;
+            DbContext = dbContextFactory.CreateDbContext();
+            DrljaDbContext = drljaDbContextFactory.CreateDbContext();
+            SaleViewModel = serviceProvider.GetRequiredService<SaleViewModel>();
+            Order = SaleViewModel.CurrentOrder;
 
             Rooms = new ObservableCollection<PartHall>();
             AllNormalPaymentPlaces = new ObservableCollection<PaymentPlace>();
@@ -78,19 +82,25 @@ namespace ClickBar.ViewModels
                 KuhinjaVisibility = Visibility.Hidden;
             }
 
-            if(saleViewModel.CurrentPartHall == null)
+            if (SaleViewModel.CurrentPartHall == null)
             {
                 CurrentPartHall = Rooms.FirstOrDefault();
             }
             else
             {
-                CurrentPartHall = Rooms.FirstOrDefault(r => r.Id == saleViewModel.CurrentPartHall.Id);
+                CurrentPartHall = Rooms.FirstOrDefault(r => r.Id == SaleViewModel.CurrentPartHall.Id);
             }
 
             StartPolling();
+            StartPollingStatusStolova();
             SelectedDate = DateTime.Now;
         }
         #endregion Constructors
+
+        #region Internal Properties
+        internal SqlServerDbContext DbContext { get; private set; }
+        internal SqliteDrljaDbContext DrljaDbContext { get; private set; }
+        #endregion Internal Properties
 
         #region Properties
         public Narudzbe CurrentNarudzba
@@ -251,7 +261,7 @@ namespace ClickBar.ViewModels
                 _selectedDate = value;
                 OnPropertyChange(nameof(SelectedDate));
 
-                if(value != null)
+                if (value != null)
                 {
                     SetKuhinjaNarudzbine();
                 }
@@ -265,7 +275,7 @@ namespace ClickBar.ViewModels
         #endregion Internal Properties
 
         #region Commands
-        public ICommand SelectRoomCommand => new SelectRoomCommand(this); 
+        public ICommand SelectRoomCommand => new SelectRoomCommand(this);
         public ICommand CancelCommand => new CancelCommand(this);
         public ICommand ClickOnPaymentPlaceCommand => new ClickOnPaymentPlaceCommand(this);
         public ICommand OpenKuhinjaCommand => new OpenKuhinjaCommand(this);
@@ -289,7 +299,7 @@ namespace ClickBar.ViewModels
                     order.Items.ToList().ForEach(item =>
                     {
                         var itemInPaymentPlace = paymentPlace.Order.Items.FirstOrDefault(i => i.Item.Id == item.Item.Id);
-                        if(itemInPaymentPlace != null)
+                        if (itemInPaymentPlace != null)
                         {
                             itemInPaymentPlace.TotalAmout += item.TotalAmout;
                             itemInPaymentPlace.Quantity += item.Quantity;
@@ -322,127 +332,113 @@ namespace ClickBar.ViewModels
         internal void SetKuhinjaNarudzbine()
         {
             Narudzbe = new ObservableCollection<Narudzbe>();
-            using (SqliteDrljaDbContext sqliteDrljaDbContext = new SqliteDrljaDbContext())
+            var allNarudzbe = DrljaDbContext.StavkeNarudzbine.AsNoTracking()
+                .Join(DrljaDbContext.Narudzbine.AsNoTracking(),
+                s => s.TR_NARUDZBE_ID,
+                n => n.TR_NARUDZBE_ID,
+                (s, n) => new { s, n })
+                .Where(n => n.n.TR_VREMENARUDZBE.Date == SelectedDate.Date);
+
+            if (allNarudzbe.Any())
             {
-                var allNarudzbe = sqliteDrljaDbContext.StavkeNarudzbine.Join(sqliteDrljaDbContext.Narudzbine,
-                    s => s.TR_NARUDZBE_ID,
-                    n => n.TR_NARUDZBE_ID,
-                    (s, n) => new { s, n }).Where(n => n.n.TR_VREMENARUDZBE.Date == SelectedDate.Date);
+                var maxBrPorudzbine = DrljaDbContext.Narudzbine.AsNoTracking()
+                    .Where(n => n.TR_VREMENARUDZBE.Date == SelectedDate.Date)
+                    .Max(n => n.TR_BROJNARUDZBE);
 
-                if (allNarudzbe.Any())
+                var minBrPorudzbine = DrljaDbContext.Narudzbine.AsNoTracking()
+                    .Where(n => n.TR_VREMENARUDZBE.Date == SelectedDate.Date)
+                    .Min(n => n.TR_BROJNARUDZBE);
+
+                var allStavkeToDay = DrljaDbContext.StavkeNarudzbine.AsNoTracking()
+                    .Where(s => s.TR_BROJNARUDZBE >= minBrPorudzbine &&
+                    s.TR_BROJNARUDZBE <= maxBrPorudzbine);
+
+                if (allStavkeToDay != null && allStavkeToDay.Any())
                 {
-                    var maxBrPorudzbine = sqliteDrljaDbContext.Narudzbine.Where(n => n.TR_VREMENARUDZBE.Date == SelectedDate.Date).Max(n => n.TR_BROJNARUDZBE);
-                    var minBrPorudzbine = sqliteDrljaDbContext.Narudzbine.Where(n => n.TR_VREMENARUDZBE.Date == SelectedDate.Date).Min(n => n.TR_BROJNARUDZBE);
+                    TotalNarudzbeSmena1 = 0;
+                    TotalNarudzbeSmena2 = 0;
+                    TotalNarudzbeDostava1 = 0;
+                    TotalNarudzbeDostava2 = 0;
+                    TotalNarudzbe = 0;
 
-                    var allStavkeToDay = sqliteDrljaDbContext.StavkeNarudzbine.Where(s => s.TR_BROJNARUDZBE >= minBrPorudzbine &&
-                        s.TR_BROJNARUDZBE <= maxBrPorudzbine);
-
-                    //var allNarudzbe = sqliteDrljaDbContext.Narudzbine.Where(n =>n.TR_VREMENARUDZBE.Date == new DateTime(2025, 1, 24));
-
-                    if (allStavkeToDay != null &&
-                        allStavkeToDay.Any())
+                    allStavkeToDay.ForEachAsync(s =>
                     {
-                        TotalNarudzbeSmena1 = 0;
-                        TotalNarudzbeSmena2 = 0;
-                        TotalNarudzbeDostava1 = 0;
-                        TotalNarudzbeDostava2 = 0;
-                        TotalNarudzbe = 0;
-
-                        allStavkeToDay.ForEachAsync(s =>
+                        try
                         {
-                            try
+                            var narudzbaDB = DrljaDbContext.Narudzbine.AsNoTracking()
+                                .Where(n => n.TR_NARUDZBE_ID == s.TR_NARUDZBE_ID)
+                                .OrderByDescending(n => n.TR_VREMENARUDZBE)
+                                .FirstOrDefault();
+
+                            if (narudzbaDB != null)
                             {
-                                if (s.TR_BROJNARUDZBE == 1345)
-                                {
-                                    int a = 2;
-                                }
-                                var narudzbeDB = sqliteDrljaDbContext.Narudzbine.Where(n => n.TR_NARUDZBE_ID == s.TR_NARUDZBE_ID);
+                                var narudzbe = Narudzbe.FirstOrDefault(na => na.BrojNarudzbe == s.TR_BROJNARUDZBE &&
+                                    na.NarudzneId == s.TR_NARUDZBE_ID);
 
-                                if (narudzbeDB != null)
+                                if (narudzbe == null)
                                 {
-                                    var narudzbaDB = narudzbeDB.OrderByDescending(n => n.TR_VREMENARUDZBE).FirstOrDefault();
-
-                                    if (narudzbaDB != null)
+                                    narudzbe = new Narudzbe()
                                     {
-                                        var narudzbe = Narudzbe.FirstOrDefault(na => na.BrojNarudzbe == s.TR_BROJNARUDZBE &&
-                                        na.NarudzneId == s.TR_NARUDZBE_ID);
+                                        Id = narudzbaDB.Id,
+                                        BrojNarudzbe = s.TR_BROJNARUDZBE,
+                                        NarudzneId = s.TR_NARUDZBE_ID,
+                                        RadnikId = narudzbaDB.TR_RADNIK,
+                                        Smena = narudzbaDB.TR_RADNIK == "1111" || narudzbaDB.TR_RADNIK == "3333" ? 1 : 2,
+                                        StoName = narudzbaDB.TR_STO,
+                                        VremeNarudzbe = Convert.ToDateTime(narudzbaDB.TR_VREMENARUDZBE),
+                                        Stavke = new ObservableCollection<StavkaNarudzbe>()
+                                    };
+                                    Narudzbe.Add(narudzbe);
+                                }
+                                narudzbe.Stavke.Add(new StavkaNarudzbe()
+                                {
+                                    BrArt = s.TR_BRART,
+                                    Id = s.Id,
+                                    Kolicina = s.TR_KOL,
+                                    Mpc = s.TR_MPC,
+                                    Naziv = s.TR_NAZIV,
+                                    StornoKolicina = s.TR_KOL_STORNO,
+                                    Ukupno = decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2)
+                                });
 
-                                        if (narudzbe == null)
-                                        {
-                                            narudzbe = new Narudzbe()
-                                            {
-                                                Id = narudzbaDB.Id,
-                                                BrojNarudzbe = s.TR_BROJNARUDZBE,
-                                                NarudzneId = s.TR_NARUDZBE_ID,
-                                                RadnikId = narudzbaDB.TR_RADNIK,
-                                                Smena = narudzbaDB.TR_RADNIK == "1111" || narudzbaDB.TR_RADNIK == "3333" ? 1 : 2,//  Convert.ToInt32(narudzbaDB.TR_SMENA),
-                                                StoName = narudzbaDB.TR_STO,
-                                                VremeNarudzbe = Convert.ToDateTime(narudzbaDB.TR_VREMENARUDZBE),
-                                                Stavke = new ObservableCollection<StavkaNarudzbe>()
-                                            };
-                                            Narudzbe.Add(narudzbe);
-                                        }
-                                        narudzbe.Stavke.Add(new StavkaNarudzbe()
-                                        {
-                                            BrArt = s.TR_BRART,
-                                            Id = s.Id,
-                                            Kolicina = s.TR_KOL,
-                                            Mpc = s.TR_MPC,
-                                            Naziv = s.TR_NAZIV,
-                                            StornoKolicina = s.TR_KOL_STORNO,
-                                            Ukupno = decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2)
-                                        });
-                                        //var allStavkeNarudzbe = sqliteDrljaDbContext.StavkeNarudzbine.Where(s => s.TR_BROJNARUDZBE == n.n.TR_BROJNARUDZBE &&
-                                        //s.TR_NARUDZBE_ID == n.n.TR_NARUDZBE_ID);
+                                if (s.TR_KOL_STORNO > 0)
+                                {
+                                    narudzbe.Storno = "IMA STORNO";
+                                }
+                                else
+                                {
+                                    narudzbe.Storno = "NEMA STORNO";
+                                }
 
-                                        //if (allStavkeNarudzbe != null &&
-                                        //allStavkeNarudzbe.Any())
-                                        //{
-                                        //var storno = s.Stavka.TR_KOL_STORNO;// allStavkeNarudzbe.AsEnumerable().Sum(s => s.TR_KOL_STORNO);
-
-                                        if (s.TR_KOL_STORNO > 0)
-                                        {
-                                            narudzbe.Storno = "IMA STORNO";
-                                        }
-                                        else
-                                        {
-                                            narudzbe.Storno = "NEMA STORNO";
-                                        }
-
-                                        //decimal sum = allStavkeNarudzbe.AsEnumerable().Sum(s => decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2));
-
-                                        if (narudzbe.RadnikId == "1111")
-                                        {
-                                            TotalNarudzbeSmena1 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
-                                        }
-                                        else if (narudzbe.RadnikId == "2222")
-                                        {
-                                            TotalNarudzbeSmena2 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
-                                        }
-                                        else if (narudzbe.RadnikId == "3333")
-                                        {
-                                            TotalNarudzbeDostava1 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
-                                        }
-                                        else if (narudzbe.RadnikId == "4444")
-                                        {
-                                            TotalNarudzbeDostava2 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
-                                        }
-                                    }
+                                if (narudzbe.RadnikId == "1111")
+                                {
+                                    TotalNarudzbeSmena1 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
+                                }
+                                else if (narudzbe.RadnikId == "2222")
+                                {
+                                    TotalNarudzbeSmena2 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
+                                }
+                                else if (narudzbe.RadnikId == "3333")
+                                {
+                                    TotalNarudzbeDostava1 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
+                                }
+                                else if (narudzbe.RadnikId == "4444")
+                                {
+                                    TotalNarudzbeDostava2 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
                                 }
                             }
-                            catch (Exception ex)
-                            {
-                                Log.Error("OpenKuhinjaCommand -> Execute -> Greska prilikom obrade stavki narudzbe: ", ex);
-                            }
-                        });
-                        TotalNarudzbe = TotalNarudzbeSmena1 +
-                            TotalNarudzbeSmena2 +
-                            TotalNarudzbeDostava1 +
-                            TotalNarudzbeDostava2;
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error("SetKuhinjaNarudzbine -> Error processing order items: ", ex);
+                        }
+                    });
+                    TotalNarudzbe = TotalNarudzbeSmena1 +
+                        TotalNarudzbeSmena2 +
+                        TotalNarudzbeDostava1 +
+                        TotalNarudzbeDostava2;
 
-                        Narudzbe = new ObservableCollection<Narudzbe>(Narudzbe.OrderByDescending(n => n.BrojNarudzbe));
-
-                    }
+                    Narudzbe = new ObservableCollection<Narudzbe>(Narudzbe.OrderByDescending(n => n.BrojNarudzbe));
                 }
             }
         }
@@ -451,175 +447,229 @@ namespace ClickBar.ViewModels
         #region Private methods
         private void LoadingDB()
         {
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
-            {
-                var remove0Value = sqliteDbContext.UnprocessedOrders
-                    .GroupJoin(
-                        sqliteDbContext.ItemsInUnprocessedOrder,
-                        order => order.Id,
-                        item => item.UnprocessedOrderId,
-                        (order, items) => new { Order = order, Items = items }
-                    )
-                    // Filtrirajte rezultate kako biste zadržali samo one narudžbine koje nemaju pridružene stavke
-                    .Where(x => !x.Items.Any())
-                    .Select(x => x.Order);
+            var remove0Value = DbContext.UnprocessedOrders
+                .GroupJoin(
+                    DbContext.ItemsInUnprocessedOrder,
+                    order => order.Id,
+                    item => item.UnprocessedOrderId,
+                    (order, items) => new { Order = order, Items = items }
+                )
+                .Where(x => !x.Items.Any())
+                .Select(x => x.Order);
 
-                if (remove0Value.Any())
+            if (remove0Value.Any())
+            {
+                DbContext.UnprocessedOrders.RemoveRange(remove0Value);
+                DbContext.SaveChanges();
+            }
+
+            DbContext.PartHalls.AsNoTracking().ToList().ForEach(part =>
+            {
+                PartHall partHall = new PartHall()
                 {
-                    sqliteDbContext.UnprocessedOrders.RemoveRange(remove0Value);
-                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                    Id = part.Id,
+                    Name = part.Name,
+                    Image = part.Image
+                };
+
+                Rooms.Add(partHall);
+            });
+
+            DbContext.PaymentPlaces.AsNoTracking().ToList().ForEach(payment =>
+            {
+                PaymentPlace paymentPlace = new PaymentPlace()
+                {
+                    Id = payment.Id,
+                    PartHallId = payment.PartHallId,
+                    Left = payment.LeftCanvas.Value,
+                    Top = payment.TopCanvas.Value,
+                    Type = payment.Type.HasValue ? (PaymentPlaceTypeEnumeration)payment.Type.Value : PaymentPlaceTypeEnumeration.Normal,
+                    Name = !string.IsNullOrEmpty(payment.Name) ? payment.Name : payment.Id.ToString(),
+                    Popust = payment.Popust
+                };
+
+                if (paymentPlace.Type == PaymentPlaceTypeEnumeration.Normal)
+                {
+                    paymentPlace.Width = payment.Width.Value;
+                    paymentPlace.Height = payment.Height.Value;
+                }
+                else
+                {
+                    paymentPlace.Diameter = payment.Width.Value;
                 }
 
-                sqliteDbContext.PartHalls.ToList().ForEach(part =>
+                var unprocessedOrders = DbContext.UnprocessedOrders.AsNoTracking().FirstOrDefault(order => order.PaymentPlaceId == payment.Id);
+
+                if (unprocessedOrders != null)
                 {
-                    PartHall partHall = new PartHall()
-                    {
-                        Id = part.Id,
-                        Name = part.Name,
-                        Image = part.Image
-                    };
-
-                    Rooms.Add(partHall);
-                });
-
-                sqliteDbContext.PaymentPlaces.ToList().ForEach(payment =>
-                {
-                    PaymentPlace paymentPlace = new PaymentPlace()
-                    {
-                        Id = payment.Id,
-                        PartHallId = payment.PartHallId,
-                        Left = payment.LeftCanvas.Value,
-                        Top = payment.TopCanvas.Value,
-                        Type = payment.Type.HasValue ? (PaymentPlaceTypeEnumeration)payment.Type.Value : PaymentPlaceTypeEnumeration.Normal,
-                        Name = !string.IsNullOrEmpty(payment.Name) ? payment.Name : payment.Id.ToString(),
-                        Popust = payment.Popust
-                    };
-
-                    if (paymentPlace.Type == PaymentPlaceTypeEnumeration.Normal)
-                    {
-                        paymentPlace.Width = payment.Width.Value;
-                        paymentPlace.Height = payment.Height.Value;
-                    }
-                    else
-                    {
-                        paymentPlace.Diameter = payment.Width.Value;
-                    }
-
-                    var unprocessedOrders = sqliteDbContext.UnprocessedOrders.FirstOrDefault(order => order.PaymentPlaceId == payment.Id);
-
-                    if (unprocessedOrders != null)
-                    {
-                        CashierDB? cashierDB = sqliteDbContext.Cashiers.Find(unprocessedOrders.CashierId);
-                        var itemsInUnprocessedOrder = sqliteDbContext.Items.Join(sqliteDbContext.ItemsInUnprocessedOrder,
-                            item => item.Id,
-                            itemInUnprocessedOrder => itemInUnprocessedOrder.ItemId,
-                            (item, itemInUnprocessedOrder) => new { Item = item, ItemInUnprocessedOrder = itemInUnprocessedOrder })
+                    CashierDB? cashierDB = DbContext.Cashiers.AsNoTracking().FirstOrDefault(c => c.Id == unprocessedOrders.CashierId);
+                    var itemsInUnprocessedOrder = DbContext.Items.AsNoTracking()
+                        .Join(DbContext.ItemsInUnprocessedOrder,
+                        item => item.Id,
+                        itemInUnprocessedOrder => itemInUnprocessedOrder.ItemId,
+                        (item, itemInUnprocessedOrder) => new { Item = item, ItemInUnprocessedOrder = itemInUnprocessedOrder })
                         .Where(item => item.ItemInUnprocessedOrder.UnprocessedOrderId == unprocessedOrders.Id);
 
-                        if (cashierDB != null && itemsInUnprocessedOrder.Any())
+                    if (cashierDB != null && itemsInUnprocessedOrder.Any())
+                    {
+                        ObservableCollection<ItemInvoice> items = new ObservableCollection<ItemInvoice>();
+                        decimal total = 0;
+
+                        itemsInUnprocessedOrder.ToList().ForEach(item =>
                         {
-                            ObservableCollection<ItemInvoice> items = new ObservableCollection<ItemInvoice>();
-                            decimal total = 0;
+                            ItemInvoice itemInvoice = new ItemInvoice(new Item(item.Item), item.ItemInUnprocessedOrder.Quantity);
+                            items.Add(itemInvoice);
+                            total += itemInvoice.TotalAmout;
+                        });
 
-                            itemsInUnprocessedOrder.ToList().ForEach(item =>
-                            {
-                                ItemInvoice itemInvoice = new ItemInvoice(new Item(item.Item), item.ItemInUnprocessedOrder.Quantity);
-                                items.Add(itemInvoice);
-                                total += itemInvoice.TotalAmout;
-                            });
-
-                            paymentPlace.Order = new Order(cashierDB, items);
-                            paymentPlace.Order.TableId = payment.Id;
-                            paymentPlace.Order.PartHall = payment.PartHallId;
-                            paymentPlace.Background = Brushes.Red;
-                            paymentPlace.Total = total;
-                        }
+                        paymentPlace.Order = new Order(cashierDB, items);
+                        paymentPlace.Order.TableId = payment.Id;
+                        paymentPlace.Order.PartHall = payment.PartHallId;
+                        paymentPlace.Background = Brushes.Red;
+                        paymentPlace.Total = total;
                     }
-                    else
-                    {
-                        paymentPlace.Order = new Order(payment.Id, payment.PartHallId);
-                        paymentPlace.Background = Brushes.Green;
-                        paymentPlace.Total = 0;
-                    }
-
-                    switch (paymentPlace.Type)
-                    {
-                        case PaymentPlaceTypeEnumeration.Normal:
-                            AllNormalPaymentPlaces.Add(paymentPlace);
-                            break;
-                        case PaymentPlaceTypeEnumeration.Round:
-                            AllRoundPaymentPlaces.Add(paymentPlace);
-                            break;
-                    }
-                });
-
-                if (CurrentPartHall != null)
-                {
-                    Title = CurrentPartHall.Name;
                 }
+                else
+                {
+                    paymentPlace.Order = new Order(payment.Id, payment.PartHallId);
+                    paymentPlace.Background = Brushes.Green;
+                    paymentPlace.Total = 0;
+                }
+
+                switch (paymentPlace.Type)
+                {
+                    case PaymentPlaceTypeEnumeration.Normal:
+                        AllNormalPaymentPlaces.Add(paymentPlace);
+                        break;
+                    case PaymentPlaceTypeEnumeration.Round:
+                        AllRoundPaymentPlaces.Add(paymentPlace);
+                        break;
+                }
+            });
+
+            if (CurrentPartHall != null)
+            {
+                Title = CurrentPartHall.Name;
             }
         }
+
         private void StartPolling()
         {
-            if(SaleViewModel.Timer != null)
+            if (SaleViewModel.Timer != null)
             {
                 SaleViewModel.Timer.Stop();
                 SaleViewModel.Timer.Dispose();
             }
-            SaleViewModel.Timer = new Timer(5000); // Proverava svakih 5 sekunde
+            SaleViewModel.Timer = new Timer(5000); // Proverava svakih 5 sekundi
             SaleViewModel.Timer.Elapsed += CheckDatabase;
             SaleViewModel.Timer.AutoReset = true;
             SaleViewModel.Timer.Enabled = true;
         }
 
+        private void StartPollingStatusStolova()
+        {
+            if (SaleViewModel.Timer1 != null)
+            {
+                SaleViewModel.Timer1.Stop();
+                SaleViewModel.Timer1.Dispose();
+            }
+            SaleViewModel.Timer1 = new Timer(5000); // Proverava svakih 5 sekundi
+            SaleViewModel.Timer1.Elapsed += CheckDatabaseStatusStolova;
+            SaleViewModel.Timer1.AutoReset = true;
+            SaleViewModel.Timer1.Enabled = true;
+        }
+
+        private void CheckDatabaseStatusStolova(object sender, ElapsedEventArgs e)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                var updatedPaymentPlaces = DbContext.PaymentPlaces.AsNoTracking().ToList();
+                foreach (var paymentPlace in updatedPaymentPlaces)
+                {
+                    var existingPaymentPlace = AllNormalPaymentPlaces.FirstOrDefault(p => p.Id == paymentPlace.Id) ??
+                                               AllRoundPaymentPlaces.FirstOrDefault(p => p.Id == paymentPlace.Id);
+
+                    if (existingPaymentPlace != null)
+                    {
+                        // Ažuriraj status stolova
+                        var unprocessedOrders = DbContext.UnprocessedOrders.AsNoTracking().FirstOrDefault(order => order.PaymentPlaceId == paymentPlace.Id);
+                        if (unprocessedOrders != null)
+                        {
+                            CashierDB? cashierDB = DbContext.Cashiers.AsNoTracking().FirstOrDefault(c => c.Id == unprocessedOrders.CashierId);
+                            var itemsInUnprocessedOrder = DbContext.Items.AsNoTracking()
+                                .Join(DbContext.ItemsInUnprocessedOrder,
+                                item => item.Id,
+                                itemInUnprocessedOrder => itemInUnprocessedOrder.ItemId,
+                                (item, itemInUnprocessedOrder) => new { Item = item, ItemInUnprocessedOrder = itemInUnprocessedOrder })
+                                .Where(item => item.ItemInUnprocessedOrder.UnprocessedOrderId == unprocessedOrders.Id);
+
+                            if (cashierDB != null && itemsInUnprocessedOrder.Any())
+                            {
+                                ObservableCollection<ItemInvoice> items = new ObservableCollection<ItemInvoice>();
+                                decimal total = 0;
+
+                                itemsInUnprocessedOrder.ToList().ForEach(item =>
+                                {
+                                    ItemInvoice itemInvoice = new ItemInvoice(new Item(item.Item), item.ItemInUnprocessedOrder.Quantity);
+                                    items.Add(itemInvoice);
+                                    total += itemInvoice.TotalAmout;
+                                });
+
+                                existingPaymentPlace.Order = new Order(cashierDB, items);
+                                existingPaymentPlace.Order.TableId = paymentPlace.Id;
+                                existingPaymentPlace.Order.PartHall = paymentPlace.PartHallId;
+                                existingPaymentPlace.Background = Brushes.Red;
+                                existingPaymentPlace.Total = total;
+                            }
+                        }
+                        else
+                        {
+                            existingPaymentPlace.Order = new Order(paymentPlace.Id, paymentPlace.PartHallId);
+                            existingPaymentPlace.Background = Brushes.Green;
+                            existingPaymentPlace.Total = 0;
+                        }
+                    }
+                }
+            });
+        }
+
         private void CheckDatabase(object sender, ElapsedEventArgs e)
         {
-            using (SqliteDrljaDbContext sqliteDrljaDbContext = new SqliteDrljaDbContext())
+            var noveNarudzbe = DrljaDbContext.Narudzbine.AsNoTracking()
+                .Where(n => n.TR_FAZA == 2 && n.TR_VREMENARUDZBE.Date == DateTime.Now.Date);
+
+            if (noveNarudzbe != null && noveNarudzbe.Any())
             {
-                var noveNarudzbe = sqliteDrljaDbContext.Narudzbine.Where(n => n.TR_FAZA == 2 &&
-                n.TR_VREMENARUDZBE.Date == DateTime.Now.Date);
-                if (noveNarudzbe != null &&
-                    noveNarudzbe.Any())
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
+                    noveNarudzbe.ForEachAsync(n =>
                     {
-                        noveNarudzbe.ForEachAsync(n =>
+                        if (n.TR_STO.StartsWith("S"))
                         {
-                            // Proverite da li string počinje sa "S"
-                            if (n.TR_STO.StartsWith("S"))
+                            string numberPart = n.TR_STO.Substring(1);
+
+                            if (int.TryParse(numberPart, out int stoId))
                             {
-                                // Izvucite deo stringa nakon "S"
-                                string numberPart = n.TR_STO.Substring(1);
+                                var sto = AllNormalPaymentPlaces.FirstOrDefault(p => p.Id == stoId)
+                                    ?? AllRoundPaymentPlaces.FirstOrDefault(p => p.Id == stoId);
 
-                                // Pokušajte da konvertujete deo stringa u broj
-                                if (int.TryParse(numberPart, out int stoId))
+                                if (sto != null && sto.Background != Brushes.Blue)
                                 {
-                                    var sto = AllNormalPaymentPlaces.FirstOrDefault(p => p.Id == stoId);
-
-                                    if(sto == null)
-                                    {
-                                        sto = AllRoundPaymentPlaces.FirstOrDefault(p => p.Id == stoId);
-                                    }
-
-                                    if (sto != null &&
-                                    sto.Background != Brushes.Blue)
-                                    {
-                                        sto.Background = Brushes.Blue;
-                                        SystemSounds.Asterisk.Play();
-                                    }
-                                }
-                                else
-                                {
-                                    Log.Error("Greska prilikom konvertovanja stringa u broj za broj stola.");
+                                    sto.Background = Brushes.Blue;
+                                    SystemSounds.Asterisk.Play();
                                 }
                             }
                             else
                             {
-                                Log.Error("String ne počinje sa 'S' za broj stola iz Drljine baze.");
+                                Log.Error("Greska prilikom konvertovanja stringa u broj za broj stola.");
                             }
-                        });
+                        }
+                        else
+                        {
+                            Log.Error("String ne počinje sa 'S' za broj stola iz Drljine baze.");
+                        }
                     });
-                }
+                });
             }
         }
         #endregion Private methods

@@ -1,18 +1,5 @@
 ﻿using ClickBar.ViewModels;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace ClickBar
 {
@@ -22,10 +9,12 @@ namespace ClickBar
     public partial class MainWindow : Window
     {
         private MainViewModel _mainViewModel;
-        public MainWindow()
+
+        public MainWindow(MainViewModel mainViewModel)
         {
             InitializeComponent();
-            _mainViewModel = new MainViewModel(this);
+            _mainViewModel = mainViewModel;
+            _mainViewModel.Window = this; // Set the Window property here
             DataContext = _mainViewModel;
         }
 

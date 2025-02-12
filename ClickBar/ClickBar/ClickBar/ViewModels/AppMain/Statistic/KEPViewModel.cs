@@ -1,6 +1,7 @@
 ﻿using ClickBar.Commands.AppMain.Statistic.KEP;
 using ClickBar.Models.AppMain.Statistic.KEP;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -8,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ClickBar.ViewModels.AppMain.Statistic
 {
@@ -25,11 +27,15 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         private decimal _zaduzenje;
         private decimal _razduzenje;
         private decimal _saldo;
+
+        private readonly IServiceProvider _serviceProvider; // Dodato za korišćenje IServiceProvider
         #endregion Fields
 
         #region Constructors
-        public KEPViewModel()
+        public KEPViewModel(IServiceProvider serviceProvider)
         {
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
             TypesKEP = new ObservableCollection<string>()
             {
                 "Sve",
@@ -53,6 +59,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #endregion Constructors
 
         #region Properties internal
+        internal SqlServerDbContext DbContext { get; private set; }
         #endregion Properties internal
 
         #region Properties

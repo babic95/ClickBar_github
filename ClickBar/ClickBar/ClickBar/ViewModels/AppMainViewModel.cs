@@ -4,20 +4,22 @@ using ClickBar.Commands.Login;
 using ClickBar.State.Navigators;
 using ClickBar.ViewModels.AppMain;
 using ClickBar_Common.Enums;
-using ClickBar_Database.Models;
+using ClickBar_Database_Drlja;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
+using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ClickBar.ViewModels
 {
     public class AppMainViewModel : ViewModelBase, INavigator
     {
+        private IServiceProvider _serviceProvider;
+
         private CashierDB _loggedCashier;
         private string _cashierNema;
         private string _resizeWindowIconPath;
@@ -41,27 +43,38 @@ namespace ClickBar.ViewModels
 
         private Timer _timer;
 
-        public AppMainViewModel(CashierDB loggedCashier, ICommand updateCurrentViewModelCommand)
+        public AppMainViewModel(IServiceProvider serviceProvider, IDbContextFactory<SqlServerDbContext> dbContextFactory, IDbContextFactory<SqliteDrljaDbContext> drljaDbContextFactory)
         {
+            _serviceProvider = serviceProvider;
+            DbContext = dbContextFactory.CreateDbContext();
+            DrljaDbContext = drljaDbContextFactory.CreateDbContext();
+            _loggedCashier = serviceProvider.GetRequiredService<CashierDB>();
+            UpdateAppViewModelCommand = serviceProvider.GetRequiredService<ICommand>();
+
             ConnectionWithLPFR = _notConnected;
             Initialization();
-            _loggedCashier = loggedCashier;
 
-            _settingsViewModel = new SettingsViewModel(loggedCashier, this);
+            _settingsViewModel = serviceProvider.GetRequiredService<SettingsViewModel>();
 
-            if (loggedCashier.Type == CashierTypeEnumeration.Admin)
+            if (_loggedCashier.Type == CashierTypeEnumeration.Admin)
             {
-                _adminViewModel = new AdminViewModel(loggedCashier);
+                _adminViewModel = serviceProvider.GetRequiredService<AdminViewModel>();
             }
 
-            UpdateAppViewModelCommand = updateCurrentViewModelCommand;
-            LoggedCashier = loggedCashier;
-            CashierNema = loggedCashier.Name;
+            LoggedCashier = _loggedCashier;
+            CashierNema = _loggedCashier.Name;
 
             CheckedReport();
 
-            AdminVisibility = loggedCashier.Type == CashierTypeEnumeration.Admin ? Visibility.Visible : Visibility.Hidden;
+            AdminVisibility = _loggedCashier.Type == CashierTypeEnumeration.Admin ? Visibility.Visible : Visibility.Hidden;
         }
+
+        #region Internal Properties
+        internal SqlServerDbContext DbContext { get; private set; }
+        internal SqliteDrljaDbContext DrljaDbContext { get; private set; }
+        #endregion Internal Properties
+
+        #region Properties
         public Uri ConnectionWithLPFR
         {
             get { return _connectionWithLPFR; }
@@ -144,25 +157,27 @@ namespace ClickBar.ViewModels
                 OnPropertyChange(nameof(CurrentViewModel));
             }
         }
+        public CashierDB LoggedCashier { get; set; }
+        #endregion Properties
 
+        #region Commands
         public ICommand UpdateAppViewModelCommand { get; set; }
         public ICommand UpdateCurrentViewModelCommand => new UpdateCurrentViewModelCommand(this);
         public ICommand LogoutCommand => new LogoutCommand(this);
         public ICommand InformationCommand => new InformationCommand();
-
-        public CashierDB LoggedCashier { get; set; }
+        #endregion Commands
 
         public void CheckedReport()
         {
-            CurrentViewModel = new ReportViewModel(_loggedCashier);
+            CurrentViewModel = new ReportViewModel(_serviceProvider);
             IsCheckedReport = true;
             IsCheckedAdmin = false;
             IsCheckedStatistics = false;
-            IsCheckedSettings = false; 
+            IsCheckedSettings = false;
         }
         public void CheckedStatistics()
         {
-            CurrentViewModel = new StatisticsViewModel(_loggedCashier, this);
+            CurrentViewModel = new StatisticsViewModel(_serviceProvider);
             IsCheckedReport = false;
             IsCheckedAdmin = false;
             IsCheckedStatistics = true;

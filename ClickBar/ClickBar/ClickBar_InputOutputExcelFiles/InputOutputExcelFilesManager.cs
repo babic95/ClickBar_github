@@ -5,9 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Settings;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using ClickBar_Common.Enums;
 using DocumentFormat.OpenXml.Spreadsheet;
 
@@ -42,7 +42,7 @@ namespace ClickBar_InputOutputExcelFiles
         #endregion Constructors
 
         #region Public methods
-        public async Task<List<SupergroupDB>?> ImportSupergroups()
+        public async Task<List<SupergroupDB>?> ImportSupergroups(SqlServerDbContext sqliteDbContext)
         {
             string? path = SettingsManager.Instance.GetPathToImportSupergroups();
 
@@ -51,41 +51,37 @@ namespace ClickBar_InputOutputExcelFiles
 
                 List<SupergroupExcel> excelSuperoups = ImportExcel<SupergroupExcel>(path, "Nadgrupe");
 
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                List<SupergroupDB> supergroups = new List<SupergroupDB>();
+
+                excelSuperoups.ForEach(async supergroup =>
                 {
+                    var supergroupDBs = sqliteDbContext.Supergroups.Where(g => g.Name == supergroup.Ime).ToList();
 
-                    List<SupergroupDB> supergroups = new List<SupergroupDB>();
-
-                    excelSuperoups.ForEach(async supergroup =>
+                    if (supergroupDBs.Any())
                     {
-                        var supergroupDBs = sqliteDbContext.Supergroups.Where(g => g.Name == supergroup.Ime).ToList();
+                        SupergroupDB supergroupDB = supergroupDBs.First();
+                        supergroupDB.Name = supergroup.Ime;
 
-                        if (supergroupDBs.Any())
+                        sqliteDbContext.Supergroups.Update(supergroupDB);
+                        supergroups.Add(supergroupDB);
+                    }
+                    else
+                    {
+                        SupergroupDB supergroupDB = new SupergroupDB()
                         {
-                            SupergroupDB supergroupDB = supergroupDBs.First();
-                            supergroupDB.Name = supergroup.Ime;
+                            Name = supergroup.Ime,
+                        };
+                        await sqliteDbContext.Supergroups.AddAsync(supergroupDB);
+                        supergroups.Add(supergroupDB);
+                    }
+                });
 
-                            sqliteDbContext.Supergroups.Update(supergroupDB);
-                            supergroups.Add(supergroupDB);
-                        }
-                        else
-                        {
-                            SupergroupDB supergroupDB = new SupergroupDB()
-                            {
-                                Name = supergroup.Ime,
-                            };
-                            await sqliteDbContext.Supergroups.AddAsync(supergroupDB);
-                            supergroups.Add(supergroupDB);
-                        }
-                    });
-
-                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-                    return supergroups;
-                }
+                sqliteDbContext.SaveChanges();
+                return supergroups;
             }
             return null;
         }
-        public async Task<List<ItemGroupDB>?> ImportGroups()
+        public async Task<List<ItemGroupDB>?> ImportGroups(SqlServerDbContext sqliteDbContext)
         {
             string? path = SettingsManager.Instance.GetPathToImportGroups();
 
@@ -94,48 +90,44 @@ namespace ClickBar_InputOutputExcelFiles
 
                 List<GroupExcel> excelItems = ImportExcel<GroupExcel>(path, "Grupe");
 
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                List<ItemGroupDB> groups = new List<ItemGroupDB>();
+
+                excelItems.ForEach(async group =>
                 {
+                    SupergroupDB? supergroupDB = sqliteDbContext.Supergroups.Find(group.Nadgrupa);
 
-                    List<ItemGroupDB> groups = new List<ItemGroupDB>();
-
-                    excelItems.ForEach(async group =>
+                    if (supergroupDB != null)
                     {
-                        SupergroupDB? supergroupDB = sqliteDbContext.Supergroups.Find(group.Nadgrupa);
+                        var itemGroupDBs = sqliteDbContext.ItemGroups.Where(g => g.Name == group.Ime).ToList();
 
-                        if (supergroupDB != null)
+                        if (itemGroupDBs.Any())
                         {
-                            var itemGroupDBs = sqliteDbContext.ItemGroups.Where(g => g.Name == group.Ime).ToList();
+                            ItemGroupDB itemGroupDB = itemGroupDBs.First();
+                            itemGroupDB.Name = group.Ime;
+                            itemGroupDB.IdSupergroup = group.Nadgrupa;
 
-                            if (itemGroupDBs.Any())
-                            {
-                                ItemGroupDB itemGroupDB = itemGroupDBs.First();
-                                itemGroupDB.Name = group.Ime;
-                                itemGroupDB.IdSupergroup = group.Nadgrupa;
-
-                                sqliteDbContext.ItemGroups.Update(itemGroupDB);
-                                groups.Add(itemGroupDB);
-                            }
-                            else
-                            {
-                                ItemGroupDB itemGroupDB = new ItemGroupDB()
-                                {
-                                    Name = group.Ime,
-                                    IdSupergroup = group.Nadgrupa
-                                };
-                                await sqliteDbContext.ItemGroups.AddAsync(itemGroupDB);
-                                groups.Add(itemGroupDB);
-                            }
+                            sqliteDbContext.ItemGroups.Update(itemGroupDB);
+                            groups.Add(itemGroupDB);
                         }
-                    });
+                        else
+                        {
+                            ItemGroupDB itemGroupDB = new ItemGroupDB()
+                            {
+                                Name = group.Ime,
+                                IdSupergroup = group.Nadgrupa
+                            };
+                            await sqliteDbContext.ItemGroups.AddAsync(itemGroupDB);
+                            groups.Add(itemGroupDB);
+                        }
+                    }
+                });
 
-                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-                    return groups;
-                }
+                sqliteDbContext.SaveChanges();
+                return groups;
             }
             return null;
         }
-        public async Task<List<ItemDB>?> ImportItems()
+        public async Task<List<ItemDB>?> ImportItems(SqlServerDbContext sqliteDbContext)
         {
             string? path = SettingsManager.Instance.GetPathToImportItems();
 
@@ -144,61 +136,57 @@ namespace ClickBar_InputOutputExcelFiles
 
                 List<ItemExcel> excelItems = ImportExcel<ItemExcel>(path, "Proizvodi");
 
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                List<ItemDB> items = new List<ItemDB>();
+
+                excelItems.ForEach(async item =>
                 {
+                    ItemGroupDB? itemGroupDB = sqliteDbContext.ItemGroups.Find(item.Grupa);
 
-                    List<ItemDB> items = new List<ItemDB>();
-
-                    excelItems.ForEach(async item =>
+                    if (itemGroupDB != null)
                     {
-                        ItemGroupDB? itemGroupDB = sqliteDbContext.ItemGroups.Find(item.Grupa);
+                        ItemDB? i = sqliteDbContext.Items.Find(item.Šifra);
 
-                        if (itemGroupDB != null)
+                        if (i == null)
                         {
-                            ItemDB? i = sqliteDbContext.Items.Find(item.Šifra);
-
-                            if (i == null)
+                            i = new ItemDB()
                             {
-                                i = new ItemDB()
-                                {
-                                    Id = item.Šifra,
-                                    Label = item.Oznaka,
-                                    Name = item.Naziv,
-                                    Jm = item.JM,
-                                    IdItemGroup = item.Grupa,
-                                    SellingUnitPrice = item.Cena,
-                                    InputUnitPrice = 0,
-                                    TotalQuantity = item.Stanje,
-                                    AlarmQuantity = item.Alarm,
-                                    ItemGroupNavigation = itemGroupDB,
-                                    Procurements = new List<ProcurementDB>()
-                                };
-                                await sqliteDbContext.Items.AddAsync(i);
-                            }
-                            else
-                            {
-                                i.Label = item.Oznaka;
-                                i.Name = item.Naziv;
-                                i.Jm = item.JM;
-                                i.IdItemGroup = item.Grupa;
-                                i.SellingUnitPrice = item.Cena;
-                                i.TotalQuantity = item.Stanje;
-                                i.AlarmQuantity = item.Alarm;
-                                i.ItemGroupNavigation = itemGroupDB;
-
-                                sqliteDbContext.Items.Update(i);
-                            }
-                            items.Add(i);
+                                Id = item.Šifra,
+                                Label = item.Oznaka,
+                                Name = item.Naziv,
+                                Jm = item.JM,
+                                IdItemGroup = item.Grupa,
+                                SellingUnitPrice = item.Cena,
+                                InputUnitPrice = 0,
+                                TotalQuantity = item.Stanje,
+                                AlarmQuantity = item.Alarm,
+                                ItemGroupNavigation = itemGroupDB,
+                                Procurements = new List<ProcurementDB>()
+                            };
+                            await sqliteDbContext.Items.AddAsync(i);
                         }
-                    });
-                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                        else
+                        {
+                            i.Label = item.Oznaka;
+                            i.Name = item.Naziv;
+                            i.Jm = item.JM;
+                            i.IdItemGroup = item.Grupa;
+                            i.SellingUnitPrice = item.Cena;
+                            i.TotalQuantity = item.Stanje;
+                            i.AlarmQuantity = item.Alarm;
+                            i.ItemGroupNavigation = itemGroupDB;
 
-                    return items;
-                }
+                            sqliteDbContext.Items.Update(i);
+                        }
+                        items.Add(i);
+                    }
+                });
+                sqliteDbContext.SaveChanges();
+
+                return items;
             }
             return null;
         }
-        public async Task<List<CashierDB>?> ImportCashiers()
+        public async Task<List<CashierDB>?> ImportCashiers(SqlServerDbContext sqliteDbContext)
         {
             string? path = SettingsManager.Instance.GetPathToImportCashiers();
 
@@ -211,54 +199,50 @@ namespace ClickBar_InputOutputExcelFiles
 
                 List<CashierExcel> excelCashiers = ImportExcel<CashierExcel>(path, "Kasiri");
 
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                List<CashierDB> cashiers = new List<CashierDB>();
+
+                excelCashiers.ForEach(async cashier =>
                 {
+                    CashierDB? cashierDB = sqliteDbContext.Cashiers.Find(cashier.Šifra);
 
-                    List<CashierDB> cashiers = new List<CashierDB>();
-
-                    excelCashiers.ForEach(async cashier =>
+                    if (cashierDB != null)
                     {
-                        CashierDB? cashierDB = sqliteDbContext.Cashiers.Find(cashier.Šifra);
+                        cashierDB.Id = cashier.Šifra;
+                        cashierDB.Address = cashier.Adresa;
+                        cashierDB.City = cashier.Grad;
+                        cashierDB.Email = cashier.Email;
+                        cashierDB.Jmbg = cashier.Jmbg;
+                        cashierDB.Name = cashier.Ime;
+                        cashierDB.ContactNumber = cashier.Telefon;
+                        cashierDB.Type = cashier.Pozicija_Radnika;
 
-                        if (cashierDB != null)
+                        sqliteDbContext.Cashiers.Update(cashierDB);
+                    }
+                    else
+                    {
+                        cashierDB = new CashierDB()
                         {
-                            cashierDB.Id = cashier.Šifra;
-                            cashierDB.Address = cashier.Adresa;
-                            cashierDB.City = cashier.Grad;
-                            cashierDB.Email = cashier.Email;
-                            cashierDB.Jmbg = cashier.Jmbg;
-                            cashierDB.Name = cashier.Ime;
-                            cashierDB.ContactNumber = cashier.Telefon;
-                            cashierDB.Type = cashier.Pozicija_Radnika;
+                            Id = cashier.Šifra,
+                            Address = cashier.Adresa,
+                            City = cashier.Grad,
+                            Email = cashier.Email,
+                            Jmbg = cashier.Jmbg,
+                            Name = cashier.Ime,
+                            ContactNumber = cashier.Telefon,
+                            Type = cashier.Pozicija_Radnika
+                        };
+                        await sqliteDbContext.Cashiers.AddAsync(cashierDB);
+                    }
+                    cashiers.Add(cashierDB);
+                });
 
-                            sqliteDbContext.Cashiers.Update(cashierDB);
-                        }
-                        else
-                        {
-                            cashierDB = new CashierDB()
-                            {
-                                Id = cashier.Šifra,
-                                Address = cashier.Adresa,
-                                City = cashier.Grad,
-                                Email = cashier.Email,
-                                Jmbg = cashier.Jmbg,
-                                Name = cashier.Ime,
-                                ContactNumber = cashier.Telefon,
-                                Type = cashier.Pozicija_Radnika
-                            };
-                            await sqliteDbContext.Cashiers.AddAsync(cashierDB);
-                        }
-                        cashiers.Add(cashierDB);
-                    });
-
-                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-                    return cashiers;
-                }
+                sqliteDbContext.SaveChanges();
+                return cashiers;
             }
 
             return null;
         }
-        public async Task<bool> ExportItems()
+        public async Task<bool> ExportItems(SqlServerDbContext sqliteDbContext)
         {
             try
             {
@@ -266,30 +250,27 @@ namespace ClickBar_InputOutputExcelFiles
 
                 if (!string.IsNullOrEmpty(path))
                 {
-                    using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                    var itemsDB = sqliteDbContext.Items.ToList();
+
+                    List<ItemExcel> items = new List<ItemExcel>();
+                    itemsDB.ToList().ForEach(item =>
                     {
-                        var itemsDB = sqliteDbContext.Items.ToList();
-
-                        List<ItemExcel> items = new List<ItemExcel>();
-                        itemsDB.ToList().ForEach(item =>
+                        ItemExcel excelItem = new ItemExcel()
                         {
-                            ItemExcel excelItem = new ItemExcel()
-                            {
-                                Šifra = item.Id,
-                                Cena = item.SellingUnitPrice,
-                                Oznaka = item.Label,
-                                JM = item.Jm,
-                                Naziv = item.Name,
-                                Grupa = item.IdItemGroup,
-                                Stanje = item.TotalQuantity,
-                                Alarm = item.AlarmQuantity
-                            };
+                            Šifra = item.Id,
+                            Cena = item.SellingUnitPrice,
+                            Oznaka = item.Label,
+                            JM = item.Jm,
+                            Naziv = item.Name,
+                            Grupa = item.IdItemGroup,
+                            Stanje = item.TotalQuantity,
+                            Alarm = item.AlarmQuantity
+                        };
 
-                            items.Add(excelItem);
-                        });
+                        items.Add(excelItem);
+                    });
 
-                        return ExportExcel(items, path, "Proizvodi");
-                    }
+                    return ExportExcel(items, path, "Proizvodi");
                 }
 
                 return false;
@@ -299,34 +280,31 @@ namespace ClickBar_InputOutputExcelFiles
                 return false;
             }
         }
-        public async Task<bool> ExportCashiers()
+        public async Task<bool> ExportCashiers(SqlServerDbContext sqliteDbContext)
         {
             string? path = SettingsManager.Instance.GetPathToExportCashiers();
 
             if (!string.IsNullOrEmpty(path))
             {
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                List<CashierDB> cashiersDB = sqliteDbContext.Cashiers.ToList();
+
+                List<CashierExcel> cashiers = new List<CashierExcel>();
+                cashiersDB.ForEach(cashier =>
                 {
-                    List<CashierDB> cashiersDB = sqliteDbContext.Cashiers.ToList();
-
-                    List<CashierExcel> cashiers = new List<CashierExcel>();
-                    cashiersDB.ForEach(cashier =>
+                    cashiers.Add(new CashierExcel()
                     {
-                        cashiers.Add(new CashierExcel()
-                        {
-                            Adresa = cashier.Address,
-                            Email = cashier.Email,
-                            Grad = cashier.City,
-                            Ime = cashier.Name,
-                            Jmbg = cashier.Jmbg,
-                            Telefon = cashier.ContactNumber,
-                            Šifra = cashier.Id,
-                            Pozicija_Radnika = cashier.Type
-                        });
+                        Adresa = cashier.Address,
+                        Email = cashier.Email,
+                        Grad = cashier.City,
+                        Ime = cashier.Name,
+                        Jmbg = cashier.Jmbg,
+                        Telefon = cashier.ContactNumber,
+                        Šifra = cashier.Id,
+                        Pozicija_Radnika = cashier.Type
                     });
+                });
 
-                    return ExportExcel(cashiers, path, "Kasiri");
-                }
+                return ExportExcel(cashiers, path, "Kasiri");
             }
 
             return false;
@@ -340,26 +318,23 @@ namespace ClickBar_InputOutputExcelFiles
 
             return false;
         }
-        public async Task<bool> ExportGroups()
+        public async Task<bool> ExportGroups(SqlServerDbContext sqliteDbContext)
         {
             string? path = SettingsManager.Instance.GetPathToExportGroups();
 
             if (!string.IsNullOrEmpty(path))
             {
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
-                {
-                    List<ItemGroupDB> itemGroupDBs = sqliteDbContext.ItemGroups.ToList();
+                List<ItemGroupDB> itemGroupDBs = sqliteDbContext.ItemGroups.ToList();
 
-                    List<GroupExcel> groups = new List<GroupExcel>();
-                    itemGroupDBs.ForEach(group =>
+                List<GroupExcel> groups = new List<GroupExcel>();
+                itemGroupDBs.ForEach(group =>
+                {
+                    groups.Add(new GroupExcel()
                     {
-                        groups.Add(new GroupExcel()
-                        {
-                            Ime = group.Name
-                        });
+                        Ime = group.Name
                     });
-                    return ExportExcel(groups, path, "Grupe");
-                }
+                });
+                return ExportExcel(groups, path, "Grupe");
             }
 
             return false;

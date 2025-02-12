@@ -42,6 +42,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ClickBar_API\ClickBar_API.csproj" />
     <ProjectReference Include="..\ClickBar_Common\ClickBar_Common.csproj" />
+    <ProjectReference Include="..\ClickBar_DatabaseSQLManager\ClickBar_DatabaseSQLManager.csproj" />
     <ProjectReference Include="..\ClickBar_Database\ClickBar_Database.csproj" />
     <ProjectReference Include="..\ClickBar_Database_Drlja\ClickBar_Database_Drlja.csproj" />
     <ProjectReference Include="..\ClickBar_eFaktura\ClickBar_eFaktura.csproj" />
@@ -59,6 +60,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+    <PackageReference Include="PDFsharp" Version="6.1.1" />
     <PackageReference Include="System.IO.Ports" Version="7.0.0" />
   </ItemGroup>
 

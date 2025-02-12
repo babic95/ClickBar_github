@@ -1,6 +1,6 @@
 ﻿using ClickBar.ViewModels.AppMain.Statistic;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,36 +44,32 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
 
                     if (result == MessageBoxResult.Yes)
                     {
-                        using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                        if (string.IsNullOrEmpty(_currentViewModel.CurrentInventoryStatus.Item.Id))
                         {
-
-                            if (string.IsNullOrEmpty(_currentViewModel.CurrentInventoryStatus.Item.Id))
+                            var norm = _currentViewModel.Norma.FirstOrDefault(norm => norm.Item.Id == idItem);
+                            if (norm != null)
                             {
-                                var norm = _currentViewModel.Norma.FirstOrDefault(norm => norm.Item.Id == idItem);
-                                if (norm != null)
-                                {
-                                    _currentViewModel.Norma.Remove(norm);
-                                }
+                                _currentViewModel.Norma.Remove(norm);
                             }
-                            else
+                        }
+                        else
+                        {
+                            ItemDB? currentItemDB = _currentViewModel.DbContext.Items.Find(_currentViewModel.CurrentInventoryStatus.Item.Id);
+
+                            if (currentItemDB != null)
                             {
-                                ItemDB? currentItemDB = sqliteDbContext.Items.Find(_currentViewModel.CurrentInventoryStatus.Item.Id);
+                                var itemInNorm = _currentViewModel.DbContext.ItemsInNorm.FirstOrDefault(x => x.IdNorm == currentItemDB.IdNorm && x.IdItem == idItem);
 
-                                if (currentItemDB != null)
+                                if (itemInNorm != null)
                                 {
-                                    var itemInNorm = sqliteDbContext.ItemsInNorm.FirstOrDefault(x => x.IdNorm == currentItemDB.IdNorm && x.IdItem == idItem);
+                                    _currentViewModel.DbContext.ItemsInNorm.Remove(itemInNorm);
+                                    _currentViewModel.DbContext.SaveChanges();
 
-                                    if (itemInNorm != null)
+                                    var norm = _currentViewModel.Norma.FirstOrDefault(norm => norm.Item.Id == idItem);
+
+                                    if (norm != null)
                                     {
-                                        sqliteDbContext.ItemsInNorm.Remove(itemInNorm);
-                                        RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                                        var norm = _currentViewModel.Norma.FirstOrDefault(norm => norm.Item.Id == idItem);
-
-                                        if (norm != null)
-                                        {
-                                            _currentViewModel.Norma.Remove(norm);
-                                        }
+                                        _currentViewModel.Norma.Remove(norm);
                                     }
                                 }
                             }

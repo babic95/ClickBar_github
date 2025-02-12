@@ -1,6 +1,8 @@
 ﻿using ClickBar.Commands.AppMain.Statistic.Nivelacija;
 using ClickBar.Models.AppMain.Statistic;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -24,32 +26,37 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         private decimal _totalPdvNivelacija;
         private ObservableCollection<Nivelacija> _nivelacije;
         private Nivelacija _currentNivelacija;
+
+        private readonly IServiceProvider _serviceProvider; // Dodato za korišćenje IServiceProvider
         #endregion Fields
 
         #region Constructors
-        public ViewNivelacijaViewModel()
+        public ViewNivelacijaViewModel(IServiceProvider serviceProvider)
         {
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
             Nivelacije = new ObservableCollection<Nivelacija>();
 
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            var nivelacije = DbContext.Nivelacijas;
+
+            if (nivelacije != null &&
+                nivelacije.Any())
             {
-
-                var nivelacije = sqliteDbContext.Nivelacijas;
-
-                if (nivelacije != null)
+                nivelacije.ToList().ForEach(nivelacija =>
                 {
-                    nivelacije.ToList().ForEach(nivelacija =>
-                    {
-                        var niv = new Nivelacija(nivelacija);
+                    var niv = new Nivelacija(DbContext, nivelacija);
 
-                        Nivelacije.Add(niv);
-                    });
-                }
+                    Nivelacije.Add(niv);
+                });
             }
         }
         #endregion Constructors
 
         #region Properties internal
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
         internal decimal TotalNivelacija
         {
             get { return _totalNivelacija; }
@@ -151,7 +158,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
 
         #region Command
         public ICommand OpenNivelacijaItemsCommand => new OpenNivelacijaItemsCommand(this);
-        public ICommand PrintNivelacijaCommand => new PrintNivelacijaCommand(this); 
+        public ICommand PrintNivelacijaCommand => new PrintNivelacijaCommand(this);
         #endregion Command
 
         #region Public methods

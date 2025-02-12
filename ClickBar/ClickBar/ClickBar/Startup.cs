@@ -2,10 +2,6 @@
 using ClickBar_Mutex;
 using ClickBar_Settings;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ClickBar
@@ -22,14 +18,13 @@ namespace ClickBar
                 if (!appLock.TryAcquireExclusiveLock())
                 {
                     MessageBox.Show("CCS ClickBar je već pokrenut!", "", MessageBoxButton.OK, MessageBoxImage.Information);
-
                     return;
                 }
 
                 Logger.ConfigureLog(SettingsManager.Instance.GetLoggingFolderPath());
                 App app = new App();
                 app.InitializeComponent();
-                app.Run(new MainWindow());
+                app.Run();
             }
         }
     }

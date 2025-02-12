@@ -3,8 +3,8 @@ using ClickBar.Models.Sale;
 using ClickBar.ViewModels;
 using ClickBar.ViewModels.AppMain.Statistic;
 using ClickBar.Views.AppMain.AuxiliaryWindows.Statistic;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -87,45 +87,41 @@ namespace ClickBar.Commands.AppMain.Statistic
 #endif
                             AddEditItemWindow addEditItemWindow = new AddEditItemWindow(inventoryStatusViewModel);
 
-                            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                            ItemDB? itemDB = inventoryStatusViewModel.DbContext.Items.Find(item.Item.Id);
+
+                            if (itemDB != null)
                             {
+                                //var itemZelje = inventoryStatusViewModel.DbContext.Zelje.Where(x => x.ItemId == itemDB.Id);
 
-                                ItemDB? itemDB = sqliteDbContext.Items.Find(item.Item.Id);
+                                //if (itemZelje != null &&
+                                //    itemZelje.Any())
+                                //{
+                                //    itemZelje.ToList().ForEach(zelja =>
+                                //    {
+                                //        inventoryStatusViewModel.Zelje.Add(new ItemZelja()
+                                //        {
+                                //            Id = zelja.Id,
+                                //            ItemId = zelja.ItemId,
+                                //            Zelja = zelja.Zelja
+                                //        });
+                                //    });
+                                //}
 
-                                if (itemDB != null)
+                                var itemInNorm = inventoryStatusViewModel.DbContext.ItemsInNorm.Where(x => x.IdNorm == itemDB.IdNorm);
+
+                                if (itemInNorm.Any())
                                 {
-                                    //var itemZelje = sqliteDbContext.Zelje.Where(x => x.ItemId == itemDB.Id);
-
-                                    //if (itemZelje != null &&
-                                    //    itemZelje.Any())
-                                    //{
-                                    //    itemZelje.ToList().ForEach(zelja =>
-                                    //    {
-                                    //        inventoryStatusViewModel.Zelje.Add(new ItemZelja()
-                                    //        {
-                                    //            Id = zelja.Id,
-                                    //            ItemId = zelja.ItemId,
-                                    //            Zelja = zelja.Zelja
-                                    //        });
-                                    //    });
-                                    //}
-
-                                    var itemInNorm = sqliteDbContext.ItemsInNorm.Where(x => x.IdNorm == itemDB.IdNorm);
-
-                                    if (itemInNorm.Any())
+                                    itemInNorm.ToList().ForEach(item =>
                                     {
-                                        itemInNorm.ToList().ForEach(item =>
-                                        {
-                                            ItemDB? itemDB = sqliteDbContext.Items.Find(item.IdItem);
+                                        ItemDB? itemDB = inventoryStatusViewModel.DbContext.Items.Find(item.IdItem);
 
-                                            if (itemDB != null)
-                                            {
-                                                Item it = new Item(itemDB);
-                                                Invertory invertory = new Invertory(it, itemDB.IdItemGroup, item.Quantity, 0, 0, isSirovina);
-                                                inventoryStatusViewModel.Norma.Add(invertory);
-                                            }
-                                        });
-                                    }
+                                        if (itemDB != null)
+                                        {
+                                            Item it = new Item(itemDB);
+                                            Invertory invertory = new Invertory(it, itemDB.IdItemGroup, item.Quantity, 0, 0, isSirovina);
+                                            inventoryStatusViewModel.Norma.Add(invertory);
+                                        }
+                                    });
                                 }
                             }
 

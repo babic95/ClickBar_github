@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows;
 using ClickBar.Models.AppMain.Statistic;
-using ClickBar_Database.Models;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager.Models;
+using ClickBar_DatabaseSQLManager;
 using ClickBar_Logging;
 using ClickBar.Enums.AppMain.Statistic;
 
@@ -41,103 +41,100 @@ namespace ClickBar.Commands.AppMain.Statistic.PriceIncrease
 
                 if (result == MessageBoxResult.Yes)
                 {
-                    using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                    var groupSirovine = _currentViewModel.DbContext.ItemGroups.FirstOrDefault(group => group.Name.ToLower() == "sirovine" ||
+                    group.Name.ToLower() == "sirovina" || group.Name.ToLower() == "trosak" || group.Name.ToLower() == "troskovi");
+
+                    IEnumerable<ItemDB> items;
+
+                    if (_currentViewModel.CurrentGroup.Id == -1)
                     {
-
-                        var groupSirovine = sqliteDbContext.ItemGroups.FirstOrDefault(group => group.Name.ToLower() == "sirovine" ||
-                        group.Name.ToLower() == "sirovina" || group.Name.ToLower() == "trosak" || group.Name.ToLower() == "troskovi");
-
-                        IEnumerable<ItemDB> items;
-
-                        if (_currentViewModel.CurrentGroup.Id == -1)
+                        if (groupSirovine != null)
                         {
-                            if (groupSirovine != null)
-                            {
-                                items = sqliteDbContext.Items.Where(item => item.IdItemGroup != groupSirovine.Id);
-                            }
-                            else
-                            {
-                                items = sqliteDbContext.Items;
-                            }
+                            items = _currentViewModel.DbContext.Items.Where(item => item.IdItemGroup != groupSirovine.Id);
                         }
                         else
                         {
-                            if (groupSirovine != null)
-                            {
-                                items = sqliteDbContext.Items.Where(item => item.IdItemGroup == _currentViewModel.CurrentGroup.Id &&
-                                item.IdItemGroup != groupSirovine.Id);
-                            }
-                            else
-                            {
-                                items = sqliteDbContext.Items.Where(item => item.IdItemGroup == _currentViewModel.CurrentGroup.Id);
-                            }
+                            items = _currentViewModel.DbContext.Items;
                         }
-
-                        if (items != null &&
-                            items.Any())
+                    }
+                    else
+                    {
+                        if (groupSirovine != null)
                         {
+                            items = _currentViewModel.DbContext.Items.Where(item => item.IdItemGroup == _currentViewModel.CurrentGroup.Id &&
+                            item.IdItemGroup != groupSirovine.Id);
+                        }
+                        else
+                        {
+                            items = _currentViewModel.DbContext.Items.Where(item => item.IdItemGroup == _currentViewModel.CurrentGroup.Id);
+                        }
+                    }
+
+                    if (items != null &&
+                        items.Any())
+                    {
 #if CRNO
 #else
-                            var nivelacija = new Models.AppMain.Statistic.Nivelacija(sqliteDbContext, NivelacijaStateEnumeration.Sve);
-                            decimal totalNivelacija = 0;
-                            NivelacijaDB nivelacijaDB = new NivelacijaDB()
-                            {
-                                Id = nivelacija.Id,
-                                Counter = nivelacija.CounterNivelacije,
-                                DateNivelacije = nivelacija.NivelacijaDate,
-                                Description = nivelacija.Description,
-                                Type = (int)nivelacija.Type
-                            };
-                            sqliteDbContext.Nivelacijas.Add(nivelacijaDB);
-                            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-                            Log.Debug($"SetDnevneCeneCommand - Postavka na dnevne cene - Uspesno kreirana nivelacija {nivelacija.Id}");
+                        var nivelacija = new Models.AppMain.Statistic.Nivelacija(_currentViewModel.DbContext, 
+                            NivelacijaStateEnumeration.Sve);
+                        decimal totalNivelacija = 0;
+                        NivelacijaDB nivelacijaDB = new NivelacijaDB()
+                        {
+                            Id = nivelacija.Id,
+                            Counter = nivelacija.CounterNivelacije,
+                            DateNivelacije = nivelacija.NivelacijaDate,
+                            Description = nivelacija.Description,
+                            Type = (int)nivelacija.Type
+                        };
+                        _currentViewModel.DbContext.Nivelacijas.Add(nivelacijaDB);
+                        _currentViewModel.DbContext.SaveChanges();
+                        Log.Debug($"SetDnevneCeneCommand - Postavka na dnevne cene - Uspesno kreirana nivelacija {nivelacija.Id}");
 
 
 #endif
 
 
-                            items.ToList().ForEach(itemDB =>
-                            {
+                        items.ToList().ForEach(itemDB =>
+                        {
 #if CRNO
                                 if (itemDB.SellingDnevnaUnitPrice != itemDB.SellingUnitPrice &&
                                 itemDB.SellingDnevnaUnitPrice > 0)
                                 {
                                     itemDB.SellingUnitPrice = itemDB.SellingDnevnaUnitPrice;
-                                    sqliteDbContext.Items.Update(itemDB);
+                                    _currentViewModel.DbContext.Items.Update(itemDB);
                                 }
 #else
-                                Models.Sale.Item item = new Models.Sale.Item(itemDB);
-                                if (item.SellingUnitPrice != item.SellingDnevnaUnitPrice &&
-                                item.SellingDnevnaUnitPrice > 0)
-                                {
-                                    item.SellingUnitPrice = item.SellingDnevnaUnitPrice;
+                            Models.Sale.Item item = new Models.Sale.Item(itemDB);
+                            if (item.SellingUnitPrice != item.SellingDnevnaUnitPrice &&
+                            item.SellingDnevnaUnitPrice > 0)
+                            {
+                                item.SellingUnitPrice = item.SellingDnevnaUnitPrice;
 
-                                    AddNivelacijaItem(sqliteDbContext, item, itemDB, nivelacija, ref totalNivelacija);
-                                }
+                                AddNivelacijaItem(item, itemDB, nivelacija, ref totalNivelacija);
+                            }
 #endif
-                            });
+                        });
 
-                            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-                            MessageBox.Show("Uspešna izmena cena!", "Uspešno", MessageBoxButton.OK, MessageBoxImage.Information);
+                        _currentViewModel.DbContext.SaveChanges();
+                        MessageBox.Show("Uspešna izmena cena!", "Uspešno", MessageBoxButton.OK, MessageBoxImage.Information);
 #if CRNO
 #else
-                            KepDB kepDB = new KepDB()
-                            {
-                                Id = Guid.NewGuid().ToString(),
-                                KepDate = nivelacijaDB.DateNivelacije,
-                                Type = (int)KepStateEnumeration.Nivelacija,
-                                Razduzenje = 0,
-                                Zaduzenje = totalNivelacija,
-                                Description = $"Ručna nivelacija svih proizvoda 'Nivelacija_{nivelacijaDB.Counter}-{nivelacijaDB.DateNivelacije.Year}'"
-                            };
-                            sqliteDbContext.Kep.Add(kepDB);
-                            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-#endif
-                        }
-                        else
+                        KepDB kepDB = new KepDB()
                         {
-                            MessageBox.Show("Nema artikala u zadatoj grupi!", "Nema artikala", MessageBoxButton.OK, MessageBoxImage.Error);
-                        }
+                            Id = Guid.NewGuid().ToString(),
+                            KepDate = nivelacijaDB.DateNivelacije,
+                            Type = (int)KepStateEnumeration.Nivelacija,
+                            Razduzenje = 0,
+                            Zaduzenje = totalNivelacija,
+                            Description = $"Ručna nivelacija svih proizvoda 'Nivelacija_{nivelacijaDB.Counter}-{nivelacijaDB.DateNivelacije.Year}'"
+                        };
+                        _currentViewModel.DbContext.Kep.Add(kepDB);
+                        _currentViewModel.DbContext.SaveChanges();
+#endif
+                    }
+                    else
+                    {
+                        MessageBox.Show("Nema artikala u zadatoj grupi!", "Nema artikala", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                     _currentViewModel.Total = 0;
                 }
@@ -147,15 +144,14 @@ namespace ClickBar.Commands.AppMain.Statistic.PriceIncrease
                 MessageBox.Show("Desila se greška!\nPozovite proizvodjača!", "", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        private void AddNivelacijaItem(SqliteDbContext sqliteDbContext,
-            Models.Sale.Item item,
+        private void AddNivelacijaItem(Models.Sale.Item item,
             ItemDB itemDB,
             Models.AppMain.Statistic.Nivelacija nivelacija,
             ref decimal totalNivelacija)
         {
             try
             {
-                var nivelacijaItem = new NivelacijaItem(item);
+                var nivelacijaItem = new NivelacijaItem(_currentViewModel.DbContext, item);
                 nivelacijaItem.OldPrice = itemDB.SellingUnitPrice;
                 nivelacijaItem.NewPrice = item.SellingUnitPrice;
 
@@ -168,12 +164,12 @@ namespace ClickBar.Commands.AppMain.Statistic.PriceIncrease
                     StopaPDV = nivelacijaItem.StopaPDV,
                     TotalQuantity = itemDB.TotalQuantity,
                 };
-                sqliteDbContext.ItemsNivelacija.Add(itemNivelacijaDB);
+                _currentViewModel.DbContext.ItemsNivelacija.Add(itemNivelacijaDB);
 
                 itemDB.SellingUnitPrice = nivelacijaItem.NewPrice;
-                sqliteDbContext.Items.Update(itemDB);
+                _currentViewModel.DbContext.Items.Update(itemDB);
 
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                _currentViewModel.DbContext.SaveChanges();
 
                 Log.Debug($"SetDnevneCeneCommand - AddNivelacijaItem - Uspesno sacuvan artikal {item.Id} za nivelaciju {nivelacija.Id}");
 

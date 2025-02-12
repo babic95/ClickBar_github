@@ -1,6 +1,6 @@
 ﻿using ClickBar.Models.Sale;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using SQLitePCL;
 using System;
 using System.Collections.Generic;
@@ -26,9 +26,11 @@ namespace ClickBar.Models.AppMain.Statistic
         private string _idItem;
         private decimal _lastImportPrice;
 
-        public NivelacijaItem(SqliteDbContext sqliteDbContext, ItemNivelacijaDB itemNivelacijaDB)
+        public NivelacijaItem(SqlServerDbContext sqliteDbContext,
+            ItemNivelacijaDB itemNivelacijaDB)
         {
             LastImportPrice = 0;
+
             var itemDB = sqliteDbContext.Items.Find(itemNivelacijaDB.IdItem);
 
             if (itemDB != null)
@@ -39,7 +41,7 @@ namespace ClickBar.Models.AppMain.Statistic
                     (calculation, calculationItem) => new { Cal = calculation, CalItem = calculationItem })
                     .Where(cal => cal.CalItem.ItemId == itemDB.Id);
 
-                if(calculationForItem != null &&
+                if (calculationForItem != null &&
                     calculationForItem.Any())
                 {
                     var lastCalculation = calculationForItem.ToList().MaxBy(cal => cal.Cal.CalculationDate);
@@ -65,10 +67,9 @@ namespace ClickBar.Models.AppMain.Statistic
             }
         }
 
-        public NivelacijaItem(Item item)
+        public NivelacijaItem(SqlServerDbContext sqliteDbContext, 
+            Item item)
         {
-            SqliteDbContext sqliteDbContext= new SqliteDbContext();
-
             StopaPDV = item.Label == "Ђ" || item.Label == "6" ? 20 :
                 item.Label == "Е" || item.Label == "7" ? 10 :
                 item.Label == "А" || item.Label == "1" ? 0 :

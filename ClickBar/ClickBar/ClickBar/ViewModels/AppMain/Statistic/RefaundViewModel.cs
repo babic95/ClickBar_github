@@ -6,14 +6,15 @@ using ClickBar.Models.Sale;
 using ClickBar.ViewModels.Sale;
 using ClickBar_Common.Models.Invoice;
 using ClickBar_Common.Models.Invoice.FileSystemWatcher;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Logging;
 using ClickBar_Printer;
 using ClickBar_Settings;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Vml;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -45,6 +46,8 @@ namespace ClickBar.ViewModels.AppMain.Statistic
     public class RefaundViewModel : ViewModelBase
     {
         #region Fields
+        private IServiceProvider _serviceProvider;
+
         private const int ERROR_SHARING_VIOLATION = 32;
         private const int ERROR_LOCK_VIOLATION = 33;
 
@@ -68,16 +71,24 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #endregion Fields
 
         #region Constructors
-        public RefaundViewModel(CashierDB loggedCashier, AppMainViewModel mainViewModel)
+        public RefaundViewModel(IServiceProvider serviceProvider)
         {
-            LoggedCashier = loggedCashier;
-            _mainViewModel = mainViewModel;
+            _serviceProvider = serviceProvider;
+
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            LoggedCashier = serviceProvider.GetRequiredService<CashierDB>();
+            _mainViewModel = serviceProvider.GetRequiredService<AppMainViewModel>();
+            RefaundCommand = serviceProvider.GetRequiredService<RefaundCommand>();
 
             Initialize();
         }
         #endregion Constructors
 
         #region Properties Internal
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
         internal InvoiceResult CurrentInvoiceResult { get; set; }
         //internal InvoiceRequest CurrentInvoiceRequest { get; set; }
         internal InvoceRequestFileSystemWatcher CurrentInvoiceRequest { get; set; }
@@ -389,7 +400,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         //public ICommand ChangeFocusCommand => new ChangeFocusCommand(this);
         public ICommand UpdateCurrentViewModelCommand => new UpdateCurrentViewModelCommand(_mainViewModel);
         public ICommand CancelCurrentRefaundInvoiceCommand => new CancelCurrentRefaundInvoiceCommand(this);
-        public ICommand RefaundCommand => new RefaundCommand(this);
+        public ICommand RefaundCommand { get; }
         public ICommand EfakturaCommand => new EfakturaCommand(this);
         public ICommand ShowInvoiceCommand => new ShowInvoiceCommand(this);
         //public ICommand RefundPerItemCommand => new RefundPerItemCommand(this);
@@ -401,93 +412,89 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         {
             try
             {
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                string json = JsonConvert.SerializeObject(CurrentInvoiceRequest);
+
+                string? inDirectory = SettingsManager.Instance.GetInDirectory();
+
+                if (string.IsNullOrEmpty(inDirectory))
                 {
+                    MessageBox.Show("Putanja do ulaznog foldera nije setovana! Račun ne moze da se fiskalizuje.",
+                        "Ulazni folder",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
 
-                    string json = JsonConvert.SerializeObject(CurrentInvoiceRequest);
+                    return;
+                }
+                else
+                {
+                    string invoiceName = $"InvoiceRefaund_{DateTime.Now.ToString("dd-MM-yyyy HH-mm-ss")}.json";
+                    string jsonPath = System.IO.Path.Combine(inDirectory, invoiceName);
 
-                    string? inDirectory = SettingsManager.Instance.GetInDirectory();
+                    File.WriteAllText(jsonPath, json);
 
-                    if (string.IsNullOrEmpty(inDirectory))
+                    Task.Run(() =>
                     {
-                        MessageBox.Show("Putanja do ulaznog foldera nije setovana! Račun ne moze da se fiskalizuje.",
-                            "Ulazni folder",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Error);
+                        string? outDirectory = SettingsManager.Instance.GetOutDirectory();
+                        string jsonOutPath = System.IO.Path.Combine(outDirectory, invoiceName);
 
-                        return;
-                    }
-                    else
-                    {
-                        string invoiceName = $"InvoiceRefaund_{DateTime.Now.ToString("dd-MM-yyyy HH-mm-ss")}.json";
-                        string jsonPath = System.IO.Path.Combine(inDirectory, invoiceName);
+                        _timer = DateTime.Now;
+                        while (IsFileLocked(jsonOutPath)) ;
 
-                        File.WriteAllText(jsonPath, json);
-
-                        Task.Run(() =>
+                        try
                         {
-                            string? outDirectory = SettingsManager.Instance.GetOutDirectory();
-                            string jsonOutPath = System.IO.Path.Combine(outDirectory, invoiceName);
-
-                            _timer = DateTime.Now;
-                            while (IsFileLocked(jsonOutPath)) ;
-
-                            try
+                            using (StreamReader r = new StreamReader(jsonOutPath))
                             {
-                                using (StreamReader r = new StreamReader(jsonOutPath))
+                                string response = r.ReadToEnd();
+
+                                ResponseJson? responseJson = JsonConvert.DeserializeObject<ResponseJson>(response);
+
+                                if (responseJson != null)
                                 {
-                                    string response = r.ReadToEnd();
-
-                                    ResponseJson? responseJson = JsonConvert.DeserializeObject<ResponseJson>(response);
-
-                                    if (responseJson != null)
+                                    if (responseJson.Message.Contains("Uspešna fiskalizacija"))
                                     {
-                                        if (responseJson.Message.Contains("Uspešna fiskalizacija"))
+                                        try
                                         {
-                                            try
-                                            {
-                                                SaveToDB(CurrentInvoiceRequest, responseJson, eFaktura);
+                                            SaveToDB(CurrentInvoiceRequest, responseJson, eFaktura);
 
-                                                Initialize();
-                                            }
-                                            catch
-                                            {
-                                                MessageBox.Show("GREŠKA PRILIKOM UPISA U BAZU!", "", MessageBoxButton.OK, MessageBoxImage.Error);
-                                            }
+                                            Initialize();
                                         }
-                                        else
+                                        catch
                                         {
-                                            MessageBox.Show("PROVERITE ESIR I LPFR!", "", MessageBoxButton.OK, MessageBoxImage.Error);
+                                            MessageBox.Show("GREŠKA PRILIKOM UPISA U BAZU!", "", MessageBoxButton.OK, MessageBoxImage.Error);
                                         }
+                                    }
+                                    else
+                                    {
+                                        MessageBox.Show("PROVERITE ESIR I LPFR!", "", MessageBoxButton.OK, MessageBoxImage.Error);
                                     }
                                 }
                             }
-                            catch (Exception ex)
-                            {
-                                Log.Error("PayCommand -> FinisedSale -> ", ex);
-                                MessageBox.Show("GREŠKA U PROVERI IZLAZNOG FAJLA!\nPROVERITE DA LI JE ESIR POKRENUT", "", MessageBoxButton.OK, MessageBoxImage.Error);
-                            }
-                        });
-                    }
-
-
-                    //List<ItemInvoiceDB> itemsInvoice = await sqliteDbContext.GetAllItemsFromInvoice(CurrentInvoice.Id);
-
-                    //CurrentInvoiceRequest.Cashier = LoggedCashier.Name;
-
-                    //Guid guid = Guid.NewGuid();
-                    //sqliteDbContext.InsertInvoice(guid, CurrentInvoiceRequest, itemsInvoice);
-
-                    //if (SendInvoiceToESDC(guid, CurrentInvoiceRequest, payRefaundViewModel.RefaundCash).Result)
-                    //{
-                    //    ResetAll();
-                    //    InvoiceType = InvoiceTypeEnumeration.Promet;
-                    //}
-                    //else
-                    //{
-                    //    MessageBox.Show("Greška u komunikaciji sa L-PFR-om, proverite Vaš L-PFR!", "", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    //}
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error("PayCommand -> FinisedSale -> ", ex);
+                            MessageBox.Show("GREŠKA U PROVERI IZLAZNOG FAJLA!\nPROVERITE DA LI JE ESIR POKRENUT", "", MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
+                    });
                 }
+
+
+                //List<ItemInvoiceDB> itemsInvoice = await sqliteDbContext.GetAllItemsFromInvoice(CurrentInvoice.Id);
+
+                //CurrentInvoiceRequest.Cashier = LoggedCashier.Name;
+
+                //Guid guid = Guid.NewGuid();
+                //sqliteDbContext.InsertInvoice(guid, CurrentInvoiceRequest, itemsInvoice);
+
+                //if (SendInvoiceToESDC(guid, CurrentInvoiceRequest, payRefaundViewModel.RefaundCash).Result)
+                //{
+                //    ResetAll();
+                //    InvoiceType = InvoiceTypeEnumeration.Promet;
+                //}
+                //else
+                //{
+                //    MessageBox.Show("Greška u komunikaciji sa L-PFR-om, proverite Vaš L-PFR!", "", MessageBoxButton.OK, MessageBoxImage.Warning);
+                //}
             }
             catch (Exception ex)
             {
@@ -507,7 +514,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         //        {
         //            PrinterManager.Instance.PrintJournal(invoiceResult, invoiceRequest);
 
-        //            SqliteDbContext sqliteDbContext = new SqliteDbContext();
+        //            SqlServerDbContext sqliteDbContext = new SqlServerDbContext();
         //            sqliteDbContext.UpdateInvoice(guid, invoiceResult);
 
 
@@ -593,36 +600,32 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             {
                 SelectedDateForRefund = DateTime.Now;
 
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                AllInvoicesInDate = new List<Invoice>();
+                var invoices = DbContext.Invoices.Where(invoice =>
+                invoice.TransactionType == (int)ClickBar_Common.Enums.TransactionTypeEnumeration.Sale &&
+                invoice.SdcDateTime.HasValue &&
+                invoice.SdcDateTime.Value.Date == SelectedDateForRefund.Date);
+
+                var invoicesRefaund = DbContext.Invoices.Where(invoice =>
+                invoice.TransactionType == (int)ClickBar_Common.Enums.TransactionTypeEnumeration.Refund &&
+                invoice.SdcDateTime.HasValue);
+
+                if (invoices != null &&
+                    invoices.Any())
                 {
-
-                    AllInvoicesInDate = new List<Invoice>();
-                    var invoices = sqliteDbContext.Invoices.Where(invoice =>
-                    invoice.TransactionType == (int)ClickBar_Common.Enums.TransactionTypeEnumeration.Sale &&
-                    invoice.SdcDateTime.HasValue &&
-                    invoice.SdcDateTime.Value.Date == SelectedDateForRefund.Date);
-
-                    var invoicesRefaund = sqliteDbContext.Invoices.Where(invoice =>
-                    invoice.TransactionType == (int)ClickBar_Common.Enums.TransactionTypeEnumeration.Refund &&
-                    invoice.SdcDateTime.HasValue);
-
-                    if (invoices != null &&
-                        invoices.Any())
+                    invoices.ToList().ForEach(invoice =>
                     {
-                        invoices.ToList().ForEach(invoice =>
+                        if (invoicesRefaund.FirstOrDefault(inv => inv.ReferentDocumentNumber == invoice.InvoiceNumberResult) == null &&
+                            !string.IsNullOrEmpty(invoice.InvoiceNumberResult))
                         {
-                            if (invoicesRefaund.FirstOrDefault(inv => inv.ReferentDocumentNumber == invoice.InvoiceNumberResult) == null &&
-                                !string.IsNullOrEmpty(invoice.InvoiceNumberResult))
-                            {
-                                AllInvoicesInDate.Add(new Invoice(invoice, AllInvoicesInDate.Count + 1));
-                            }
-                        });
-                    }
-                    CurrentInvoice = null;
-                    SearchInvoices = new ObservableCollection<Invoice>(AllInvoicesInDate);
-
-                    InvoiceType = InvoiceTypeEnumeration.Promet;
+                            AllInvoicesInDate.Add(new Invoice(invoice, AllInvoicesInDate.Count + 1));
+                        }
+                    });
                 }
+                CurrentInvoice = null;
+                SearchInvoices = new ObservableCollection<Invoice>(AllInvoicesInDate);
+
+                InvoiceType = InvoiceTypeEnumeration.Promet;
             }
             catch (Exception ex)
             {
@@ -672,35 +675,32 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         }
         private async Task<InvoceRequestFileSystemWatcher> CreateCopyInvoice(InvoiceResult invoiceResult)
         {
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            var invoiceDB = DbContext.Invoices.FirstOrDefault(invoice => invoice.InvoiceNumberResult == invoiceResult.InvoiceNumber);
+
+            if (invoiceDB != null)
             {
-                var invoiceDB = sqliteDbContext.Invoices.FirstOrDefault(invoice => invoice.InvoiceNumberResult == invoiceResult.InvoiceNumber);
+                var itemsInvoice = DbContext.ItemInvoices.Where(invoice => invoice.InvoiceId == invoiceDB.Id &&
+                                (invoice.IsSirovina == null || invoice.IsSirovina == 0));
 
-                if (invoiceDB != null)
+                if (itemsInvoice != null)
                 {
-                    var itemsInvoice = sqliteDbContext.ItemInvoices.Where(invoice => invoice.InvoiceId == invoiceDB.Id &&
-                                    (invoice.IsSirovina == null || invoice.IsSirovina == 0));
+                    List<ClickBar_Common.Models.Invoice.Item> items = new List<ClickBar_Common.Models.Invoice.Item>();
 
-                    if (itemsInvoice != null)
+                    InvoceRequestFileSystemWatcher invoiceRequest = new InvoceRequestFileSystemWatcher()
                     {
-                        List<ClickBar_Common.Models.Invoice.Item> items = new List<ClickBar_Common.Models.Invoice.Item>();
-
-                        InvoceRequestFileSystemWatcher invoiceRequest = new InvoceRequestFileSystemWatcher()
-                        {
-                            BuyerId = CurrentInvoiceRequest.BuyerId,
-                            Cashier = LoggedCashier.Name,
-                            InvoiceType = ClickBar_Common.Enums.InvoiceTypeEenumeration.Copy,
-                            TransactionType = ClickBar_Common.Enums.TransactionTypeEnumeration.Refund,
-                            Items = CurrentInvoiceRequest.Items,
-                            Payment = CurrentInvoiceRequest.Payment,
-                            ReferentDocumentNumber = invoiceResult.InvoiceNumber,
-                            ReferentDocumentDT = invoiceResult.SdcDateTime,
-                        };
-                        return invoiceRequest;
-                    }
+                        BuyerId = CurrentInvoiceRequest.BuyerId,
+                        Cashier = LoggedCashier.Name,
+                        InvoiceType = ClickBar_Common.Enums.InvoiceTypeEenumeration.Copy,
+                        TransactionType = ClickBar_Common.Enums.TransactionTypeEnumeration.Refund,
+                        Items = CurrentInvoiceRequest.Items,
+                        Payment = CurrentInvoiceRequest.Payment,
+                        ReferentDocumentNumber = invoiceResult.InvoiceNumber,
+                        ReferentDocumentDT = invoiceResult.SdcDateTime,
+                    };
+                    return invoiceRequest;
                 }
-                return null;
             }
+            return null;
         }
         private void Search()
         {
@@ -862,248 +862,242 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         }
         private async Task<InvoiceDB> InsertInvoiceInDB(InvoceRequestFileSystemWatcher invoiceRequset, ResponseJson responseJson)
         {
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            decimal total = 0;
+
+            invoiceRequset.Items.ToList().ForEach(item =>
             {
+                total += item.TotalAmount;
+            });
 
-                decimal total = 0;
-
-                invoiceRequset.Items.ToList().ForEach(item =>
-                {
-                    total += item.TotalAmount;
-                });
-
-                InvoiceDB invoiceDB = new InvoiceDB()
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Cashier = LoggedCashier.Id,
-                    InvoiceType = (int)invoiceRequset.InvoiceType,
-                    TransactionType = (int)invoiceRequset.TransactionType,
-                    SdcDateTime = Convert.ToDateTime(responseJson.DateTime),
-                    TotalAmount = total,
-                    InvoiceCounter = responseJson.TotalInvoiceNumber,
-                    InvoiceNumberResult = responseJson.InvoiceNumber,
-                    BuyerId = invoiceRequset.BuyerId,
-                    BuyerName = invoiceRequset.BuyerName,
-                    BuyerAddress = invoiceRequset.BuyerAddress,
-                    ReferentDocumentNumber = invoiceRequset.ReferentDocumentNumber,
-                    ReferentDocumentDt = invoiceRequset.ReferentDocumentDT
-                };
-
-                sqliteDbContext.Add(invoiceDB);
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                int itemInvoiceId = 0;
-                invoiceRequset.Items.ToList().ForEach(item =>
-                {
-                    ItemDB? itemDB = sqliteDbContext.Items.Find(item.Id);
-                    if (itemDB != null)
-                    {
-                        if (itemDB.IdNorm != null)
-                        {
-                            var norms = sqliteDbContext.ItemsInNorm.Where(norm => norm.IdNorm == itemDB.IdNorm);
-
-                            if (norms != null &&
-                            norms.Any())
-                            {
-                                norms.ForEachAsync(norm =>
-                                {
-                                    var normItem = sqliteDbContext.Items.Find(norm.IdItem);
-
-                                    if (normItem != null)
-                                    {
-                                        var itemInvoice = new ItemInvoiceDB()
-                                        {
-                                            Id = itemInvoiceId++,
-                                            Quantity = item.Quantity * norm.Quantity,
-                                            TotalAmout = item.Quantity * norm.Quantity * itemDB.SellingUnitPrice,
-                                            Label = itemDB.Label,
-                                            Name = itemDB.Name,
-                                            UnitPrice = itemDB.SellingUnitPrice,
-                                            ItemCode = itemDB.Id,
-                                            OriginalUnitPrice = itemDB.SellingUnitPrice,
-                                            InvoiceId = invoiceDB.Id,
-                                            IsSirovina = 1,
-                                            //Item = itemDB
-                                        };
-                                        sqliteDbContext.Add(itemInvoice);
-                                    }
-                                });
-                            }
-                        }
-
-                        var itemInvoice = new ItemInvoiceDB()
-                        {
-                            Id = itemInvoiceId++,
-                            Quantity = item.Quantity,
-                            TotalAmout = item.Quantity * item.UnitPrice,
-                            Label = item.Label,
-                            Name = item.Name,
-                            UnitPrice = item.UnitPrice,
-                            ItemCode = item.Id,
-                            OriginalUnitPrice = itemDB.SellingUnitPrice,
-                            InvoiceId = invoiceDB.Id,
-                            IsSirovina = 0
-                            //Item = itemDB
-                        };
-
-                        sqliteDbContext.Add(itemInvoice);
-                    }
-                });
-
-                invoiceRequset.Payment.ToList().ForEach(payment =>
-                {
-                    PaymentInvoiceDB paymentInvoice = new PaymentInvoiceDB()
-                    {
-                        InvoiceId = invoiceDB.Id,
-                        Amout = payment.Amount,
-                        PaymentType = payment.PaymentType
-                    };
-
-                    sqliteDbContext.PaymentInvoices.Add(paymentInvoice);
-                });
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                if (responseJson.TaxItems != null &&
-                    responseJson.TaxItems.Any())
-                {
-                    responseJson.TaxItems.ToList().ForEach(taxItem =>
-                    {
-                        TaxItemInvoiceDB taxItemInvoiceDB = new TaxItemInvoiceDB()
-                        {
-                            Amount = taxItem.Amount,
-                            CategoryName = taxItem.CategoryName,
-                            CategoryType = (int)taxItem.CategoryType.Value,
-                            Label = taxItem.Label,
-                            Rate = taxItem.Rate,
-                            InvoiceId = invoiceDB.Id
-                        };
-
-                        sqliteDbContext.TaxItemInvoices.Add(taxItemInvoiceDB);
-                    });
-                }
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                return invoiceDB;
-            }
-        }
-        private async Task TakingUpNorm(InvoiceDB invoice)
-        {
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            InvoiceDB invoiceDB = new InvoiceDB()
             {
-                List<ItemDB> itemsForCondition = new List<ItemDB>();
+                Id = Guid.NewGuid().ToString(),
+                Cashier = LoggedCashier.Id,
+                InvoiceType = (int)invoiceRequset.InvoiceType,
+                TransactionType = (int)invoiceRequset.TransactionType,
+                SdcDateTime = Convert.ToDateTime(responseJson.DateTime),
+                TotalAmount = total,
+                InvoiceCounter = responseJson.TotalInvoiceNumber,
+                InvoiceNumberResult = responseJson.InvoiceNumber,
+                BuyerId = invoiceRequset.BuyerId,
+                BuyerName = invoiceRequset.BuyerName,
+                BuyerAddress = invoiceRequset.BuyerAddress,
+                ReferentDocumentNumber = invoiceRequset.ReferentDocumentNumber,
+                ReferentDocumentDt = invoiceRequset.ReferentDocumentDT
+            };
 
-                invoice.ItemInvoices.ToList().ForEach(item =>
+            DbContext.Add(invoiceDB);
+            DbContext.SaveChanges();
+
+            int itemInvoiceId = 0;
+            invoiceRequset.Items.ToList().ForEach(item =>
+            {
+                ItemDB? itemDB = DbContext.Items.Find(item.Id);
+                if (itemDB != null)
                 {
-                    var it = sqliteDbContext.Items.Find(item.ItemCode);
-                    if (it != null &&
-                    item.Quantity.HasValue)
+                    if (itemDB.IdNorm != null)
                     {
-                        var itemInNorm = sqliteDbContext.ItemsInNorm.Where(norm => it.IdNorm == norm.IdNorm);
+                        var norms = DbContext.ItemsInNorm.Where(norm => norm.IdNorm == itemDB.IdNorm);
 
-                        if (itemInNorm != null &&
-                        itemInNorm.Any())
+                        if (norms != null &&
+                        norms.Any())
                         {
-                            itemInNorm.ForEachAsync(norm =>
+                            norms.ForEachAsync(norm =>
                             {
-                                var itm = sqliteDbContext.Items.Find(norm.IdItem);
+                                var normItem = DbContext.Items.Find(norm.IdItem);
 
-                                if (itm != null)
+                                if (normItem != null)
                                 {
-                                    if (itm.IdNorm == null)
+                                    var itemInvoice = new ItemInvoiceDB()
                                     {
-                                        itm.TotalQuantity += item.Quantity.Value * norm.Quantity;
-                                        sqliteDbContext.Items.Update(itm);
-                                    }
-                                    else
-                                    {
-                                        var itemInNorm2 = sqliteDbContext.ItemsInNorm.Where(norm => itm.IdNorm == norm.IdNorm);
-                                        if (itemInNorm2.Any())
-                                        {
-                                            itemInNorm2.ToList().ForEach(norm2 =>
-                                            {
-                                                var itm2 = sqliteDbContext.Items.Find(norm2.IdItem);
-
-                                                if (itm2 != null)
-                                                {
-                                                    if (itm2.IdNorm == null)
-                                                    {
-                                                        itm2.TotalQuantity += item.Quantity.Value * norm.Quantity * norm2.Quantity;
-                                                        sqliteDbContext.Items.Update(itm2);
-                                                    }
-                                                    else
-                                                    {
-                                                        var itemInNorm3 = sqliteDbContext.ItemsInNorm.Where(norm => itm2.IdNorm == norm2.IdNorm);
-                                                        if (itemInNorm3.Any())
-                                                        {
-                                                            itemInNorm3.ToList().ForEach(norm3 =>
-                                                            {
-                                                                var itm3 = sqliteDbContext.Items.Find(norm3.IdItem);
-
-                                                                if (itm3 != null)
-                                                                {
-                                                                    if (itm3.IdNorm == null)
-                                                                    {
-                                                                        itm3.TotalQuantity += item.Quantity.Value * norm.Quantity * norm2.Quantity * norm3.Quantity;
-                                                                        sqliteDbContext.Items.Update(itm3);
-                                                                    }
-                                                                }
-                                                            });
-                                                        }
-                                                        else
-                                                        {
-                                                            itm2.TotalQuantity += item.Quantity.Value * norm.Quantity * norm2.Quantity;
-                                                            sqliteDbContext.Items.Update(itm2);
-                                                        }
-                                                    }
-                                                }
-                                            });
-                                        }
-                                        else
-                                        {
-                                            itm.TotalQuantity += item.Quantity.Value * norm.Quantity;
-                                            sqliteDbContext.Items.Update(itm);
-                                        }
-                                    }
+                                        Id = itemInvoiceId++,
+                                        Quantity = item.Quantity * norm.Quantity,
+                                        TotalAmout = item.Quantity * norm.Quantity * itemDB.SellingUnitPrice,
+                                        Label = itemDB.Label,
+                                        Name = itemDB.Name,
+                                        UnitPrice = itemDB.SellingUnitPrice,
+                                        ItemCode = itemDB.Id,
+                                        OriginalUnitPrice = itemDB.SellingUnitPrice,
+                                        InvoiceId = invoiceDB.Id,
+                                        IsSirovina = 1,
+                                        //Item = itemDB
+                                    };
+                                    DbContext.Add(itemInvoice);
                                 }
                             });
                         }
-                        else
-                        {
-                            it.TotalQuantity += item.Quantity.Value;
-                            sqliteDbContext.Items.Update(it);
-                        }
                     }
-                    //var it = sqliteDbContext.Items.Find(item.ItemCode);
-                    //if (it != null && item.Quantity.HasValue)
-                    //{
-                    //    var itemInNorm = sqliteDbContext.ItemsInNorm.Where(norm => it.IdNorm == norm.IdNorm);
 
-                    //    if (itemInNorm.Any())
-                    //    {
-                    //        itemInNorm.ToList().ForEach(norm =>
-                    //        {
-                    //            var itm = sqliteDbContext.Items.Find(norm.IdItem);
+                    var itemInvoice = new ItemInvoiceDB()
+                    {
+                        Id = itemInvoiceId++,
+                        Quantity = item.Quantity,
+                        TotalAmout = item.Quantity * item.UnitPrice,
+                        Label = item.Label,
+                        Name = item.Name,
+                        UnitPrice = item.UnitPrice,
+                        ItemCode = item.Id,
+                        OriginalUnitPrice = itemDB.SellingUnitPrice,
+                        InvoiceId = invoiceDB.Id,
+                        IsSirovina = 0
+                        //Item = itemDB
+                    };
 
-                    //            if (itm != null)
-                    //            {
-                    //                itm.TotalQuantity += item.Quantity.Value * norm.Quantity;
+                    DbContext.Add(itemInvoice);
+                }
+            });
 
-                    //                sqliteDbContext.Items.Update(itm);
-                    //            }
-                    //        });
-                    //    }
-                    //    else
-                    //    {
-                    //        it.TotalQuantity += item.Quantity.Value;
+            invoiceRequset.Payment.ToList().ForEach(payment =>
+            {
+                PaymentInvoiceDB paymentInvoice = new PaymentInvoiceDB()
+                {
+                    InvoiceId = invoiceDB.Id,
+                    Amout = payment.Amount,
+                    PaymentType = payment.PaymentType
+                };
 
-                    //        sqliteDbContext.Items.Update(it);
-                    //    }
-                    //}
+                DbContext.PaymentInvoices.Add(paymentInvoice);
+            });
+            DbContext.SaveChanges();
+
+            if (responseJson.TaxItems != null &&
+                responseJson.TaxItems.Any())
+            {
+                responseJson.TaxItems.ToList().ForEach(taxItem =>
+                {
+                    TaxItemInvoiceDB taxItemInvoiceDB = new TaxItemInvoiceDB()
+                    {
+                        Amount = taxItem.Amount,
+                        CategoryName = taxItem.CategoryName,
+                        CategoryType = (int)taxItem.CategoryType.Value,
+                        Label = taxItem.Label,
+                        Rate = taxItem.Rate,
+                        InvoiceId = invoiceDB.Id
+                    };
+
+                    DbContext.TaxItemInvoices.Add(taxItemInvoiceDB);
                 });
-
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
             }
-            #endregion Private methods
+            DbContext.SaveChanges();
+
+            return invoiceDB;
         }
+        private async Task TakingUpNorm(InvoiceDB invoice)
+        {
+            List<ItemDB> itemsForCondition = new List<ItemDB>();
+
+            invoice.ItemInvoices.ToList().ForEach(item =>
+            {
+                var it = DbContext.Items.Find(item.ItemCode);
+                if (it != null &&
+                item.Quantity.HasValue)
+                {
+                    var itemInNorm = DbContext.ItemsInNorm.Where(norm => it.IdNorm == norm.IdNorm);
+
+                    if (itemInNorm != null &&
+                    itemInNorm.Any())
+                    {
+                        itemInNorm.ForEachAsync(norm =>
+                        {
+                            var itm = DbContext.Items.Find(norm.IdItem);
+
+                            if (itm != null)
+                            {
+                                if (itm.IdNorm == null)
+                                {
+                                    itm.TotalQuantity += item.Quantity.Value * norm.Quantity;
+                                    DbContext.Items.Update(itm);
+                                }
+                                else
+                                {
+                                    var itemInNorm2 = DbContext.ItemsInNorm.Where(norm => itm.IdNorm == norm.IdNorm);
+                                    if (itemInNorm2.Any())
+                                    {
+                                        itemInNorm2.ToList().ForEach(norm2 =>
+                                        {
+                                            var itm2 = DbContext.Items.Find(norm2.IdItem);
+
+                                            if (itm2 != null)
+                                            {
+                                                if (itm2.IdNorm == null)
+                                                {
+                                                    itm2.TotalQuantity += item.Quantity.Value * norm.Quantity * norm2.Quantity;
+                                                    DbContext.Items.Update(itm2);
+                                                }
+                                                else
+                                                {
+                                                    var itemInNorm3 = DbContext.ItemsInNorm.Where(norm => itm2.IdNorm == norm2.IdNorm);
+                                                    if (itemInNorm3.Any())
+                                                    {
+                                                        itemInNorm3.ToList().ForEach(norm3 =>
+                                                        {
+                                                            var itm3 = DbContext.Items.Find(norm3.IdItem);
+
+                                                            if (itm3 != null)
+                                                            {
+                                                                if (itm3.IdNorm == null)
+                                                                {
+                                                                    itm3.TotalQuantity += item.Quantity.Value * norm.Quantity * norm2.Quantity * norm3.Quantity;
+                                                                    DbContext.Items.Update(itm3);
+                                                                }
+                                                            }
+                                                        });
+                                                    }
+                                                    else
+                                                    {
+                                                        itm2.TotalQuantity += item.Quantity.Value * norm.Quantity * norm2.Quantity;
+                                                        DbContext.Items.Update(itm2);
+                                                    }
+                                                }
+                                            }
+                                        });
+                                    }
+                                    else
+                                    {
+                                        itm.TotalQuantity += item.Quantity.Value * norm.Quantity;
+                                        DbContext.Items.Update(itm);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                    else
+                    {
+                        it.TotalQuantity += item.Quantity.Value;
+                        DbContext.Items.Update(it);
+                    }
+                }
+                //var it = sqliteDbContext.Items.Find(item.ItemCode);
+                //if (it != null && item.Quantity.HasValue)
+                //{
+                //    var itemInNorm = sqliteDbContext.ItemsInNorm.Where(norm => it.IdNorm == norm.IdNorm);
+
+                //    if (itemInNorm.Any())
+                //    {
+                //        itemInNorm.ToList().ForEach(norm =>
+                //        {
+                //            var itm = sqliteDbContext.Items.Find(norm.IdItem);
+
+                //            if (itm != null)
+                //            {
+                //                itm.TotalQuantity += item.Quantity.Value * norm.Quantity;
+
+                //                sqliteDbContext.Items.Update(itm);
+                //            }
+                //        });
+                //    }
+                //    else
+                //    {
+                //        it.TotalQuantity += item.Quantity.Value;
+
+                //        sqliteDbContext.Items.Update(it);
+                //    }
+                //}
+            });
+
+            DbContext.SaveChanges();
+        }
+
+        #endregion Private methods
     }
 }

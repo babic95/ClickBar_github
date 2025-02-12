@@ -1,5 +1,5 @@
 ﻿using ClickBar.Models.AppMain.Statistic;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

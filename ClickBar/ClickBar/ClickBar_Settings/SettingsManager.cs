@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -28,6 +29,9 @@ namespace ClickBar_Settings
         private static readonly string _excelImportFolderName = @"Import";
         private static readonly string _excelExportFolderName = @"Export";
         private static readonly string _databaseName = @"ClickBar_DB.db";
+        private static readonly string _sqlServerDatabaseName = "ClickBar_DB";
+        private static readonly string _masterDatabaseConnectionString = @"Data Source=.\ClickBar_SSMS;Initial Catalog=master;User ID=sa;Password=Jajajaja95!;MultipleActiveResultSets=True;TrustServerCertificate=True";
+        private static readonly string _databaseConnectionString = @"Data Source=.\ClickBar_SSMS;Initial Catalog=ClickBar_DB;User ID=sa;Password=Jajajaja95!;MultipleActiveResultSets=True;TrustServerCertificate=True";
         private static readonly string _appFileName = @"app.json";
         private static readonly string _model = "CCS ClickBar";
         private static readonly string _logo = "logo.png";
@@ -64,7 +68,7 @@ namespace ClickBar_Settings
         private static readonly string _pathToExportItemsExcelFolder = Path.Combine(_pathToExportExcelFolder, _items);
 #endregion Fields
 
-#region Constructors
+        #region Constructors
         private SettingsManager() { }
         public static SettingsManager Instance
         {
@@ -82,9 +86,9 @@ namespace ClickBar_Settings
                 }
             }
         }
-#endregion Constructors
+        #endregion Constructors
 
-#region Public methods
+        #region Public methods
         public bool SetSettingsFile(SettingsFile settingsFile)
         {
             try
@@ -114,6 +118,18 @@ namespace ClickBar_Settings
                 return false;
             }
             return true;
+        }
+        public string GetSqlServerDatabaseName()
+        {
+            return _sqlServerDatabaseName;
+        }
+        public string GetConnectionString()
+        {
+            return _databaseConnectionString;
+        }
+        public string GetConnectionStringMaster()
+        {
+            return _masterDatabaseConnectionString;
         }
         public bool GetRunPorudzbineServis()
         {
@@ -342,7 +358,7 @@ namespace ClickBar_Settings
         }
 #endregion Public methods
 
-#region Private methods
+        #region Private methods
         private void CreateDefaultSettingsFile()
         {
             if (!File.Exists(_pathToAppJsonFile))
@@ -459,6 +475,6 @@ namespace ClickBar_Settings
 
             File.WriteAllText(_pathToAppJsonFile, json);
         }
-#endregion Private methods
+        #endregion Private methods
     }
 }

@@ -4,8 +4,8 @@ using ClickBar.ViewModels;
 using ClickBar_Common.Enums;
 using ClickBar_Common.Models.Invoice.Tax;
 using ClickBar_Common.Models.Invoice;
-using ClickBar_Database.Models;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager.Models;
+using ClickBar_DatabaseSQLManager;
 using ClickBar_Settings;
 using System;
 using System.Collections.Generic;
@@ -18,6 +18,7 @@ using ClickBar.ViewModels.Sale;
 using ClickBar_Common.Models.Invoice.FileSystemWatcher;
 using ClickBar.Views.AppMain.AuxiliaryWindows.Statistic.Refaund;
 using System.Threading;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ClickBar.Commands.AppMain.Statistic.Refaund
 {
@@ -25,10 +26,13 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
     {
         public event EventHandler CanExecuteChanged;
 
+        private readonly IServiceProvider _serviceProvider;
         private ViewModelBase _currentViewModel;
+        private SqlServerDbContext _dbContext;
 
-        public RefaundCommand(ViewModelBase currentViewModel)
+        public RefaundCommand(IServiceProvider serviceProvider, ViewModelBase currentViewModel)
         {
+            _serviceProvider = serviceProvider;
             _currentViewModel = currentViewModel;
         }
 
@@ -39,8 +43,9 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
 
         public async void Execute(object parameter)
         {
-            if (_currentViewModel is RefaundViewModel)
+            if (_currentViewModel is RefaundViewModel refaundViewModel)
             {
+                _dbContext = refaundViewModel.DbContext;
                 if (parameter is string)
                 {
                     bool isEfaktura = parameter.ToString().Contains("eFaktura");
@@ -55,8 +60,9 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
                     Refaund();
                 }
             }
-            else if (_currentViewModel is PayRefaundViewModel)
+            else if (_currentViewModel is PayRefaundViewModel payRefaundViewModel)
             {
+                _dbContext = payRefaundViewModel.DbContext;
                 PayRefaund();
             }
         }
@@ -77,162 +83,142 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
             }
             else
             {
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                var invoiceDB = await _dbContext.Invoices.FindAsync(refaundViewModel.CurrentInvoice.Id);
+
+                if (invoiceDB is not null)
                 {
-
-                    var invoiceDB = await sqliteDbContext.Invoices.FindAsync(refaundViewModel.CurrentInvoice.Id);
-
-                    if (invoiceDB is not null)
+                    InvoceRequestFileSystemWatcher invoiceRequest = new InvoceRequestFileSystemWatcher()
                     {
-                        InvoceRequestFileSystemWatcher invoiceRequest = new InvoceRequestFileSystemWatcher()
-                        {
-                            Cashier = refaundViewModel.LoggedCashier.Name,
-                            InvoiceType = invoiceDB.InvoiceType != null && invoiceDB.InvoiceType.HasValue ? (InvoiceTypeEenumeration)invoiceDB.InvoiceType.Value :
-                            InvoiceTypeEenumeration.Normal,
-                        };
+                        Cashier = refaundViewModel.LoggedCashier.Name,
+                        InvoiceType = invoiceDB.InvoiceType != null && invoiceDB.InvoiceType.HasValue ? (InvoiceTypeEenumeration)invoiceDB.InvoiceType.Value :
+                        InvoiceTypeEenumeration.Normal,
+                    };
 
-                        //InvoiceRequest invoiceRequest = new InvoiceRequest()
-                        //{
-                        //    Cashier = invoiceDB.Cashier,
-                        //    DateAndTimeOfIssue = invoice.DateAndTimeOfIssue,
-                        //    BuyerId = invoice.BuyerId,
-                        //    BuyerName = invoice.BuyerName,
-                        //    BuyerAddress = invoice.BuyerAddress,
-                        //    BuyerCostCenterId = invoice.BuyerCostCenterId,
-                        //    InvoiceNumber = invoice.InvoiceNumber,
-                        //    InvoiceType = invoice.InvoiceType,
-                        //    ReferentDocumentDT = invoice.ReferentDocumentDT,
-                        //    ReferentDocumentNumber = invoice.ReferentDocumentNumber,
-                        //    TransactionType = invoice.TransactionType,
-                        //    Options = new InlineModel()
-                        //    {
-                        //        OmitQRCodeGen = "1",
-                        //        OmitTextualRepresentation = "1",
-                        //    }
-                        //};
-                        List<ItemFileSystemWatcher> items = new List<ItemFileSystemWatcher>();
-                        List<ItemInvoiceDB> itemsInvoice = await sqliteDbContext.GetAllItemsFromInvoice(invoiceDB.Id);
+                    List<ItemFileSystemWatcher> items = new List<ItemFileSystemWatcher>();
+                    List<ItemInvoiceDB> itemsInvoice = await _dbContext.GetAllItemsFromInvoice(invoiceDB.Id);
 
-                        itemsInvoice.ForEach(item =>
+                    itemsInvoice.ForEach(item =>
+                    {
+                        if (item.TotalAmout > 0)
                         {
-                            if (item.TotalAmout > 0)
+                            var itemDB = _dbContext.Items.FirstOrDefault(i => i.Id == item.ItemCode);
+
+                            if (itemDB != null &&
+                            item.Quantity.HasValue &&
+                            item.TotalAmout.HasValue &&
+                            item.UnitPrice.HasValue)
                             {
-                                var itemDB = sqliteDbContext.Items.FirstOrDefault(i => i.Id == item.ItemCode);
-
-                                if (itemDB != null &&
-                                item.Quantity.HasValue &&
-                                item.TotalAmout.HasValue &&
-                                item.UnitPrice.HasValue)
+                                items.Add(new ItemFileSystemWatcher()
                                 {
-                                    items.Add(new ItemFileSystemWatcher()
-                                    {
-                                        Name = item.Name,
-                                        Jm = string.IsNullOrEmpty(itemDB.Jm) ? "kom" : itemDB.Jm,
-                                        Quantity = item.Quantity.Value,
-                                        TotalAmount = item.TotalAmout.Value,
-                                        UnitPrice = item.UnitPrice.Value,
-                                        Label = item.Label,
-                                        Id = item.ItemCode,
-                                    });
-                                }
-                            }
-                        });
-                        invoiceRequest.Items = items;
-
-                        List<Payment> payments = new List<Payment>();
-
-                        var paymentsIvoice = await sqliteDbContext.GetAllPaymentFromInvoice(invoiceDB.Id);
-                        paymentsIvoice.ForEach(payment =>
-                        {
-                            if (payment.Amout.HasValue)
-                            {
-                                payments.Add(new Payment()
-                                {
-                                    Amount = payment.Amout.Value,
-                                    PaymentType = payment.PaymentType
+                                    Name = item.Name,
+                                    Jm = string.IsNullOrEmpty(itemDB.Jm) ? "kom" : itemDB.Jm,
+                                    Quantity = item.Quantity.Value,
+                                    TotalAmount = item.TotalAmout.Value,
+                                    UnitPrice = item.UnitPrice.Value,
+                                    Label = item.Label,
+                                    Id = item.ItemCode,
                                 });
                             }
-                        });
-                        invoiceRequest.Payment = payments;
+                        }
+                    });
+                    invoiceRequest.Items = items;
 
-                        InvoiceResult invoiceResult = new InvoiceResult()
+                    List<Payment> payments = new List<Payment>();
+
+                    var paymentsIvoice = await _dbContext.GetAllPaymentFromInvoice(invoiceDB.Id);
+                    paymentsIvoice.ForEach(payment =>
+                    {
+                        if (payment.Amout.HasValue)
                         {
-                            RequestedBy = invoiceDB.RequestedBy,
-                            SignedBy = invoiceDB.SignedBy,
-                            SdcDateTime = invoiceDB.SdcDateTime.Value,
-                            InvoiceCounter = invoiceDB.InvoiceCounter,
-                            InvoiceCounterExtension = invoiceDB.InvoiceCounterExtension,
-                            InvoiceNumber = invoiceDB.InvoiceNumberResult,
-                            TotalCounter = invoiceDB.TotalCounter,
-                            TransactionTypeCounter = invoiceDB.TransactionTypeCounter,
-                            TotalAmount = invoiceDB.TotalAmount,
-                            EncryptedInternalData = invoiceDB.EncryptedInternalData,
-                            Signature = invoiceDB.Signature,
-                            BusinessName = invoiceDB.BusinessName,
-                            LocationName = invoiceDB.LocationName,
-                            Address = invoiceDB.Address,
-                            Tin = invoiceDB.Tin,
-                            District = invoiceDB.District,
-                            TaxGroupRevision = invoiceDB.TaxGroupRevision,
-                            Mrc = invoiceDB.Mrc
-                        };
-
-                        List<TaxItem> taxItems = new List<TaxItem>();
-
-                        var taxItemInvoice = await sqliteDbContext.GetAllTaxFromInvoice(invoiceDB.Id);
-
-                        taxItemInvoice.ForEach(taxItem =>
-                        {
-                            if (taxItem.Amount.HasValue &&
-                            taxItem.CategoryType.HasValue &&
-                            taxItem.Rate.HasValue)
+                            payments.Add(new Payment()
                             {
-                                taxItems.Add(new TaxItem()
-                                {
-                                    Amount = taxItem.Amount.Value,
-                                    CategoryName = taxItem.CategoryName,
-                                    CategoryType = (CategoryTypeEnumeration)taxItem.CategoryType.Value,
-                                    Label = taxItem.Label,
-                                    Rate = taxItem.Rate.Value
-                                });
-                            }
-                        });
+                                Amount = payment.Amout.Value,
+                                PaymentType = payment.PaymentType
+                            });
+                        }
+                    });
+                    invoiceRequest.Payment = payments;
 
-                        invoiceResult.TaxItems = taxItems;
+                    InvoiceResult invoiceResult = new InvoiceResult()
+                    {
+                        RequestedBy = invoiceDB.RequestedBy,
+                        SignedBy = invoiceDB.SignedBy,
+                        SdcDateTime = invoiceDB.SdcDateTime.Value,
+                        InvoiceCounter = invoiceDB.InvoiceCounter,
+                        InvoiceCounterExtension = invoiceDB.InvoiceCounterExtension,
+                        InvoiceNumber = invoiceDB.InvoiceNumberResult,
+                        TotalCounter = invoiceDB.TotalCounter,
+                        TransactionTypeCounter = invoiceDB.TransactionTypeCounter,
+                        TotalAmount = invoiceDB.TotalAmount,
+                        EncryptedInternalData = invoiceDB.EncryptedInternalData,
+                        Signature = invoiceDB.Signature,
+                        BusinessName = invoiceDB.BusinessName,
+                        LocationName = invoiceDB.LocationName,
+                        Address = invoiceDB.Address,
+                        Tin = invoiceDB.Tin,
+                        District = invoiceDB.District,
+                        TaxGroupRevision = invoiceDB.TaxGroupRevision,
+                        Mrc = invoiceDB.Mrc
+                    };
 
-                        if (!isEfaktura)
+                    List<TaxItem> taxItems = new List<TaxItem>();
+
+                    var taxItemInvoice = await _dbContext.GetAllTaxFromInvoice(invoiceDB.Id);
+
+                    taxItemInvoice.ForEach(taxItem =>
+                    {
+                        if (taxItem.Amount.HasValue &&
+                        taxItem.CategoryType.HasValue &&
+                        taxItem.Rate.HasValue)
                         {
+                            taxItems.Add(new TaxItem()
+                            {
+                                Amount = taxItem.Amount.Value,
+                                CategoryName = taxItem.CategoryName,
+                                CategoryType = (CategoryTypeEnumeration)taxItem.CategoryType.Value,
+                                Label = taxItem.Label,
+                                Rate = taxItem.Rate.Value
+                            });
+                        }
+                    });
+
+                    invoiceResult.TaxItems = taxItems;
+
+                    if (!isEfaktura)
+                    {
+
+                        refaundViewModel.CurrentInvoiceRequest = invoiceRequest;
+                        refaundViewModel.CurrentInvoiceResult = invoiceResult;
+
+                        var firma = _dbContext.Firmas.FirstOrDefault();
+
+                        if (firma != null &&
+                            !string.IsNullOrEmpty(firma.Pib))
+                        {
+                            refaundViewModel.CurrentInvoiceRequest.BuyerId = firma.Pib;
+                        }
+
+                        var payRefaundViewModel = _serviceProvider.GetRequiredService<PayRefaundViewModel>();
+                        payRefaundViewModel.Initialize(refaundViewModel.DbContext, _serviceProvider.GetRequiredService<PayRefaundWindow>(), refaundViewModel);
+
+                        PayRefaundWindow payRefaundWindow = new PayRefaundWindow(payRefaundViewModel);
+                        payRefaundWindow.Show();
+                    }
+                    else
+                    {
+                        var firma = _dbContext.Firmas.FirstOrDefault();
+
+                        if (firma != null &&
+                            !string.IsNullOrEmpty(firma.Pib))
+                        {
+                            invoiceRequest.TransactionType = ClickBar_Common.Enums.TransactionTypeEnumeration.Refund;
+                            invoiceRequest.ReferentDocumentNumber = invoiceResult.InvoiceNumber;
+                            invoiceRequest.ReferentDocumentDT = Convert.ToDateTime(invoiceResult.SdcDateTime);
+                            invoiceRequest.BuyerId = $"10:{firma.Pib}";
 
                             refaundViewModel.CurrentInvoiceRequest = invoiceRequest;
-                            refaundViewModel.CurrentInvoiceResult = invoiceResult;
 
-                            var firma = sqliteDbContext.Firmas.FirstOrDefault();
-
-                            if (firma != null &&
-                                !string.IsNullOrEmpty(firma.Pib))
-                            {
-                                refaundViewModel.CurrentInvoiceRequest.BuyerId = firma.Pib;
-                            }
-
-                            PayRefaundWindow payRefaundWindow = new PayRefaundWindow(refaundViewModel);
-                            payRefaundWindow.Show();
-                        }
-                        else
-                        {
-                            var firma = sqliteDbContext.Firmas.FirstOrDefault();
-
-                            if (firma != null &&
-                                !string.IsNullOrEmpty(firma.Pib))
-                            {
-                                invoiceRequest.TransactionType = ClickBar_Common.Enums.TransactionTypeEnumeration.Refund;
-                                invoiceRequest.ReferentDocumentNumber = invoiceResult.InvoiceNumber;
-                                invoiceRequest.ReferentDocumentDT = Convert.ToDateTime(invoiceResult.SdcDateTime);
-                                invoiceRequest.BuyerId = $"10:{firma.Pib}";
-
-                                refaundViewModel.CurrentInvoiceRequest = invoiceRequest;
-
-                                refaundViewModel.FinisedRefaund(true);
-                            }
+                            refaundViewModel.FinisedRefaund(true);
                         }
                     }
                 }
@@ -244,7 +230,6 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
 
             AddPayment(payRefaundViewModel);
 
-            //payRefaundViewModel.RefaundViewModel.CurrentInvoiceRequest.InvoiceNumber = SettingsManager.Instance.GetPosNumber();
             payRefaundViewModel.RefaundViewModel.CurrentInvoiceRequest.TransactionType = ClickBar_Common.Enums.TransactionTypeEnumeration.Refund;
             payRefaundViewModel.RefaundViewModel.CurrentInvoiceRequest.ReferentDocumentNumber = payRefaundViewModel.RefaundViewModel.CurrentInvoice.InvoiceNumber;
             payRefaundViewModel.RefaundViewModel.CurrentInvoiceRequest.ReferentDocumentDT = Convert.ToDateTime(payRefaundViewModel.RefaundViewModel.CurrentInvoice.SdcDateTime);
@@ -262,7 +247,6 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
 
             payRefaundViewModel.RefaundViewModel.FinisedRefaund(false);
             payRefaundViewModel.Window.Close();
-            //payRefaundViewModel.RefaundViewModel.SearchRefaundInvoiceCommand.Execute(null);
         }
         private void AddPayment(PayRefaundViewModel payRefaundViewModel)
         {

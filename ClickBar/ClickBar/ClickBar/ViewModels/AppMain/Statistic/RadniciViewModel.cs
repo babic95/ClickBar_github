@@ -1,7 +1,8 @@
 ﻿using ClickBar.Commands.AppMain.Statistic.Radnici;
 using ClickBar.Models.AppMain.Statistic;
 using ClickBar.Models.AppMain.Statistic.Radnici;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -27,28 +28,33 @@ namespace ClickBar.ViewModels.AppMain.Statistic
 
         private ObservableCollection<WhatDidWorkerSell> _whatDidWorkerSells;
         private decimal _total;
+
+        private readonly IServiceProvider _serviceProvider; // Dodato za korišćenje IServiceProvider
         #endregion Fields
 
         #region Constructors
-        public RadniciViewModel()
+        public RadniciViewModel(IServiceProvider serviceProvider)
         {
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+
+            DbContext.Cashiers.ToList().ForEach(x =>
             {
+                RadniciAll.Add(new Radnik(x));
+            });
 
-                sqliteDbContext.Cashiers.ToList().ForEach(x =>
-                {
-                    RadniciAll.Add(new Radnik(x));
-                });
+            Radnici = new ObservableCollection<Radnik>(RadniciAll);
+            CurrentRadnik = new Radnik();
 
-                Radnici = new ObservableCollection<Radnik>(RadniciAll);
-                CurrentRadnik = new Radnik();
-
-                IsEdited = false;
-            }
+            IsEdited = false;
         }
         #endregion Constructors
 
         #region Properties internal
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
         internal List<Radnik> RadniciAll = new List<Radnik>();
         internal Window Window { get; set; }
         #endregion Properties internal

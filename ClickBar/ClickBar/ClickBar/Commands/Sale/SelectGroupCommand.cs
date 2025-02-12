@@ -1,6 +1,6 @@
 ﻿using ClickBar.Models.Sale;
 using ClickBar.ViewModels;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -48,15 +48,12 @@ namespace ClickBar.Commands.Sale
 
                 if (items.Any())
                 {
-                    using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                    items.ForEach(item =>
                     {
-                        items.ForEach(item =>
-                        {
-                            Item i = new Item(item);
+                        Item i = new Item(item);
 
-                            _viewModel.Items.Add(i);
-                        });
-                    }
+                        _viewModel.Items.Add(i);
+                    });
                 }
             }
         }

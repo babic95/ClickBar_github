@@ -41,18 +41,15 @@ namespace ClickBar.Commands.TableOverview
                 Narudzbe narudzba = (Narudzbe)dataGridCellInfo.Item;
                 if (narudzba != null)
                 {
-                    using (SqliteDrljaDbContext sqliteDrljaDbContext = new SqliteDrljaDbContext())
+                    var stavkeNarudzbine = _currentView.DrljaDbContext.StavkeNarudzbine.Where(s => s.TR_BROJNARUDZBE == narudzba.BrojNarudzbe);
+
+                    if (stavkeNarudzbine != null &&
+                        stavkeNarudzbine.Any())
                     {
-                        var stavkeNarudzbine = sqliteDrljaDbContext.StavkeNarudzbine.Where(s => s.TR_BROJNARUDZBE == narudzba.BrojNarudzbe);
+                        _currentView.CurrentNarudzba = narudzba;
 
-                        if (stavkeNarudzbine != null &&
-                            stavkeNarudzbine.Any())
-                        {
-                            _currentView.CurrentNarudzba = narudzba;
-
-                            KuhinjaStavkePorudzbine KuhinjaStavkePorudzbine = new KuhinjaStavkePorudzbine(_currentView);
-                            KuhinjaStavkePorudzbine.ShowDialog();
-                        }
+                        KuhinjaStavkePorudzbine KuhinjaStavkePorudzbine = new KuhinjaStavkePorudzbine(_currentView);
+                        KuhinjaStavkePorudzbine.ShowDialog();
                     }
                 }
             }

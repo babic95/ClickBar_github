@@ -1,8 +1,8 @@
 ﻿using ClickBar.Models.AppMain.Statistic;
 using ClickBar.Models.Sale;
 using ClickBar.ViewModels;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -56,7 +56,7 @@ namespace ClickBar.Commands.Sale
             ItemInvoice? itemInvoice = _viewModel.ItemsInvoice.Where(item => item.Item.Id == itemDB.Id).FirstOrDefault();
 
             ObservableCollection<ItemZelja> fixneZelje = new ObservableCollection<ItemZelja>();
-            //using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            //using (SqlServerDbContext sqliteDbContext = new SqlServerDbContext())
             //{
             //    var fixneZeljeDB = sqliteDbContext.Zelje.Where(z => z.ItemId == itemDB.Id);
 

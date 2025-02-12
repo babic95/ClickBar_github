@@ -1,8 +1,8 @@
 ﻿using ClickBar.Models.AppMain.Statistic;
 using ClickBar.ViewModels.AppMain.Statistic;
 using ClickBar_Common.Models.Statistic;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Printer;
 using ClickBar_Printer.PaperFormat;
 using System;
@@ -36,89 +36,86 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
             if (parameter is string)
             {
                 string calculationId = (string)parameter;
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+
+                var calculation = _currentViewModel.Calculations.FirstOrDefault(x => x.Id == calculationId);
+                var calculationDB = _currentViewModel.DbContext.Calculations.FirstOrDefault(x => x.Id == calculationId);
+
+                if (calculationDB != null)
                 {
+                    List<InvertoryGlobal> invertoryGlobals = new List<InvertoryGlobal>();
 
-                    var calculation = _currentViewModel.Calculations.FirstOrDefault(x => x.Id == calculationId);
-                    var calculationDB = sqliteDbContext.Calculations.FirstOrDefault(x => x.Id == calculationId);
-
-                    if (calculationDB != null)
+                    var calculationItems = await _currentViewModel.GetAllItemsInCalculation(calculationDB);
+                    if (calculationItems != null &&
+                        calculationItems.Any())
                     {
-                        List<InvertoryGlobal> invertoryGlobals = new List<InvertoryGlobal>();
-
-                        var calculationItems = await _currentViewModel.GetAllItemsInCalculation(calculationDB);
-                        if (calculationItems != null &&
-                            calculationItems.Any())
+                        calculationItems.ToList().ForEach(item =>
                         {
-                            calculationItems.ToList().ForEach(item =>
-                            {
-                                var itemDB = sqliteDbContext.Items.Find(item.Item.Id);
+                            var itemDB = _currentViewModel.DbContext.Items.Find(item.Item.Id);
 
-                                if (itemDB != null)
+                            if (itemDB != null)
+                            {
+                                var group = _currentViewModel.DbContext.ItemGroups.Find(itemDB.IdItemGroup);
+
+                                if (group == null)
                                 {
-                                    var group = sqliteDbContext.ItemGroups.Find(itemDB.IdItemGroup);
+                                    MessageBox.Show("ARTIKAL MORA DA PRIPADA NEKOJ GRUPI!",
+                                        "Greška",
+                                        MessageBoxButton.OK,
+                                        MessageBoxImage.Error);
 
-                                    if (group == null)
-                                    {
-                                        MessageBox.Show("ARTIKAL MORA DA PRIPADA NEKOJ GRUPI!",
-                                            "Greška",
-                                            MessageBoxButton.OK,
-                                            MessageBoxImage.Error);
-
-                                        return;
-                                    }
-                                    decimal inputUnitPrice = Decimal.Round(item.InputPrice / item.Quantity, 2);
-                                    if (group.Name.ToLower().Contains("sirovine") ||
-                                        group.Name.ToLower().Contains("sirovina"))
-                                    {
-                                        invertoryGlobals.Add(new InvertoryGlobal()
-                                        {
-                                            Id = item.Item.Id,
-                                            Name = item.Item.Name,
-                                            Jm = item.Item.Jm,
-                                            InputUnitPrice = inputUnitPrice,
-                                            SellingUnitPrice = 0,
-                                            Quantity = item.Quantity,
-                                            TotalAmout = Decimal.Round(item.InputPrice, 2)
-                                        });
-                                    }
-                                    else
-                                    {
-                                        invertoryGlobals.Add(new InvertoryGlobal()
-                                        {
-                                            Id = item.Item.Id,
-                                            Name = item.Item.Name,
-                                            Jm = item.Item.Jm,
-                                            InputUnitPrice = inputUnitPrice,
-                                            SellingUnitPrice = item.Item.SellingUnitPrice,
-                                            Quantity = item.Quantity,
-                                            TotalAmout = Decimal.Round(item.TotalAmout * item.Quantity, 2)
-                                        });
-                                    }
+                                    return;
                                 }
-                            });
-                        }
+                                decimal inputUnitPrice = Decimal.Round(item.InputPrice / item.Quantity, 2);
+                                if (group.Name.ToLower().Contains("sirovine") ||
+                                    group.Name.ToLower().Contains("sirovina"))
+                                {
+                                    invertoryGlobals.Add(new InvertoryGlobal()
+                                    {
+                                        Id = item.Item.Id,
+                                        Name = item.Item.Name,
+                                        Jm = item.Item.Jm,
+                                        InputUnitPrice = inputUnitPrice,
+                                        SellingUnitPrice = 0,
+                                        Quantity = item.Quantity,
+                                        TotalAmout = Decimal.Round(item.InputPrice, 2)
+                                    });
+                                }
+                                else
+                                {
+                                    invertoryGlobals.Add(new InvertoryGlobal()
+                                    {
+                                        Id = item.Item.Id,
+                                        Name = item.Item.Name,
+                                        Jm = item.Item.Jm,
+                                        InputUnitPrice = inputUnitPrice,
+                                        SellingUnitPrice = item.Item.SellingUnitPrice,
+                                        Quantity = item.Quantity,
+                                        TotalAmout = Decimal.Round(item.TotalAmout * item.Quantity, 2)
+                                    });
+                                }
+                            }
+                        });
+                    }
 
-                        if (calculation != null &&
-                            calculation.Supplier != null)
+                    if (calculation != null &&
+                        calculation.Supplier != null)
+                    {
+                        SupplierGlobal supplierGlobal = new SupplierGlobal()
                         {
-                            SupplierGlobal supplierGlobal = new SupplierGlobal()
-                            {
-                                Name = calculation.Supplier.Name,
-                                Pib = calculation.Supplier.Pib,
-                                Address = calculation.Supplier.Address,
-                                City = calculation.Supplier.City,
-                                ContractNumber = calculation.Supplier.ContractNumber,
-                                Email = calculation.Supplier.Email,
-                                Mb = calculation.Supplier.MB,
-                                InvoiceNumber = calculation.InvoiceNumber
-                            };
+                            Name = calculation.Supplier.Name,
+                            Pib = calculation.Supplier.Pib,
+                            Address = calculation.Supplier.Address,
+                            City = calculation.Supplier.City,
+                            ContractNumber = calculation.Supplier.ContractNumber,
+                            Email = calculation.Supplier.Email,
+                            Mb = calculation.Supplier.MB,
+                            InvoiceNumber = calculation.InvoiceNumber
+                        };
 
-                            PrinterManager.Instance.PrintInventoryStatus(invertoryGlobals,
-                                $"KALKULACIJA_{calculation.Counter}-{calculation.CalculationDate.Year}",
-                                calculation.CalculationDate,
-                                supplierGlobal);
-                        }
+                        PrinterManager.Instance.PrintInventoryStatus(invertoryGlobals,
+                            $"KALKULACIJA_{calculation.Counter}-{calculation.CalculationDate.Year}",
+                            calculation.CalculationDate,
+                            supplierGlobal);
                     }
                 }
             }

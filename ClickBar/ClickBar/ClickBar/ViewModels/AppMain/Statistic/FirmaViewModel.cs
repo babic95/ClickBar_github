@@ -2,8 +2,8 @@
 using ClickBar.Commands.AppMain.Statistic.Firma;
 using ClickBar.Commands.AppMain.Statistic.KEP;
 using ClickBar.Models.AppMain.Statistic;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ClickBar.ViewModels.AppMain.Statistic
 {
@@ -18,29 +19,29 @@ namespace ClickBar.ViewModels.AppMain.Statistic
     {
         #region Fields
         private Firma _firma;
+        private readonly IServiceProvider _serviceProvider; // Dodato za korišćenje IServiceProvider
         #endregion Fields
 
         #region Constructors
-        public FirmaViewModel()
+        public FirmaViewModel(IServiceProvider serviceProvider)
         {
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            FirmaDB = DbContext.Firmas.FirstOrDefault();
+
+            if (FirmaDB != null)
             {
-
-                FirmaDB = sqliteDbContext.Firmas.FirstOrDefault();
-
-                if (FirmaDB != null)
-                {
-                    Firma = new Firma(FirmaDB);
-                }
-                else
-                {
-                    Firma = new Firma();
-                }
+                Firma = new Firma(FirmaDB);
+            }
+            else
+            {
+                Firma = new Firma();
             }
         }
         #endregion Constructors
 
         #region Properties internal
+        internal SqlServerDbContext DbContext { get; private set; }
         internal FirmaDB? FirmaDB { get; set; }
         #endregion Properties internal
 

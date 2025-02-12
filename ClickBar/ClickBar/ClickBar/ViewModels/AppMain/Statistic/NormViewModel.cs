@@ -1,7 +1,7 @@
 ﻿using ClickBar.Commands.AppMain.Statistic.Norm;
 using ClickBar.Models.AppMain.Statistic;
 using ClickBar.Models.Sale;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using DocumentFormat.OpenXml.VariantTypes;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ClickBar.ViewModels.AppMain.Statistic
 {
@@ -22,33 +23,38 @@ namespace ClickBar.ViewModels.AppMain.Statistic
 
         private Supergroup? _currentSupergroupSearch;
         private ObservableCollection<Supergroup> _allSupergroups;
+
+        private readonly IServiceProvider _serviceProvider; // Dodato za korišćenje IServiceProvider
         #endregion Fields
 
         #region Constructors
-        public NormViewModel()
+        public NormViewModel(IServiceProvider serviceProvider)
         {
-            FromDate = null; 
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            FromDate = null;
             ToDate = null;
 
             AllSupergroups = new ObservableCollection<Supergroup>() { new Supergroup(-1, "Sve nadgrupe") };
 
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            if (DbContext.Supergroups != null &&
+                DbContext.Supergroups.Any())
             {
-                if (sqliteDbContext.Supergroups != null &&
-                    sqliteDbContext.Supergroups.Any())
+                DbContext.Supergroups.ForEachAsync(supergroup =>
                 {
-                    sqliteDbContext.Supergroups.ForEachAsync(supergroup =>
-                    {
-                        AllSupergroups.Add(new Supergroup(supergroup.Id, supergroup.Name));
-                    });
+                    AllSupergroups.Add(new Supergroup(supergroup.Id, supergroup.Name));
+                });
 
-                    CurrentSupergroupSearch = AllSupergroups.FirstOrDefault();
-                }
+                CurrentSupergroupSearch = AllSupergroups.FirstOrDefault();
             }
         }
         #endregion Constructors
 
         #region Properties internal
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
         #endregion Properties internal
 
         #region Properties

@@ -8,8 +8,8 @@ using ClickBar.ViewModels.AppMain.Statistic;
 using ClickBar.Views.AppMain.AuxiliaryWindows.Statistic.Nivelacija;
 using ClickBar_Common.Enums;
 using ClickBar_Common.Models.Statistic;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Logging;
 using ClickBar_Printer;
 using ClickBar_Printer.PaperFormat;
@@ -32,6 +32,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
         public event EventHandler CanExecuteChanged;
 
         private ViewModelBase _currentViewModel;
+        private SqlServerDbContext _dbContext;
 
         public SaveCalculationCommand(ViewModelBase currentViewModel)
         {
@@ -48,6 +49,15 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
             if (_currentViewModel is CalculationViewModel ||
                 _currentViewModel is ViewCalculationViewModel)
             {
+                if(_currentViewModel is CalculationViewModel calculationViewModel)
+                {
+                    _dbContext = calculationViewModel.DbContext;
+                }
+                else if (_currentViewModel is ViewCalculationViewModel viewCalculationViewModel)
+                {
+                    _dbContext = viewCalculationViewModel.DbContext;
+                }
+
                 Calculate();
             }
         }
@@ -66,251 +76,59 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                     try
                     {
                         bool onlySirovine = true;
-                        using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                        var cas = calculationViewModel.DbContext.Cashiers.Find(calculationViewModel.LoggedCashier.Id);
+                        var sup = calculationViewModel.DbContext.Suppliers.Find(calculationViewModel.SelectedSupplier.Id);
+
+                        var allNivelacijeInYear = calculationViewModel.DbContext.Calculations.Where(cal => cal.CalculationDate.Year == calculationViewModel.CalculationDate.Year);
+
+                        int counterCalculation = 1;
+
+                        if (allNivelacijeInYear != null &&
+                            allNivelacijeInYear.Any())
                         {
+                            var maxNivelacija = allNivelacijeInYear.Max(nivelacija => nivelacija.Counter);
 
-                            var cas = sqliteDbContext.Cashiers.Find(calculationViewModel.LoggedCashier.Id);
-                            var sup = sqliteDbContext.Suppliers.Find(calculationViewModel.SelectedSupplier.Id);
-
-                            var allNivelacijeInYear = sqliteDbContext.Calculations.Where(cal => cal.CalculationDate.Year == calculationViewModel.CalculationDate.Year);
-
-                            int counterCalculation = 1;
-
-                            if (allNivelacijeInYear != null &&
-                                allNivelacijeInYear.Any())
+                            if (maxNivelacija > 0)
                             {
-                                var maxNivelacija = allNivelacijeInYear.Max(nivelacija => nivelacija.Counter);
-
-                                if (maxNivelacija > 0)
-                                {
-                                    counterCalculation = maxNivelacija + 1;
-                                }
+                                counterCalculation = maxNivelacija + 1;
                             }
-                            var nivelacija = new Models.AppMain.Statistic.Nivelacija(sqliteDbContext, NivelacijaStateEnumeration.Kalkulacija, calculationViewModel.CalculationDate.AddSeconds(-1));
+                        }
+                        var nivelacija = new Models.AppMain.Statistic.Nivelacija(_dbContext,
+                            NivelacijaStateEnumeration.Kalkulacija, 
+                            calculationViewModel.CalculationDate.AddSeconds(-1));
 
-                            CalculationDB calculationDB = new CalculationDB()
+                        CalculationDB calculationDB = new CalculationDB()
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            CashierId = calculationViewModel.LoggedCashier.Id,
+                            SupplierId = calculationViewModel.SelectedSupplier.Id,
+                            CalculationDate = calculationViewModel.CalculationDate,
+                            InputTotalPrice = 0,
+                            OutputTotalPrice = 0,
+                            InvoiceNumber = calculationViewModel.InvoiceNumber,
+                            Counter = counterCalculation,
+                            //Cashier = cas,
+                            //Supplier = sup
+                        };
+                        calculationViewModel.DbContext.Calculations.Add(calculationDB);
+                        calculationViewModel.DbContext.SaveChanges();
+
+                        List<InvertoryGlobal> invertoryGlobals = new List<InvertoryGlobal>();
+
+                        bool nivelacijaIsAdded = false;
+
+                        NivelacijaDB? nivelacijaDB = null;
+                        decimal nivelacijaTotal = 0;
+
+                        calculationViewModel.Calculations.ToList().ForEach(item =>
+                        {
+                            var itemDB = calculationViewModel.DbContext.Items.Find(item.Item.Id);
+
+                            if (itemDB != null)
                             {
-                                Id = Guid.NewGuid().ToString(),
-                                CashierId = calculationViewModel.LoggedCashier.Id,
-                                SupplierId = calculationViewModel.SelectedSupplier.Id,
-                                CalculationDate = calculationViewModel.CalculationDate,
-                                InputTotalPrice = 0,
-                                OutputTotalPrice = 0,
-                                InvoiceNumber = calculationViewModel.InvoiceNumber,
-                                Counter = counterCalculation,
-                                //Cashier = cas,
-                                //Supplier = sup
-                            };
-                            sqliteDbContext.Calculations.Add(calculationDB);
-                            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                                var group = calculationViewModel.DbContext.ItemGroups.Find(itemDB.IdItemGroup);
 
-                            List<InvertoryGlobal> invertoryGlobals = new List<InvertoryGlobal>();
-
-                            bool nivelacijaIsAdded = false;
-
-                            NivelacijaDB? nivelacijaDB = null;
-                            decimal nivelacijaTotal = 0;
-
-                            calculationViewModel.Calculations.ToList().ForEach(item =>
-                            {
-                                var itemDB = sqliteDbContext.Items.Find(item.Item.Id);
-
-                                if (itemDB != null)
-                                {
-                                    var group = sqliteDbContext.ItemGroups.Find(itemDB.IdItemGroup);
-
-                                    if (group == null)
-                                    {
-                                        MessageBox.Show("ARTIKAL MORA DA PRIPADA NEKOJ GRUPI!",
-                                            "Greška",
-                                            MessageBoxButton.OK,
-                                            MessageBoxImage.Error);
-
-                                        return;
-                                    }
-                                    if (group.Name.ToLower().Contains("sirovine") ||
-                                        group.Name.ToLower().Contains("sirovina"))
-                                    {
-                                        if (calculationViewModel.CalculationDate.Date < DateTime.Now.Date)
-                                        {
-                                            StarijaKalkulacija(sqliteDbContext,
-                                                calculationViewModel.CalculationDate,
-                                                item,
-                                                itemDB,
-                                                true,
-                                                null);
-                                        }
-                                        else
-                                        {
-                                            Kalkulacija(sqliteDbContext, item, itemDB);
-                                        }
-                                        item.Item.InputUnitPrice = itemDB.InputUnitPrice;
-
-                                        invertoryGlobals.Add(new InvertoryGlobal()
-                                        {
-                                            Id = item.Item.Id,
-                                            Name = item.Item.Name,
-                                            Jm = item.Item.Jm,
-                                            InputUnitPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
-                                            Quantity = item.Quantity,
-                                            TotalAmout = item.InputPrice
-                                        });
-
-                                        CalculationItemDB calculationItemDB = new CalculationItemDB()
-                                        {
-                                            CalculationId = calculationDB.Id,
-                                            ItemId = itemDB.Id,
-                                            InputPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
-                                            OutputPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
-                                            Quantity = item.Quantity
-                                        };
-                                        sqliteDbContext.CalculationItems.Add(calculationItemDB);
-
-                                        calculationDB.InputTotalPrice += item.InputPrice;
-                                        sqliteDbContext.Calculations.Update(calculationDB);
-                                    }
-                                    else
-                                    {
-                                        onlySirovine = false;
-
-                                        if (calculationViewModel.CalculationDate.Date < DateTime.Now.Date)
-                                        {
-                                            StarijaKalkulacija(sqliteDbContext,
-                                                calculationViewModel.CalculationDate,
-                                                item,
-                                                itemDB,
-                                                false,
-                                                null);
-                                        }
-                                        else
-                                        {
-                                            Kalkulacija(sqliteDbContext, item, itemDB);
-                                        }
-
-                                        if (itemDB.SellingUnitPrice != item.Item.SellingUnitPrice)
-                                        {
-                                            if (!nivelacijaIsAdded)
-                                            {
-                                                nivelacijaIsAdded = true;
-
-                                                nivelacijaDB = new NivelacijaDB()
-                                                {
-                                                    Id = nivelacija.Id,
-                                                    Counter = nivelacija.CounterNivelacije,
-                                                    DateNivelacije = nivelacija.NivelacijaDate,
-                                                    Description = nivelacija.Description,
-                                                    Type = (int)nivelacija.Type
-                                                };
-                                                sqliteDbContext.Nivelacijas.Add(nivelacijaDB);
-                                                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                                                Log.Debug($"SaveCommand - Kalkulacija - Uspesno sacuvana nivelacija {nivelacija.Id}");
-                                            }
-
-                                            AddNivelacijaItem(sqliteDbContext, item.Item, itemDB, nivelacija, ref nivelacijaTotal);
-                                        }
-
-                                        item.Item.InputUnitPrice = itemDB.InputUnitPrice;
-
-                                        invertoryGlobals.Add(new InvertoryGlobal()
-                                        {
-                                            Id = item.Item.Id,
-                                            Name = item.Item.Name,
-                                            Jm = item.Item.Jm,
-                                            SellingUnitPrice = item.Item.SellingUnitPrice,
-
-                                            InputUnitPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
-
-                                            Quantity = item.Quantity,
-                                            TotalAmout = item.Item.SellingUnitPrice * item.Quantity
-                                        });
-
-                                        CalculationItemDB calculationItemDB = new CalculationItemDB()
-                                        {
-                                            CalculationId = calculationDB.Id,
-                                            ItemId = itemDB.Id,
-                                            InputPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
-                                            OutputPrice = item.Item.SellingUnitPrice,
-                                            Quantity = item.Quantity
-                                        };
-                                        sqliteDbContext.CalculationItems.Add(calculationItemDB);
-
-                                        calculationDB.OutputTotalPrice += item.Item.SellingUnitPrice * item.Quantity;
-                                        calculationDB.InputTotalPrice += item.InputPrice;
-                                        sqliteDbContext.Calculations.Update(calculationDB);
-                                    }
-
-                                    itemDB.TotalQuantity += item.Quantity;
-                                    sqliteDbContext.Update(itemDB);
-                                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-                                }
-                            });
-
-
-                            await KnjizenjePazaraKEP(sqliteDbContext, calculationDB);
-
-                            SupplierGlobal supplierGlobal = new SupplierGlobal()
-                            {
-                                Name = calculationViewModel.SelectedSupplier.Name,
-                                Pib = calculationViewModel.SelectedSupplier.Pib,
-                                Address = calculationViewModel.SelectedSupplier.Address,
-                                City = calculationViewModel.SelectedSupplier.City,
-                                ContractNumber = calculationViewModel.SelectedSupplier.ContractNumber,
-                                Email = calculationViewModel.SelectedSupplier.Email,
-                                Mb = calculationViewModel.SelectedSupplier.MB,
-                                InvoiceNumber = calculationViewModel.InvoiceNumber
-                            };
-
-                            if (!onlySirovine)
-                            {
-                                if (nivelacijaDB != null)
-                                {
-                                    KepDB kepNivelacijaDB = new KepDB()
-                                    {
-                                        Id = Guid.NewGuid().ToString(),
-                                        KepDate = nivelacijaDB.DateNivelacije,
-                                        Type = (int)KepStateEnumeration.Nivelacija,
-                                        Razduzenje = 0,
-                                        Zaduzenje = nivelacijaTotal,
-                                        Description = $"Nivelacija 'Nivelacija_{nivelacijaDB.Counter}-{nivelacijaDB.DateNivelacije.Year}' po kalkulaciji 'Kalkulacija_{calculationDB.Counter}-{calculationDB.CalculationDate.Year}'"
-                                    };
-                                    sqliteDbContext.Kep.Add(kepNivelacijaDB);
-                                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-                                }
-
-                                KepDB kepCalculationDB = new KepDB()
-                                {
-                                    Id = Guid.NewGuid().ToString(),
-                                    KepDate = calculationDB.CalculationDate,
-                                    Type = (int)KepStateEnumeration.Kalkulacija,
-                                    Razduzenje = 0,
-                                    Zaduzenje = calculationDB.OutputTotalPrice,
-                                    Description = $"Ručna kalkulacija 'Kalkulacija_{calculationDB.Counter}-{calculationDB.CalculationDate.Year}'"
-                                };
-                                sqliteDbContext.Kep.Add(kepCalculationDB);
-
-                            }
-
-                            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-                            PrinterManager.Instance.PrintInventoryStatus(invertoryGlobals, $"KALKULACIJA_{calculationDB.Counter}-{calculationDB.CalculationDate.Year}", calculationDB.CalculationDate, supplierGlobal);
-                            calculationViewModel.SuppliersAll = new List<Supplier>();
-                            calculationViewModel.InventoryStatusAll = new List<Invertory>();
-                            sqliteDbContext.Suppliers.ToList().ForEach(x =>
-                            {
-                                calculationViewModel.SuppliersAll.Add(new Supplier(x));
-                            });
-                            sqliteDbContext.Items.ToList().ForEach(x =>
-                            {
-                                Item item = new Item(x);
-
-                                var group = sqliteDbContext.ItemGroups.Find(x.IdItemGroup);
-
-                                if (group != null)
-                                {
-                                    bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
-                                    calculationViewModel.InventoryStatusAll.Add(new Invertory(item, x.IdItemGroup, x.TotalQuantity, 0, x.AlarmQuantity, isSirovina));
-                                }
-                                else
+                                if (group == null)
                                 {
                                     MessageBox.Show("ARTIKAL MORA DA PRIPADA NEKOJ GRUPI!",
                                         "Greška",
@@ -319,24 +137,212 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
 
                                     return;
                                 }
-                            });
+                                if (group.Name.ToLower().Contains("sirovine") ||
+                                    group.Name.ToLower().Contains("sirovina"))
+                                {
+                                    if (calculationViewModel.CalculationDate.Date < DateTime.Now.Date)
+                                    {
+                                        StarijaKalkulacija(calculationViewModel.CalculationDate,
+                                            item,
+                                            itemDB,
+                                            true,
+                                            null);
+                                    }
+                                    else
+                                    {
+                                        Kalkulacija(item, itemDB);
+                                    }
+                                    item.Item.InputUnitPrice = itemDB.InputUnitPrice;
 
-                            calculationViewModel.Suppliers = new ObservableCollection<Supplier>(calculationViewModel.SuppliersAll);
-                            calculationViewModel.InventoryStatusCalculation = new ObservableCollection<Invertory>(calculationViewModel.InventoryStatusAll);
-                            calculationViewModel.Calculations = new ObservableCollection<Invertory>();
-                            calculationViewModel.CalculationQuantityString = "0";
-                            calculationViewModel.CalculationPriceString = "0";
-                            calculationViewModel.TotalCalculation = 0;
-                            calculationViewModel.InvoiceNumber = string.Empty;
-                            calculationViewModel.VisibilityNext = Visibility.Hidden;
-                            calculationViewModel.SearchText = string.Empty;
-                            calculationViewModel.CurrentGroup = calculationViewModel.AllGroups.FirstOrDefault();
-                            calculationViewModel.CurrentInventoryStatusCalculation = null;
+                                    invertoryGlobals.Add(new InvertoryGlobal()
+                                    {
+                                        Id = item.Item.Id,
+                                        Name = item.Item.Name,
+                                        Jm = item.Item.Jm,
+                                        InputUnitPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
+                                        Quantity = item.Quantity,
+                                        TotalAmout = item.InputPrice
+                                    });
 
-                            MessageBox.Show("Uspešno ste izvrsili kalkulaciju!", "", MessageBoxButton.OK, MessageBoxImage.Information);
+                                    CalculationItemDB calculationItemDB = new CalculationItemDB()
+                                    {
+                                        CalculationId = calculationDB.Id,
+                                        ItemId = itemDB.Id,
+                                        InputPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
+                                        OutputPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
+                                        Quantity = item.Quantity
+                                    };
+                                    calculationViewModel.DbContext.CalculationItems.Add(calculationItemDB);
 
-                            calculationViewModel.Window.Close();
+                                    calculationDB.InputTotalPrice += item.InputPrice;
+                                    calculationViewModel.DbContext.Calculations.Update(calculationDB);
+                                }
+                                else
+                                {
+                                    onlySirovine = false;
+
+                                    if (calculationViewModel.CalculationDate.Date < DateTime.Now.Date)
+                                    {
+                                        StarijaKalkulacija(calculationViewModel.CalculationDate,
+                                            item,
+                                            itemDB,
+                                            false,
+                                            null);
+                                    }
+                                    else
+                                    {
+                                        Kalkulacija(item, itemDB);
+                                    }
+
+                                    if (itemDB.SellingUnitPrice != item.Item.SellingUnitPrice)
+                                    {
+                                        if (!nivelacijaIsAdded)
+                                        {
+                                            nivelacijaIsAdded = true;
+
+                                            nivelacijaDB = new NivelacijaDB()
+                                            {
+                                                Id = nivelacija.Id,
+                                                Counter = nivelacija.CounterNivelacije,
+                                                DateNivelacije = nivelacija.NivelacijaDate,
+                                                Description = nivelacija.Description,
+                                                Type = (int)nivelacija.Type
+                                            };
+                                            calculationViewModel.DbContext.Nivelacijas.Add(nivelacijaDB);
+                                            calculationViewModel.DbContext.SaveChanges();
+
+                                            Log.Debug($"SaveCommand - Kalkulacija - Uspesno sacuvana nivelacija {nivelacija.Id}");
+                                        }
+
+                                        AddNivelacijaItem(item.Item, itemDB, nivelacija, ref nivelacijaTotal);
+                                    }
+
+                                    item.Item.InputUnitPrice = itemDB.InputUnitPrice;
+
+                                    invertoryGlobals.Add(new InvertoryGlobal()
+                                    {
+                                        Id = item.Item.Id,
+                                        Name = item.Item.Name,
+                                        Jm = item.Item.Jm,
+                                        SellingUnitPrice = item.Item.SellingUnitPrice,
+
+                                        InputUnitPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
+
+                                        Quantity = item.Quantity,
+                                        TotalAmout = item.Item.SellingUnitPrice * item.Quantity
+                                    });
+
+                                    CalculationItemDB calculationItemDB = new CalculationItemDB()
+                                    {
+                                        CalculationId = calculationDB.Id,
+                                        ItemId = itemDB.Id,
+                                        InputPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
+                                        OutputPrice = item.Item.SellingUnitPrice,
+                                        Quantity = item.Quantity
+                                    };
+                                    calculationViewModel.DbContext.CalculationItems.Add(calculationItemDB);
+
+                                    calculationDB.OutputTotalPrice += item.Item.SellingUnitPrice * item.Quantity;
+                                    calculationDB.InputTotalPrice += item.InputPrice;
+                                    calculationViewModel.DbContext.Calculations.Update(calculationDB);
+                                }
+
+                                itemDB.TotalQuantity += item.Quantity;
+                                calculationViewModel.DbContext.Update(itemDB);
+                                calculationViewModel.DbContext.SaveChanges();
+                            }
+                        });
+
+
+                        await KnjizenjePazaraKEP(calculationDB);
+
+                        SupplierGlobal supplierGlobal = new SupplierGlobal()
+                        {
+                            Name = calculationViewModel.SelectedSupplier.Name,
+                            Pib = calculationViewModel.SelectedSupplier.Pib,
+                            Address = calculationViewModel.SelectedSupplier.Address,
+                            City = calculationViewModel.SelectedSupplier.City,
+                            ContractNumber = calculationViewModel.SelectedSupplier.ContractNumber,
+                            Email = calculationViewModel.SelectedSupplier.Email,
+                            Mb = calculationViewModel.SelectedSupplier.MB,
+                            InvoiceNumber = calculationViewModel.InvoiceNumber
+                        };
+
+                        if (!onlySirovine)
+                        {
+                            if (nivelacijaDB != null)
+                            {
+                                KepDB kepNivelacijaDB = new KepDB()
+                                {
+                                    Id = Guid.NewGuid().ToString(),
+                                    KepDate = nivelacijaDB.DateNivelacije,
+                                    Type = (int)KepStateEnumeration.Nivelacija,
+                                    Razduzenje = 0,
+                                    Zaduzenje = nivelacijaTotal,
+                                    Description = $"Nivelacija 'Nivelacija_{nivelacijaDB.Counter}-{nivelacijaDB.DateNivelacije.Year}' po kalkulaciji 'Kalkulacija_{calculationDB.Counter}-{calculationDB.CalculationDate.Year}'"
+                                };
+                                calculationViewModel.DbContext.Kep.Add(kepNivelacijaDB);
+                                calculationViewModel.DbContext.SaveChanges();
+                            }
+
+                            KepDB kepCalculationDB = new KepDB()
+                            {
+                                Id = Guid.NewGuid().ToString(),
+                                KepDate = calculationDB.CalculationDate,
+                                Type = (int)KepStateEnumeration.Kalkulacija,
+                                Razduzenje = 0,
+                                Zaduzenje = calculationDB.OutputTotalPrice,
+                                Description = $"Ručna kalkulacija 'Kalkulacija_{calculationDB.Counter}-{calculationDB.CalculationDate.Year}'"
+                            };
+                            calculationViewModel.DbContext.Kep.Add(kepCalculationDB);
+
                         }
+
+                        calculationViewModel.DbContext.SaveChanges();
+                        PrinterManager.Instance.PrintInventoryStatus(invertoryGlobals, $"KALKULACIJA_{calculationDB.Counter}-{calculationDB.CalculationDate.Year}", calculationDB.CalculationDate, supplierGlobal);
+                        calculationViewModel.SuppliersAll = new List<Supplier>();
+                        calculationViewModel.InventoryStatusAll = new List<Invertory>();
+                        calculationViewModel.DbContext.Suppliers.ToList().ForEach(x =>
+                        {
+                            calculationViewModel.SuppliersAll.Add(new Supplier(x));
+                        });
+                        calculationViewModel.DbContext.Items.ToList().ForEach(x =>
+                        {
+                            Item item = new Item(x);
+
+                            var group = calculationViewModel.DbContext.ItemGroups.Find(x.IdItemGroup);
+
+                            if (group != null)
+                            {
+                                bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
+                                calculationViewModel.InventoryStatusAll.Add(new Invertory(item, x.IdItemGroup, x.TotalQuantity, 0, x.AlarmQuantity, isSirovina));
+                            }
+                            else
+                            {
+                                MessageBox.Show("ARTIKAL MORA DA PRIPADA NEKOJ GRUPI!",
+                                    "Greška",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Error);
+
+                                return;
+                            }
+                        });
+
+                        calculationViewModel.Suppliers = new ObservableCollection<Supplier>(calculationViewModel.SuppliersAll);
+                        calculationViewModel.InventoryStatusCalculation = new ObservableCollection<Invertory>(calculationViewModel.InventoryStatusAll);
+                        calculationViewModel.Calculations = new ObservableCollection<Invertory>();
+                        calculationViewModel.CalculationQuantityString = "0";
+                        calculationViewModel.CalculationPriceString = "0";
+                        calculationViewModel.TotalCalculation = 0;
+                        calculationViewModel.InvoiceNumber = string.Empty;
+                        calculationViewModel.VisibilityNext = Visibility.Hidden;
+                        calculationViewModel.SearchText = string.Empty;
+                        calculationViewModel.CurrentGroup = calculationViewModel.AllGroups.FirstOrDefault();
+                        calculationViewModel.CurrentInventoryStatusCalculation = null;
+
+                        MessageBox.Show("Uspešno ste izvrsili kalkulaciju!", "", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                        calculationViewModel.Window.Close();
                     }
                     catch (Exception ex)
                     {
@@ -357,7 +363,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                 {
                     try
                     {
-                        if(viewCalculationViewModel.CurrentCalculation.Supplier == null ||
+                        if (viewCalculationViewModel.CurrentCalculation.Supplier == null ||
                             viewCalculationViewModel.CurrentCalculation.Supplier.Id < 0)
                         {
                             MessageBox.Show("Morate izabrati dobavljača!",
@@ -369,282 +375,44 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
 
                         if (viewCalculationViewModel.CurrentCalculation != null)
                         {
-                            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                            var calculationDB = viewCalculationViewModel.DbContext.Calculations.Find(viewCalculationViewModel.CurrentCalculation.Id);
+
+                            if (calculationDB != null)
                             {
-                                var calculationDB = sqliteDbContext.Calculations.Find(viewCalculationViewModel.CurrentCalculation.Id);
+                                calculationDB.CalculationDate = viewCalculationViewModel.CurrentCalculation.CalculationDate;
+                                calculationDB.InvoiceNumber = viewCalculationViewModel.CurrentCalculation.InvoiceNumber;
+                                calculationDB.SupplierId = viewCalculationViewModel.CurrentCalculation.Supplier.Id;
+                                calculationDB.InputTotalPrice = 0;
+                                calculationDB.OutputTotalPrice = 0;
+                                bool onlySirovine = true;
+                                List<InvertoryGlobal> invertoryGlobals = new List<InvertoryGlobal>();
 
-                                if (calculationDB != null)
+                                var itemsInCalculation = viewCalculationViewModel.DbContext.CalculationItems.Where(item => item.CalculationId == calculationDB.Id);
+
+                                if (itemsInCalculation != null &&
+                                    itemsInCalculation.Any())
                                 {
-                                    calculationDB.CalculationDate = viewCalculationViewModel.CurrentCalculation.CalculationDate;
-                                    calculationDB.InvoiceNumber = viewCalculationViewModel.CurrentCalculation.InvoiceNumber;
-                                    calculationDB.SupplierId = viewCalculationViewModel.CurrentCalculation.Supplier.Id;
-                                    calculationDB.InputTotalPrice = 0;
-                                    calculationDB.OutputTotalPrice = 0;
-                                    bool onlySirovine = true;
-                                    List<InvertoryGlobal> invertoryGlobals = new List<InvertoryGlobal>();
-
-                                    var itemsInCalculation = sqliteDbContext.CalculationItems.Where(item => item.CalculationId == calculationDB.Id);
-
-                                    if (itemsInCalculation != null &&
-                                        itemsInCalculation.Any())
+                                    await itemsInCalculation.ForEachAsync(i =>
                                     {
-                                        await itemsInCalculation.ForEachAsync(i =>
+                                        var item = viewCalculationViewModel.CurrentCalculation.CalculationItems.FirstOrDefault(it => it.Item.Id == i.ItemId);
+
+                                        if (item == null)
                                         {
-                                            var item = viewCalculationViewModel.CurrentCalculation.CalculationItems.FirstOrDefault(it => it.Item.Id == i.ItemId);
-
-                                            if (item == null)
-                                            {
-                                                sqliteDbContext.CalculationItems.Remove(i);
-                                            }
-                                        });
-                                        RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-                                    }
-
-                                    viewCalculationViewModel.CurrentCalculation.CalculationItems.ToList().ForEach(item =>
-                                    {
-                                        var itemDB = sqliteDbContext.Items.Find(item.Item.Id);
-
-                                        if (itemDB != null)
-                                        {
-                                            var group = sqliteDbContext.ItemGroups.Find(itemDB.IdItemGroup);
-
-                                            if (group == null)
-                                            {
-                                                MessageBox.Show("ARTIKAL MORA DA PRIPADA NEKOJ GRUPI!",
-                                                    "Greška",
-                                                    MessageBoxButton.OK,
-                                                    MessageBoxImage.Error);
-
-                                                return;
-                                            }
-
-                                            if (group.Name.ToLower().Contains("sirovine") ||
-                                                group.Name.ToLower().Contains("sirovina"))
-                                            {
-
-                                                if (viewCalculationViewModel.CurrentCalculation.CalculationDate.Date < DateTime.Now.Date)
-                                                {
-                                                    StarijaKalkulacija(sqliteDbContext,
-                                                        viewCalculationViewModel.CurrentCalculation.CalculationDate,
-                                                        item,
-                                                        itemDB,
-                                                        true,
-                                                        calculationDB);
-                                                }
-                                                else
-                                                {
-                                                    Kalkulacija(sqliteDbContext, item, itemDB);
-                                                }
-
-                                                if (itemsInCalculation != null &&
-                                                itemsInCalculation.Any())
-                                                {
-                                                    var itemInCal = itemsInCalculation.FirstOrDefault(i => i.ItemId == itemDB.Id);
-
-                                                    if (itemInCal != null)
-                                                    {
-                                                        itemDB.TotalQuantity -= itemInCal.Quantity;
-                                                        sqliteDbContext.Items.Update(itemDB);
-                                                        sqliteDbContext.CalculationItems.Remove(itemInCal);
-                                                        itemsInCalculation.ToList().Remove(itemInCal);
-                                                    }
-                                                }
-
-                                                item.Item.InputUnitPrice = itemDB.InputUnitPrice;
-                                                invertoryGlobals.Add(new InvertoryGlobal()
-                                                {
-                                                    Id = item.Item.Id,
-                                                    Name = item.Item.Name,
-                                                    Jm = item.Item.Jm,
-                                                    InputUnitPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
-                                                    Quantity = item.Quantity,
-                                                    TotalAmout = item.InputPrice,
-                                                    SellingUnitPrice = 0,
-                                                });
-
-                                                CalculationItemDB calculationItemDB = new CalculationItemDB()
-                                                {
-                                                    CalculationId = calculationDB.Id,
-                                                    ItemId = itemDB.Id,
-                                                    InputPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
-                                                    OutputPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
-                                                    Quantity = item.Quantity,
-                                                };
-                                                sqliteDbContext.CalculationItems.Add(calculationItemDB);
-
-                                                calculationDB.InputTotalPrice += item.InputPrice;
-                                                sqliteDbContext.Calculations.Update(calculationDB);
-                                            }
-                                            else
-                                            {
-                                                onlySirovine = false;
-
-                                                if (viewCalculationViewModel.CurrentCalculation.CalculationDate.Date < DateTime.Now.Date)
-                                                {
-                                                    StarijaKalkulacija(sqliteDbContext,
-                                                        viewCalculationViewModel.CurrentCalculation.CalculationDate,
-                                                        item,
-                                                        itemDB,
-                                                        false,
-                                                        calculationDB);
-                                                }
-                                                else
-                                                {
-                                                    Kalkulacija(sqliteDbContext, item, itemDB);
-                                                }
-
-                                                if (itemsInCalculation != null &&
-                                                itemsInCalculation.Any())
-                                                {
-                                                    var itemInCal = itemsInCalculation.FirstOrDefault(i => i.ItemId == itemDB.Id);
-
-                                                    if (itemInCal != null)
-                                                    {
-                                                        itemDB.TotalQuantity -= itemInCal.Quantity;
-                                                        sqliteDbContext.Items.Update(itemDB);
-                                                        sqliteDbContext.CalculationItems.Remove(itemInCal);
-                                                        itemsInCalculation.ToList().Remove(itemInCal);
-                                                    }
-                                                }
-                                                item.Item.InputUnitPrice = itemDB.InputUnitPrice;
-
-                                                invertoryGlobals.Add(new InvertoryGlobal()
-                                                {
-                                                    Id = item.Item.Id,
-                                                    Name = item.Item.Name,
-                                                    Jm = item.Item.Jm,
-                                                    SellingUnitPrice = item.Item.SellingUnitPrice,
-
-                                                    InputUnitPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
-
-                                                    Quantity = item.Quantity,
-                                                    TotalAmout = Decimal.Round(item.Item.SellingUnitPrice * item.Quantity, 2)
-                                                });
-
-                                                CalculationItemDB calculationItemDB = new CalculationItemDB()
-                                                {
-                                                    CalculationId = calculationDB.Id,
-                                                    ItemId = itemDB.Id,
-                                                    InputPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
-                                                    OutputPrice = item.Item.SellingUnitPrice,
-                                                    Quantity = item.Quantity
-                                                };
-                                                sqliteDbContext.CalculationItems.Add(calculationItemDB);
-
-                                                calculationDB.OutputTotalPrice += item.Item.SellingUnitPrice * item.Quantity;
-                                                calculationDB.InputTotalPrice += item.InputPrice;
-                                                sqliteDbContext.Calculations.Update(calculationDB);
-                                            }
-
-                                            itemDB.TotalQuantity += item.Quantity;
-                                            sqliteDbContext.Update(itemDB);
-                                            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                                            viewCalculationViewModel.DbContext.CalculationItems.Remove(i);
                                         }
                                     });
+                                    viewCalculationViewModel.DbContext.SaveChanges();
+                                }
 
-                                    await KnjizenjePazaraKEP(sqliteDbContext, calculationDB);
+                                viewCalculationViewModel.CurrentCalculation.CalculationItems.ToList().ForEach(item =>
+                                {
+                                    var itemDB = viewCalculationViewModel.DbContext.Items.Find(item.Item.Id);
 
-                                    SupplierGlobal supplierGlobal = new SupplierGlobal()
+                                    if (itemDB != null)
                                     {
-                                        Name = viewCalculationViewModel.CurrentCalculation.Supplier.Name,
-                                        Pib = viewCalculationViewModel.CurrentCalculation.Supplier.Pib,
-                                        Address = viewCalculationViewModel.CurrentCalculation.Supplier.Address,
-                                        City = viewCalculationViewModel.CurrentCalculation.Supplier.City,
-                                        ContractNumber = viewCalculationViewModel.CurrentCalculation.Supplier.ContractNumber,
-                                        Email = viewCalculationViewModel.CurrentCalculation.Supplier.Email,
-                                        Mb = viewCalculationViewModel.CurrentCalculation.Supplier.MB,
-                                        InvoiceNumber = viewCalculationViewModel.CurrentCalculation.InvoiceNumber
-                                    };
+                                        var group = viewCalculationViewModel.DbContext.ItemGroups.Find(itemDB.IdItemGroup);
 
-                                    KepDB? kepCalculationDB = sqliteDbContext.Kep.FirstOrDefault(kep =>
-                                    kep.Description.ToLower().Contains($"kalkulacija_{viewCalculationViewModel.CurrentCalculation.Counter}-{viewCalculationViewModel.CurrentCalculation.CalculationDate.Year}"));
-
-                                    if (kepCalculationDB != null)
-                                    {
-                                        if (!onlySirovine)
-                                        {
-                                            kepCalculationDB.Zaduzenje = calculationDB.OutputTotalPrice;
-                                            kepCalculationDB.KepDate = calculationDB.CalculationDate;
-                                            sqliteDbContext.Kep.Update(kepCalculationDB);
-                                        }
-                                        else
-                                        {
-                                            sqliteDbContext.Kep.Remove(kepCalculationDB);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (!onlySirovine)
-                                        {
-                                            kepCalculationDB = new KepDB()
-                                            {
-                                                Id = Guid.NewGuid().ToString(),
-                                                KepDate = calculationDB.CalculationDate,
-                                                Type = (int)KepStateEnumeration.Kalkulacija,
-                                                Razduzenje = 0,
-                                                Zaduzenje = calculationDB.OutputTotalPrice,
-                                                Description = $"Ručna kalkulacija 'Kalkulacija_{calculationDB.Counter}-{calculationDB.CalculationDate.Year}'"
-                                            };
-                                            sqliteDbContext.Kep.Add(kepCalculationDB);
-                                        }
-                                    }
-                                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                                    PrinterManager.Instance.PrintInventoryStatus(invertoryGlobals, $"KALKULACIJA_{calculationDB.Counter}-{calculationDB.CalculationDate.Year}", calculationDB.CalculationDate, supplierGlobal);
-
-                                    viewCalculationViewModel.CalculationsAll = new ObservableCollection<Models.AppMain.Statistic.Calculation>();
-                                    viewCalculationViewModel.Calculations = new ObservableCollection<Models.AppMain.Statistic.Calculation>();
-
-                                    var calculations = sqliteDbContext.Calculations.Where(cal => viewCalculationViewModel.SearchFromCalculationDate.HasValue &&
-                                    cal.CalculationDate.Date >= viewCalculationViewModel.SearchFromCalculationDate.Value.Date &&
-                                    viewCalculationViewModel.SearchToCalculationDate.HasValue &&
-                                    cal.CalculationDate.Date <= viewCalculationViewModel.SearchToCalculationDate.Value.Date)
-                                    .Join(sqliteDbContext.Suppliers,
-                                    cal => cal.SupplierId,
-                                    supp => supp.Id,
-                                    (cal, supp) => new { Cal = cal, Supp = supp })
-                                    .Join(sqliteDbContext.Cashiers,
-                                    cal => cal.Cal.CashierId,
-                                    cash => cash.Id,
-                                    (cal, cash) => new { Cal = cal, Cash = cash });
-
-                                    if (calculations != null &&
-                                        calculations.Any())
-                                    {
-                                        await calculations.ForEachAsync(cal =>
-                                        {
-                                            Models.AppMain.Statistic.Calculation calculation = new Models.AppMain.Statistic.Calculation()
-                                            {
-                                                Id = cal.Cal.Cal.Id,
-                                                CalculationDate = cal.Cal.Cal.CalculationDate,
-                                                InputTotalPrice = cal.Cal.Cal.InputTotalPrice,
-                                                InvoiceNumber = cal.Cal.Cal.InvoiceNumber,
-                                                OutputTotalPrice = cal.Cal.Cal.OutputTotalPrice,
-                                                Counter = cal.Cal.Cal.Counter,
-                                                Name = $"Kalkulacija_{cal.Cal.Cal.Counter}-{cal.Cal.Cal.CalculationDate.Year}",
-                                                Supplier = cal.Cal.Supp == null ? null : new Supplier(cal.Cal.Supp),
-                                                Cashier = cal.Cash
-                                            };
-
-                                            viewCalculationViewModel.CalculationsAll.Add(calculation);
-                                        });
-                                    }
-                                    viewCalculationViewModel.Calculations = new ObservableCollection<Models.AppMain.Statistic.Calculation>(viewCalculationViewModel.CalculationsAll.OrderBy(cal =>
-                                    cal.CalculationDate));
-
-                                    viewCalculationViewModel.InventoryStatusAll = new List<Invertory>();
-                                    sqliteDbContext.Items.ToList().ForEach(x =>
-                                    {
-                                        Item item = new Item(x);
-
-                                        var group = sqliteDbContext.ItemGroups.Find(x.IdItemGroup);
-
-                                        if (group != null)
-                                        {
-                                            bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
-                                            viewCalculationViewModel.InventoryStatusAll.Add(new Invertory(item, x.IdItemGroup, x.TotalQuantity, 0, x.AlarmQuantity, isSirovina));
-                                        }
-                                        else
+                                        if (group == null)
                                         {
                                             MessageBox.Show("ARTIKAL MORA DA PRIPADA NEKOJ GRUPI!",
                                                 "Greška",
@@ -653,37 +421,270 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
 
                                             return;
                                         }
-                                    });
 
-                                    viewCalculationViewModel.InventoryStatusCalculation = new ObservableCollection<Invertory>(viewCalculationViewModel.InventoryStatusAll);
-                                    viewCalculationViewModel.CalculationQuantityString = "0";
-                                    viewCalculationViewModel.CalculationPriceString = "0";
-                                    //viewCalculationViewModel.VisibilityNext = Visibility.Hidden;
-                                    viewCalculationViewModel.SearchText = string.Empty;
-                                    viewCalculationViewModel.CurrentGroup = viewCalculationViewModel.AllGroups.FirstOrDefault();
-                                    viewCalculationViewModel.CurrentInventoryStatusCalculation = null;
-                                    MessageBox.Show("Uspešno ste izmenili kalkulaciju!", "Uspešna kalkulacija", MessageBoxButton.OK, MessageBoxImage.Information);
+                                        if (group.Name.ToLower().Contains("sirovine") ||
+                                            group.Name.ToLower().Contains("sirovina"))
+                                        {
 
-                                    if (viewCalculationViewModel.EditWindow != null)
-                                    {
-                                        viewCalculationViewModel.EditWindow.Close();
+                                            if (viewCalculationViewModel.CurrentCalculation.CalculationDate.Date < DateTime.Now.Date)
+                                            {
+                                                StarijaKalkulacija(viewCalculationViewModel.CurrentCalculation.CalculationDate,
+                                                    item,
+                                                    itemDB,
+                                                    true,
+                                                    calculationDB);
+                                            }
+                                            else
+                                            {
+                                                Kalkulacija(item, itemDB);
+                                            }
+
+                                            if (itemsInCalculation != null &&
+                                            itemsInCalculation.Any())
+                                            {
+                                                var itemInCal = itemsInCalculation.FirstOrDefault(i => i.ItemId == itemDB.Id);
+
+                                                if (itemInCal != null)
+                                                {
+                                                    itemDB.TotalQuantity -= itemInCal.Quantity;
+                                                    viewCalculationViewModel.DbContext.Items.Update(itemDB);
+                                                    viewCalculationViewModel.DbContext.CalculationItems.Remove(itemInCal);
+                                                    itemsInCalculation.ToList().Remove(itemInCal);
+                                                }
+                                            }
+
+                                            item.Item.InputUnitPrice = itemDB.InputUnitPrice;
+                                            invertoryGlobals.Add(new InvertoryGlobal()
+                                            {
+                                                Id = item.Item.Id,
+                                                Name = item.Item.Name,
+                                                Jm = item.Item.Jm,
+                                                InputUnitPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
+                                                Quantity = item.Quantity,
+                                                TotalAmout = item.InputPrice,
+                                                SellingUnitPrice = 0,
+                                            });
+
+                                            CalculationItemDB calculationItemDB = new CalculationItemDB()
+                                            {
+                                                CalculationId = calculationDB.Id,
+                                                ItemId = itemDB.Id,
+                                                InputPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
+                                                OutputPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
+                                                Quantity = item.Quantity,
+                                            };
+                                            viewCalculationViewModel.DbContext.CalculationItems.Add(calculationItemDB);
+
+                                            calculationDB.InputTotalPrice += item.InputPrice;
+                                            viewCalculationViewModel.DbContext.Calculations.Update(calculationDB);
+                                        }
+                                        else
+                                        {
+                                            onlySirovine = false;
+
+                                            if (viewCalculationViewModel.CurrentCalculation.CalculationDate.Date < DateTime.Now.Date)
+                                            {
+                                                StarijaKalkulacija(viewCalculationViewModel.CurrentCalculation.CalculationDate,
+                                                    item,
+                                                    itemDB,
+                                                    false,
+                                                    calculationDB);
+                                            }
+                                            else
+                                            {
+                                                Kalkulacija(item, itemDB);
+                                            }
+
+                                            if (itemsInCalculation != null &&
+                                            itemsInCalculation.Any())
+                                            {
+                                                var itemInCal = itemsInCalculation.FirstOrDefault(i => i.ItemId == itemDB.Id);
+
+                                                if (itemInCal != null)
+                                                {
+                                                    itemDB.TotalQuantity -= itemInCal.Quantity;
+                                                    viewCalculationViewModel.DbContext.Items.Update(itemDB);
+                                                    viewCalculationViewModel.DbContext.CalculationItems.Remove(itemInCal);
+                                                    itemsInCalculation.ToList().Remove(itemInCal);
+                                                }
+                                            }
+                                            item.Item.InputUnitPrice = itemDB.InputUnitPrice;
+
+                                            invertoryGlobals.Add(new InvertoryGlobal()
+                                            {
+                                                Id = item.Item.Id,
+                                                Name = item.Item.Name,
+                                                Jm = item.Item.Jm,
+                                                SellingUnitPrice = item.Item.SellingUnitPrice,
+
+                                                InputUnitPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
+
+                                                Quantity = item.Quantity,
+                                                TotalAmout = Decimal.Round(item.Item.SellingUnitPrice * item.Quantity, 2)
+                                            });
+
+                                            CalculationItemDB calculationItemDB = new CalculationItemDB()
+                                            {
+                                                CalculationId = calculationDB.Id,
+                                                ItemId = itemDB.Id,
+                                                InputPrice = Decimal.Round(item.InputPrice / item.Quantity, 2),
+                                                OutputPrice = item.Item.SellingUnitPrice,
+                                                Quantity = item.Quantity
+                                            };
+                                            viewCalculationViewModel.DbContext.CalculationItems.Add(calculationItemDB);
+
+                                            calculationDB.OutputTotalPrice += item.Item.SellingUnitPrice * item.Quantity;
+                                            calculationDB.InputTotalPrice += item.InputPrice;
+                                            viewCalculationViewModel.DbContext.Calculations.Update(calculationDB);
+                                        }
+
+                                        itemDB.TotalQuantity += item.Quantity;
+                                        viewCalculationViewModel.DbContext.Update(itemDB);
+                                        viewCalculationViewModel.DbContext.SaveChanges();
                                     }
+                                });
 
-                                    if (viewCalculationViewModel.CurrentWindow != null)
+                                await KnjizenjePazaraKEP(calculationDB);
+
+                                SupplierGlobal supplierGlobal = new SupplierGlobal()
+                                {
+                                    Name = viewCalculationViewModel.CurrentCalculation.Supplier.Name,
+                                    Pib = viewCalculationViewModel.CurrentCalculation.Supplier.Pib,
+                                    Address = viewCalculationViewModel.CurrentCalculation.Supplier.Address,
+                                    City = viewCalculationViewModel.CurrentCalculation.Supplier.City,
+                                    ContractNumber = viewCalculationViewModel.CurrentCalculation.Supplier.ContractNumber,
+                                    Email = viewCalculationViewModel.CurrentCalculation.Supplier.Email,
+                                    Mb = viewCalculationViewModel.CurrentCalculation.Supplier.MB,
+                                    InvoiceNumber = viewCalculationViewModel.CurrentCalculation.InvoiceNumber
+                                };
+
+                                KepDB? kepCalculationDB = viewCalculationViewModel.DbContext.Kep.FirstOrDefault(kep =>
+                                kep.Description.ToLower().Contains($"kalkulacija_{viewCalculationViewModel.CurrentCalculation.Counter}-{viewCalculationViewModel.CurrentCalculation.CalculationDate.Year}"));
+
+                                if (kepCalculationDB != null)
+                                {
+                                    if (!onlySirovine)
                                     {
-                                        viewCalculationViewModel.CurrentWindow.Close();
+                                        kepCalculationDB.Zaduzenje = calculationDB.OutputTotalPrice;
+                                        kepCalculationDB.KepDate = calculationDB.CalculationDate;
+                                        viewCalculationViewModel.DbContext.Kep.Update(kepCalculationDB);
                                     }
-
-                                    if (viewCalculationViewModel.EditQuantityWindow != null)
+                                    else
                                     {
-                                        viewCalculationViewModel.EditQuantityWindow.Close();
+                                        viewCalculationViewModel.DbContext.Kep.Remove(kepCalculationDB);
                                     }
                                 }
                                 else
                                 {
-                                    Log.Error("SaveCalculationCommand -> Greska, kalkulacija ne postoji u bazi ->");
-                                    MessageBox.Show("Greška prilikom izmene kalkulacije!", "Greška - kalkulacija", MessageBoxButton.OK, MessageBoxImage.Error);
+                                    if (!onlySirovine)
+                                    {
+                                        kepCalculationDB = new KepDB()
+                                        {
+                                            Id = Guid.NewGuid().ToString(),
+                                            KepDate = calculationDB.CalculationDate,
+                                            Type = (int)KepStateEnumeration.Kalkulacija,
+                                            Razduzenje = 0,
+                                            Zaduzenje = calculationDB.OutputTotalPrice,
+                                            Description = $"Ručna kalkulacija 'Kalkulacija_{calculationDB.Counter}-{calculationDB.CalculationDate.Year}'"
+                                        };
+                                        viewCalculationViewModel.DbContext.Kep.Add(kepCalculationDB);
+                                    }
                                 }
+                                viewCalculationViewModel.DbContext.SaveChanges();
+
+                                PrinterManager.Instance.PrintInventoryStatus(invertoryGlobals, $"KALKULACIJA_{calculationDB.Counter}-{calculationDB.CalculationDate.Year}", calculationDB.CalculationDate, supplierGlobal);
+
+                                viewCalculationViewModel.CalculationsAll = new ObservableCollection<Models.AppMain.Statistic.Calculation>();
+                                viewCalculationViewModel.Calculations = new ObservableCollection<Models.AppMain.Statistic.Calculation>();
+
+                                var calculations = viewCalculationViewModel.DbContext.Calculations.Where(cal => viewCalculationViewModel.SearchFromCalculationDate.HasValue &&
+                                cal.CalculationDate.Date >= viewCalculationViewModel.SearchFromCalculationDate.Value.Date &&
+                                viewCalculationViewModel.SearchToCalculationDate.HasValue &&
+                                cal.CalculationDate.Date <= viewCalculationViewModel.SearchToCalculationDate.Value.Date)
+                                .Join(viewCalculationViewModel.DbContext.Suppliers,
+                                cal => cal.SupplierId,
+                                supp => supp.Id,
+                                (cal, supp) => new { Cal = cal, Supp = supp })
+                                .Join(viewCalculationViewModel.DbContext.Cashiers,
+                                cal => cal.Cal.CashierId,
+                                cash => cash.Id,
+                                (cal, cash) => new { Cal = cal, Cash = cash });
+
+                                if (calculations != null &&
+                                    calculations.Any())
+                                {
+                                    await calculations.ForEachAsync(cal =>
+                                    {
+                                        Models.AppMain.Statistic.Calculation calculation = new Models.AppMain.Statistic.Calculation()
+                                        {
+                                            Id = cal.Cal.Cal.Id,
+                                            CalculationDate = cal.Cal.Cal.CalculationDate,
+                                            InputTotalPrice = cal.Cal.Cal.InputTotalPrice,
+                                            InvoiceNumber = cal.Cal.Cal.InvoiceNumber,
+                                            OutputTotalPrice = cal.Cal.Cal.OutputTotalPrice,
+                                            Counter = cal.Cal.Cal.Counter,
+                                            Name = $"Kalkulacija_{cal.Cal.Cal.Counter}-{cal.Cal.Cal.CalculationDate.Year}",
+                                            Supplier = cal.Cal.Supp == null ? null : new Supplier(cal.Cal.Supp),
+                                            Cashier = cal.Cash
+                                        };
+
+                                        viewCalculationViewModel.CalculationsAll.Add(calculation);
+                                    });
+                                }
+                                viewCalculationViewModel.Calculations = new ObservableCollection<Models.AppMain.Statistic.Calculation>(viewCalculationViewModel.CalculationsAll.OrderBy(cal =>
+                                cal.CalculationDate));
+
+                                viewCalculationViewModel.InventoryStatusAll = new List<Invertory>();
+                                viewCalculationViewModel.DbContext.Items.ToList().ForEach(x =>
+                                {
+                                    Item item = new Item(x);
+
+                                    var group = viewCalculationViewModel.DbContext.ItemGroups.Find(x.IdItemGroup);
+
+                                    if (group != null)
+                                    {
+                                        bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
+                                        viewCalculationViewModel.InventoryStatusAll.Add(new Invertory(item, x.IdItemGroup, x.TotalQuantity, 0, x.AlarmQuantity, isSirovina));
+                                    }
+                                    else
+                                    {
+                                        MessageBox.Show("ARTIKAL MORA DA PRIPADA NEKOJ GRUPI!",
+                                            "Greška",
+                                            MessageBoxButton.OK,
+                                            MessageBoxImage.Error);
+
+                                        return;
+                                    }
+                                });
+
+                                viewCalculationViewModel.InventoryStatusCalculation = new ObservableCollection<Invertory>(viewCalculationViewModel.InventoryStatusAll);
+                                viewCalculationViewModel.CalculationQuantityString = "0";
+                                viewCalculationViewModel.CalculationPriceString = "0";
+                                //viewCalculationViewModel.VisibilityNext = Visibility.Hidden;
+                                viewCalculationViewModel.SearchText = string.Empty;
+                                viewCalculationViewModel.CurrentGroup = viewCalculationViewModel.AllGroups.FirstOrDefault();
+                                viewCalculationViewModel.CurrentInventoryStatusCalculation = null;
+                                MessageBox.Show("Uspešno ste izmenili kalkulaciju!", "Uspešna kalkulacija", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                                if (viewCalculationViewModel.EditWindow != null)
+                                {
+                                    viewCalculationViewModel.EditWindow.Close();
+                                }
+
+                                if (viewCalculationViewModel.CurrentWindow != null)
+                                {
+                                    viewCalculationViewModel.CurrentWindow.Close();
+                                }
+
+                                if (viewCalculationViewModel.EditQuantityWindow != null)
+                                {
+                                    viewCalculationViewModel.EditQuantityWindow.Close();
+                                }
+                            }
+                            else
+                            {
+                                Log.Error("SaveCalculationCommand -> Greska, kalkulacija ne postoji u bazi ->");
+                                MessageBox.Show("Greška prilikom izmene kalkulacije!", "Greška - kalkulacija", MessageBoxButton.OK, MessageBoxImage.Error);
                             }
                         }
                     }
@@ -695,20 +696,19 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                 }
             }
         }
-        private async Task KnjizenjePazaraKEP(SqliteDbContext sqliteDbContext,
-            CalculationDB calculationDB)
+        private async Task KnjizenjePazaraKEP(CalculationDB calculationDB)
         {
-            var proknjizeniPazariDB = sqliteDbContext.KnjizenjePazara.Where(kp => kp.IssueDateTime.Date >= calculationDB.CalculationDate.Date);
+            var proknjizeniPazariDB = _dbContext.KnjizenjePazara.Where(kp => kp.IssueDateTime.Date >= calculationDB.CalculationDate.Date);
 
             if (proknjizeniPazariDB != null &&
                 proknjizeniPazariDB.Any())
             {
                 await proknjizeniPazariDB.ForEachAsync(kp =>
                 {
-                    var kep = sqliteDbContext.Kep.Where(kep => kep.KepDate.Date == kp.IssueDateTime.Date &&
+                    var kep = _dbContext.Kep.Where(kep => kep.KepDate.Date == kp.IssueDateTime.Date &&
                     kep.Type >= (int)KepStateEnumeration.Dnevni_Pazar_Prodaja_Gotovina && kep.Type <= (int)KepStateEnumeration.Dnevni_Pazar_Refundacija_Virman);
 
-                    if(kep != null &&
+                    if (kep != null &&
                     kep.Any())
                     {
                         kep.ForEachAsync(k =>
@@ -745,8 +745,8 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
 
                             if (paymentType != null)
                             {
-                                var invoices = sqliteDbContext.Invoices.Where(invoice => invoice.KnjizenjePazaraId == kp.Id)
-                                .Join(sqliteDbContext.PaymentInvoices,
+                                var invoices = _dbContext.Invoices.Where(invoice => invoice.KnjizenjePazaraId == kp.Id)
+                                .Join(_dbContext.PaymentInvoices,
                                 invoice => invoice.Id,
                                 payment => payment.InvoiceId,
                                 (invoice, payment) => new { Invoice = invoice, Payment = payment })
@@ -760,15 +760,15 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                                     k.Zaduzenje = 0;
                                     invoices.ForEachAsync(invoice =>
                                     {
-                                        var itemsInInvoice = sqliteDbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoice.Id &&
+                                        var itemsInInvoice = _dbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoice.Id &&
                                         (itemInvoice.IsSirovina == null || itemInvoice.IsSirovina == 0));
 
-                                        if(itemsInInvoice != null &&
+                                        if (itemsInInvoice != null &&
                                         itemsInInvoice.Any())
                                         {
                                             itemsInInvoice.ForEachAsync(item =>
                                             {
-                                                var itemDB = sqliteDbContext.Items.Find(item.ItemCode);
+                                                var itemDB = _dbContext.Items.Find(item.ItemCode);
 
                                                 if (itemDB != null)
                                                 {
@@ -854,35 +854,33 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                                     });
                                 }
                             }
-                            sqliteDbContext.Kep.Update(k);
+                            _dbContext.Kep.Update(k);
                         });
                     }
-                    sqliteDbContext.KnjizenjePazara.Update(kp);
+                    _dbContext.KnjizenjePazara.Update(kp);
                 });
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                _dbContext.SaveChanges();
             }
         }
-        private async Task<decimal> SrediProsecnuCenu(SqliteDbContext sqliteDbContext, 
-            ItemDB itemDB,
+        private async Task<decimal> SrediProsecnuCenu(ItemDB itemDB,
             bool isSirovina)
         {
             decimal prosecnaCena = 0;
             decimal quantity = 0;
+            var proknjizeniPazari = _dbContext.KnjizenjePazara.Join(_dbContext.Invoices,
+        knjizenje => knjizenje.Id,
+            invoice => invoice.KnjizenjePazaraId,
+            (knjizenje, invoice) => new { Knji = knjizenje, Invoice = invoice })
+            .Join(_dbContext.ItemInvoices,
+            invoice => invoice.Invoice.Id,
+            invoiceItem => invoiceItem.InvoiceId,
+            (invoice, invoiceItem) => new { KnjizenjeInvoice = invoice, InvItem = invoiceItem })
+            .Where(pazar => pazar.KnjizenjeInvoice.Invoice.SdcDateTime != null &&
+            pazar.KnjizenjeInvoice.Invoice.SdcDateTime.HasValue &&
+            pazar.InvItem.ItemCode == itemDB.Id)
+            .OrderBy(item => item.KnjizenjeInvoice.Knji.IssueDateTime);
 
-            var proknjizeniPazari = sqliteDbContext.KnjizenjePazara.Join(sqliteDbContext.Invoices,
-            knjizenje => knjizenje.Id,
-                invoice => invoice.KnjizenjePazaraId,
-                (knjizenje, invoice) => new { Knji = knjizenje, Invoice = invoice })
-                .Join(sqliteDbContext.ItemInvoices,
-                invoice => invoice.Invoice.Id,
-                invoiceItem => invoiceItem.InvoiceId,
-                (invoice, invoiceItem) => new { KnjizenjeInvoice = invoice, InvItem = invoiceItem })
-                .Where(pazar => pazar.KnjizenjeInvoice.Invoice.SdcDateTime != null &&
-                pazar.KnjizenjeInvoice.Invoice.SdcDateTime.HasValue &&
-                pazar.InvItem.ItemCode == itemDB.Id)
-                .OrderBy(item => item.KnjizenjeInvoice.Knji.IssueDateTime);
-
-            var neproknjizeniPazari = sqliteDbContext.Invoices.Join(sqliteDbContext.ItemInvoices,
+            var neproknjizeniPazari = _dbContext.Invoices.Join(_dbContext.ItemInvoices,
             invoice => invoice.Id,
                 invoiceItem => invoiceItem.InvoiceId,
                 (invoice, invoiceItem) => new { Inv = invoice, InvItem = invoiceItem })
@@ -891,7 +889,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                 pazar.InvItem.ItemCode == itemDB.Id)
                 .OrderBy(item => item.Inv.SdcDateTime);
 
-            var kalkulacije = sqliteDbContext.Calculations.Join(sqliteDbContext.CalculationItems,
+            var kalkulacije = _dbContext.Calculations.Join(_dbContext.CalculationItems,
             calculacion => calculacion.Id,
                 calculationItem => calculationItem.CalculationId,
                 (calculacion, calculationItem) => new { Cal = calculacion, CalItem = calculationItem })
@@ -924,7 +922,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                                 if (!kalkulacijeOdradjene.Any() ||
                                 !kalkulacijeOdradjene.Contains(kal.Cal.Id))
                                 {
-                                    if(prosecnaCena == 0)
+                                    if (prosecnaCena == 0)
                                     {
                                         prosecnaCena = kal.CalItem.InputPrice;
                                     }
@@ -937,9 +935,9 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                                         {
                                             prosecnaCena = 0;
                                         }
-                                        else 
+                                        else
                                         {
-                                            prosecnaCena = Decimal.Round(delilac / deljenik, 2); 
+                                            prosecnaCena = Decimal.Round(delilac / deljenik, 2);
                                         }
                                     }
                                     quantity += kal.CalItem.Quantity;
@@ -976,7 +974,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                                             paz.InvItem.UnitPrice = prosecnaCena;
                                         }
                                         paz.InvItem.InputUnitPrice = prosecnaCena;
-                                        sqliteDbContext.ItemInvoices.Update(paz.InvItem);
+                                        _dbContext.ItemInvoices.Update(paz.InvItem);
                                         neproknjizeni.Add(paz.Inv.Id);
                                     }
                                 }
@@ -994,7 +992,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                             prPazar.InvItem.UnitPrice = prosecnaCena;
                         }
                         prPazar.InvItem.InputUnitPrice = prosecnaCena;
-                        sqliteDbContext.ItemInvoices.Update(prPazar.InvItem);
+                        _dbContext.ItemInvoices.Update(prPazar.InvItem);
                     }
                 });
             }
@@ -1056,7 +1054,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                                 pazar.InvItem.UnitPrice = prosecnaCena;
                             }
                             pazar.InvItem.InputUnitPrice = prosecnaCena;
-                            sqliteDbContext.ItemInvoices.Update(pazar.InvItem);
+                            _dbContext.ItemInvoices.Update(pazar.InvItem);
                         }
                     });
                 }
@@ -1069,7 +1067,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
 
                         await kalkulacije.ForEachAsync(kal =>
                         {
-                            if(prosecnaCena == 0)
+                            if (prosecnaCena == 0)
                             {
                                 quantity += kal.CalItem.Quantity;
                             }
@@ -1096,8 +1094,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
 
             return Decimal.Round(prosecnaCena, 2);
         }
-        private async void StarijaKalkulacija(SqliteDbContext sqliteDbContext,
-            DateTime calculationDate,
+        private async void StarijaKalkulacija(DateTime calculationDate,
             Invertory calculationItem,
             ItemDB itemDB,
             bool isSirovina,
@@ -1112,25 +1109,24 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
             if (itemDB.TotalQuantity != 0 &&
                 unitPrice == 0)
             {
-                unitPrice = await SrediProsecnuCenu(sqliteDbContext, itemDB, isSirovina);
+                unitPrice = await SrediProsecnuCenu(itemDB, isSirovina);
             }
+            var proknjizeniPazari = _dbContext.KnjizenjePazara.Join(_dbContext.Invoices,
+            knjizenje => knjizenje.Id,
+            invoice => invoice.KnjizenjePazaraId,
+            (knjizenje, invoice) => new { Knji = knjizenje, Invoice = invoice })
+            .Where(pazar => pazar.Knji.IssueDateTime.Date >= calculationDate.Date)
+            .Join(_dbContext.ItemInvoices,
+            invoice => invoice.Invoice.Id,
+            invoiceItem => invoiceItem.InvoiceId,
+            (invoice, invoiceItem) => new { KnjizenjeInvoice = invoice, InvItem = invoiceItem })
+            .Where(pazar => pazar.KnjizenjeInvoice.Invoice.SdcDateTime != null &&
+            pazar.KnjizenjeInvoice.Invoice.SdcDateTime.HasValue &&
+            pazar.KnjizenjeInvoice.Invoice.SdcDateTime.Value.Date >= calculationDate.Date &&
+            pazar.InvItem.ItemCode == itemDB.Id)
+            .OrderByDescending(item => item.KnjizenjeInvoice.Knji.IssueDateTime);
 
-            var proknjizeniPazari = sqliteDbContext.KnjizenjePazara.Join(sqliteDbContext.Invoices,
-                knjizenje => knjizenje.Id,
-                invoice => invoice.KnjizenjePazaraId,
-                (knjizenje, invoice) => new { Knji = knjizenje, Invoice = invoice })
-                .Where(pazar => pazar.Knji.IssueDateTime.Date >= calculationDate.Date)
-                .Join(sqliteDbContext.ItemInvoices,
-                invoice => invoice.Invoice.Id,
-                invoiceItem => invoiceItem.InvoiceId,
-                (invoice, invoiceItem) => new { KnjizenjeInvoice = invoice, InvItem = invoiceItem })
-                .Where(pazar => pazar.KnjizenjeInvoice.Invoice.SdcDateTime != null &&
-                pazar.KnjizenjeInvoice.Invoice.SdcDateTime.HasValue &&
-                pazar.KnjizenjeInvoice.Invoice.SdcDateTime.Value.Date >= calculationDate.Date &&
-                pazar.InvItem.ItemCode == itemDB.Id)
-                .OrderByDescending(item => item.KnjizenjeInvoice.Knji.IssueDateTime);
-
-            var neproknjizeniPazari = sqliteDbContext.Invoices.Join(sqliteDbContext.ItemInvoices,
+            var neproknjizeniPazari = _dbContext.Invoices.Join(_dbContext.ItemInvoices,
                 invoice => invoice.Id,
                 invoiceItem => invoiceItem.InvoiceId,
                 (invoice, invoiceItem) => new { Inv = invoice, InvItem = invoiceItem })
@@ -1139,7 +1135,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                 pazar.InvItem.ItemCode == itemDB.Id)
                 .OrderByDescending(item => item.Inv.SdcDateTime);
 
-            var kalkulacije  = sqliteDbContext.Calculations.Join(sqliteDbContext.CalculationItems,
+            var kalkulacije = _dbContext.Calculations.Join(_dbContext.CalculationItems,
                 calculacion => calculacion.Id,
                 calculationItem => calculationItem.CalculationId,
                 (calculacion, calculationItem) => new { Cal = calculacion, CalItem = calculationItem })
@@ -1214,7 +1210,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                                     }
                                     else
                                     {
-                                        decimal quantityTrenutno = Math.Abs(itemDB.TotalQuantity)  + qunatityPazari - qunatityKalkulacija;
+                                        decimal quantityTrenutno = Math.Abs(itemDB.TotalQuantity) + qunatityPazari - qunatityKalkulacija;
                                         decimal quantityUkupno = Math.Abs(itemDB.TotalQuantity) + qunatityPazari - qunatityKalkulacija - kal.CalItem.Quantity;
 
                                         decimal delilac = (quantityTrenutno * unitPrice) - kal.CalItem.InputPrice * kal.CalItem.Quantity;
@@ -1326,7 +1322,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
             }
 
             decimal quantityTotal = itemDB.TotalQuantity + qunatityPazari - qunatityKalkulacija;
-            decimal deljenik = Math.Abs(quantityTotal)  * unitPrice + (calculationItem.InputPrice);
+            decimal deljenik = Math.Abs(quantityTotal) * unitPrice + (calculationItem.InputPrice);
             decimal delilac = Math.Abs(quantityTotal) + calculationItem.Quantity;
 
             if (delilac == 0 || deljenik == 0)
@@ -1376,8 +1372,9 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                                         {
                                             itemDB.InputUnitPrice = unitPrice = 0;
                                         }
-                                        else {
-                                            itemDB.InputUnitPrice = unitPrice = Decimal.Round(delilac / deljenik, 2); 
+                                        else
+                                        {
+                                            itemDB.InputUnitPrice = unitPrice = Decimal.Round(delilac / deljenik, 2);
                                         }
 
                                         qunatityKalkulacija -= kal.CalItem.Quantity;
@@ -1419,7 +1416,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                                             paz.InvItem.TotalAmout = Decimal.Round(itemDB.InputUnitPrice.Value * paz.InvItem.Quantity.Value, 2);
                                         }
                                         paz.InvItem.InputUnitPrice = itemDB.InputUnitPrice;
-                                        sqliteDbContext.ItemInvoices.Update(paz.InvItem);
+                                        _dbContext.ItemInvoices.Update(paz.InvItem);
 
                                         neproknjizeni.Add(paz.Inv.Id);
                                     }
@@ -1441,7 +1438,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                             prPazar.InvItem.TotalAmout = Decimal.Round(itemDB.InputUnitPrice.Value * prPazar.InvItem.Quantity.Value);
                         }
                         prPazar.InvItem.InputUnitPrice = itemDB.InputUnitPrice;
-                        sqliteDbContext.ItemInvoices.Update(prPazar.InvItem);
+                        _dbContext.ItemInvoices.Update(prPazar.InvItem);
                     }
                 });
             }
@@ -1504,7 +1501,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                             pazar.InvItem.OriginalUnitPrice = itemDB.InputUnitPrice;
                             pazar.InvItem.TotalAmout = Decimal.Round(itemDB.InputUnitPrice.Value * pazar.InvItem.Quantity.Value, 2);
                         }
-                        sqliteDbContext.ItemInvoices.Update(pazar.InvItem);
+                        _dbContext.ItemInvoices.Update(pazar.InvItem);
                     }
                 });
             }
@@ -1539,12 +1536,11 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                     }
                 });
 
-                sqliteDbContext.Items.Update(itemDB);
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                _dbContext.Items.Update(itemDB);
+                _dbContext.SaveChanges();
             }
         }
-        private void Kalkulacija(SqliteDbContext sqliteDbContext,
-            Invertory calculationItem,
+        private void Kalkulacija(Invertory calculationItem,
             ItemDB itemDB,
             CalculationDB? calculationDB = null)
         {
@@ -1552,18 +1548,18 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
             decimal inputUnitPrice = itemDB.InputUnitPrice != null && itemDB.InputUnitPrice.HasValue ? itemDB.InputUnitPrice.Value : 0;
 
             itemDB.InputUnitPrice = Decimal.Round(((inputUnitPrice * quantity) + (calculationItem.InputPrice)) / (quantity + calculationItem.Quantity), 2);
-            
-            sqliteDbContext.Items.Update(itemDB);
-            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+
+            _dbContext.Items.Update(itemDB);
+            _dbContext.SaveChanges();
+
         }
-        private void AddNivelacijaItem(SqliteDbContext sqliteDbContext,
-            Item item,
+        private void AddNivelacijaItem(Item item,
             ItemDB itemDB,
             Models.AppMain.Statistic.Nivelacija nivelacija,
             ref decimal nivelacijaTotal)
         {
 
-            var nivelacijaItem = new NivelacijaItem(item);
+            var nivelacijaItem = new NivelacijaItem(_dbContext, item);
             nivelacijaItem.OldPrice = itemDB.SellingUnitPrice;
             nivelacijaItem.NewPrice = item.SellingUnitPrice;
 
@@ -1576,12 +1572,12 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                 StopaPDV = nivelacijaItem.StopaPDV,
                 TotalQuantity = itemDB.TotalQuantity,
             };
-            sqliteDbContext.ItemsNivelacija.Add(itemNivelacijaDB);
+            _dbContext.ItemsNivelacija.Add(itemNivelacijaDB);
 
             itemDB.SellingUnitPrice = nivelacijaItem.NewPrice;
-            sqliteDbContext.Items.Update(itemDB);
+            _dbContext.Items.Update(itemDB);
 
-            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+            _dbContext.SaveChanges();
 
             nivelacijaTotal += (itemNivelacijaDB.NewUnitPrice - itemNivelacijaDB.OldUnitPrice) * itemNivelacijaDB.TotalQuantity;
 

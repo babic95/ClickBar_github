@@ -1,5 +1,5 @@
 ﻿using ClickBar.ViewModels.AppMain.Statistic;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,21 +43,18 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
 
                     if (result == MessageBoxResult.Yes)
                     {
-                        using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                        var zeljaDB = _currentViewModel.DbContext.Zelje.Find(idZelje);
+
+                        if (zeljaDB != null)
                         {
-                            var zeljaDB = sqliteDbContext.Zelje.Find(idZelje);
+                            _currentViewModel.DbContext.Zelje.Remove(zeljaDB);
+                            _currentViewModel.DbContext.SaveChanges();
 
-                            if(zeljaDB != null)
+                            var zeljaZaBrisanje = _currentViewModel.Zelje.FirstOrDefault(z => z.Id == idZelje);
+
+                            if (zeljaZaBrisanje != null)
                             {
-                                sqliteDbContext.Zelje.Remove(zeljaDB);
-                                sqliteDbContext.SaveChanges();
-
-                                var zeljaZaBrisanje = _currentViewModel.Zelje.FirstOrDefault(z => z.Id == idZelje);
-
-                                if(zeljaZaBrisanje != null)
-                                {
-                                    _currentViewModel.Zelje.Remove(zeljaZaBrisanje);
-                                }
+                                _currentViewModel.Zelje.Remove(zeljaZaBrisanje);
                             }
                         }
                     }

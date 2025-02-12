@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows;
 using ClickBar.Views.AppMain.AuxiliaryWindows.Statistic.ViewCalculation;
-using ClickBar_Database.Models;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager.Models;
+using ClickBar_DatabaseSQLManager;
 
 namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
 {
@@ -47,65 +47,62 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
 
                         if (calculationItem != null)
                         {
-                            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                            var group = _currentViewModel.DbContext.ItemGroups.Find(calculationItem.IdGroupItems);
+
+                            if (group == null)
                             {
-                                var group = sqliteDbContext.ItemGroups.Find(calculationItem.IdGroupItems);
+                                MessageBox.Show("ARTIKAL MORA DA PRIPADA NEKOJ GRUPI!",
+                                    "Greška",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Error);
 
-                                if (group == null)
-                                {
-                                    MessageBox.Show("ARTIKAL MORA DA PRIPADA NEKOJ GRUPI!",
-                                        "Greška",
-                                        MessageBoxButton.OK,
-                                        MessageBoxImage.Error);
+                                return;
+                            }
 
-                                    return;
-                                }
+                            if (group.Name.ToLower().Contains("sirovine") ||
+                                group.Name.ToLower().Contains("sirovina"))
+                            {
+                                _currentViewModel.VisibilityProsecnaPrice = Visibility.Visible;
 
-                                if (group.Name.ToLower().Contains("sirovine") ||
-                                    group.Name.ToLower().Contains("sirovina"))
-                                {
-                                    _currentViewModel.VisibilityProsecnaPrice = Visibility.Visible;
+                                _currentViewModel.ProsecnaPrice = calculationItem.Item.InputUnitPrice != null &&
+                                    calculationItem.Item.InputUnitPrice.HasValue ? calculationItem.Item.InputUnitPrice.Value : 0;
+                            }
+                            else
+                            {
+                                _currentViewModel.VisibilityProsecnaPrice = Visibility.Hidden;
 
-                                    _currentViewModel.ProsecnaPrice = calculationItem.Item.InputUnitPrice != null &&
-                                        calculationItem.Item.InputUnitPrice.HasValue ? calculationItem.Item.InputUnitPrice.Value : 0;
-                                }
-                                else
-                                {
-                                    _currentViewModel.VisibilityProsecnaPrice = Visibility.Hidden;
+                                _currentViewModel.OldPrice = calculationItem.Item.SellingUnitPrice;
+                            }
 
-                                    _currentViewModel.OldPrice = calculationItem.Item.SellingUnitPrice;
-                                }
+                            decimal totalItem = calculationItem.InputPrice;
+                            _currentViewModel.CalculationQuantityString = calculationItem.Quantity.ToString();
+                            _currentViewModel.CalculationPriceString = calculationItem.InputPrice.ToString();
+                            _currentViewModel.JM = calculationItem.Item.Jm;
 
-                                decimal totalItem = calculationItem.InputPrice;
-                                _currentViewModel.CalculationQuantityString = calculationItem.Quantity.ToString();
-                                _currentViewModel.CalculationPriceString = calculationItem.InputPrice.ToString();
-                                _currentViewModel.JM = calculationItem.Item.Jm;
+                            _currentViewModel.EditQuantityWindow = new EditQuantityCalculationWindow(_currentViewModel);
+                            _currentViewModel.EditQuantityWindow.ShowDialog();
 
-                                _currentViewModel.EditQuantityWindow = new EditQuantityCalculationWindow(_currentViewModel);
-                                _currentViewModel.EditQuantityWindow.ShowDialog();
+                            if (_currentViewModel.CalculationQuantity > 0 &&
+                                    _currentViewModel.CalculationPrice > 0)
+                            {
+                                calculationItem.Quantity = _currentViewModel.CalculationQuantity;
+                                calculationItem.InputPrice = _currentViewModel.CalculationPrice;
 
-                                if (_currentViewModel.CalculationQuantity > 0 &&
-                                        _currentViewModel.CalculationPrice > 0)
-                                {
-                                    calculationItem.Quantity = _currentViewModel.CalculationQuantity;
-                                    calculationItem.InputPrice = _currentViewModel.CalculationPrice;
+                                _currentViewModel.CurrentCalculation.InputTotalPrice += calculationItem.InputPrice - totalItem;
+                                _currentViewModel.CalculationQuantityString = "0";
+                                _currentViewModel.JM = string.Empty;
 
-                                    _currentViewModel.CurrentCalculation.InputTotalPrice += calculationItem.InputPrice - totalItem;
-                                    _currentViewModel.CalculationQuantityString = "0";
-                                    _currentViewModel.JM = string.Empty;
-
-                                    MessageBox.Show("Uspešno ste izmenili artikal iz kalkulacije!",
-                                        "Uspešno",
-                                        MessageBoxButton.OK,
-                                        MessageBoxImage.Information);
-                                }
-                                else
-                                {
-                                    MessageBox.Show("KOLIČINA I ULAZNA CENA MORAJU BITI VEĆI OD 0!",
-                                        "Greška",
-                                        MessageBoxButton.OK,
-                                        MessageBoxImage.Error);
-                                }
+                                MessageBox.Show("Uspešno ste izmenili artikal iz kalkulacije!",
+                                    "Uspešno",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Information);
+                            }
+                            else
+                            {
+                                MessageBox.Show("KOLIČINA I ULAZNA CENA MORAJU BITI VEĆI OD 0!",
+                                    "Greška",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Error);
                             }
                         }
                     }

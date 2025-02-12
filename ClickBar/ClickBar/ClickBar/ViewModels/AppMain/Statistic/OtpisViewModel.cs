@@ -3,9 +3,10 @@ using ClickBar.Commands.AppMain.Statistic.ViewCalculation;
 using ClickBar.Models.AppMain.Statistic;
 using ClickBar.Models.AppMain.Statistic.Otpis;
 using ClickBar.Models.Sale;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -32,35 +33,39 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         private string _quantityString;
 
         private Visibility _visibilityNext;
+
+        private readonly IServiceProvider _serviceProvider; // Dodato za korišćenje IServiceProvider
         #endregion Fields
 
         #region Constructors
-        public OtpisViewModel(CashierDB loggedCashier)
+        public OtpisViewModel(IServiceProvider serviceProvider)
         {
-            LoggedCashier = loggedCashier;
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            LoggedCashier = serviceProvider.GetRequiredService<CashierDB>();
 
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            ItemsInOtpis = new ObservableCollection<OtpisItem>();
+            CurrentItem = new OtpisItem();
+
+            _allItems = new List<Invertory>();
+
+            DbContext.Items.ForEachAsync(itemDB =>
             {
+                Invertory item = new Invertory(new Item(itemDB), -1, itemDB.TotalQuantity, 0, 0, false);
+                _allItems.Add(item);
+            });
 
-                ItemsInOtpis = new ObservableCollection<OtpisItem>();
-                CurrentItem = new OtpisItem();
+            Items = new ObservableCollection<Invertory>(_allItems);
 
-                _allItems = new List<Invertory>();
-
-                sqliteDbContext.Items.ForEachAsync(itemDB =>
-                {
-                    Invertory item = new Invertory(new Item(itemDB), -1, itemDB.TotalQuantity, 0, 0, false);
-                    _allItems.Add(item);
-                });
-
-                Items = new ObservableCollection<Invertory>(_allItems);
-
-                VisibilityNext = Visibility.Hidden;
-            }
+            VisibilityNext = Visibility.Hidden;
         }
         #endregion Constructors
 
         #region Properties internal
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
         internal CashierDB LoggedCashier { get; private set; }
         internal Window AllItemsWindow { get; set; }
         internal Window QuantityWindow { get; set; }
@@ -102,7 +107,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                 _textSearch = value;
                 OnPropertyChange(nameof(TextSearch));
 
-                if(string.IsNullOrEmpty(value))
+                if (string.IsNullOrEmpty(value))
                 {
                     Items = new ObservableCollection<Invertory>(_allItems);
                 }
@@ -120,7 +125,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                 _selectedItem = value;
                 OnPropertyChange(nameof(SelectedItem));
 
-                if(value != null)
+                if (value != null)
                 {
                     VisibilityNext = Visibility.Visible;
                 }

@@ -1,6 +1,9 @@
 ﻿using ClickBar.Commands.AppMain.Statistic.Knjizenje;
 using ClickBar.Models.AppMain.Statistic.Knjizenje;
 using ClickBar.Models.Sale;
+using ClickBar_DatabaseSQLManager;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -20,11 +23,15 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         private ObservableCollection<Invoice> _invoices;
         private KnjizenjePazara _currentKnjizenjePazara;
         private ObservableCollection<ItemInvoice> _itemsInInvoice;
+
+        private readonly IServiceProvider _serviceProvider; // Dodato za korišćenje IServiceProvider
         #endregion Fields
 
         #region Constructors
-        public PregledPazaraViewModel()
+        public PregledPazaraViewModel(IServiceProvider serviceProvider)
         {
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
             DateTime fromDateTime = DateTime.Now;
 
             FromDate = fromDateTime;
@@ -36,6 +43,10 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #endregion Constructors
 
         #region Properties internal
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
         internal Window Window { get; set; }
         #endregion Properties internal
 
@@ -85,7 +96,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                 OnPropertyChange(nameof(ItemsInInvoice));
             }
         }
-        
+
         #endregion Properties
 
         #region Commands

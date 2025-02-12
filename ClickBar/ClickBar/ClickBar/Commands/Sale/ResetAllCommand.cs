@@ -1,6 +1,6 @@
 ﻿using ClickBar.Enums;
 using ClickBar.ViewModels;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using ClickBar_Logging;
 using ClickBar_Settings;
 using System;
@@ -41,7 +41,7 @@ namespace ClickBar.Commands.Sale
                     //if (_viewModel.TableId > 0 &&
                     //    SettingsManager.Instance.CancelOrderFromTable())
                     //{
-                    //    SqliteDbContext sqliteDbContext = new SqliteDbContext();
+                    //    SqlServerDbContext sqliteDbContext = new SqlServerDbContext();
 
                     //    var order = sqliteDbContext.UnprocessedOrders.FirstOrDefault(order => order.PaymentPlaceId == _viewModel.TableId);
 
@@ -58,7 +58,7 @@ namespace ClickBar.Commands.Sale
                     //            });
                     //        }
                     //        sqliteDbContext.UnprocessedOrders.Remove(order);
-                    //        RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                    //        sqliteDbContext.SaveChanges();
                     //    }
                     //}
 
@@ -66,7 +66,9 @@ namespace ClickBar.Commands.Sale
 
                     _viewModel.Reset();
 
-                    AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
+                    AppStateParameter appStateParameter = new AppStateParameter(_viewModel.DbContext, 
+                        _viewModel.DrljaDbContext,
+                        AppStateEnumerable.TableOverview,
                         _viewModel.LoggedCashier,
                         _viewModel);
                     _viewModel.UpdateAppViewModelCommand.Execute(appStateParameter);

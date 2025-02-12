@@ -47,13 +47,15 @@ namespace ClickBar.Commands.AppMain.Report
             ClickBar_Report.Report report;
             if (string.IsNullOrEmpty(_currentViewModel.SmartCard))
             {
-                report = new ClickBar_Report.Report(_currentViewModel.StartReport,
+                report = new ClickBar_Report.Report(_currentViewModel.DbContext,
+                    _currentViewModel.StartReport,
                     _currentViewModel.EndReport,
                     _currentViewModel.Items);
             }
             else
             {
-                report = new ClickBar_Report.Report(_currentViewModel.StartReport,
+                report = new ClickBar_Report.Report(_currentViewModel.DbContext, 
+                    _currentViewModel.StartReport,
                     _currentViewModel.EndReport,
                     _currentViewModel.Items,
                     _currentViewModel.SmartCard);

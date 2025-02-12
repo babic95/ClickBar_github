@@ -1,7 +1,7 @@
 ﻿using ClickBar.ViewModels.AppMain.Statistic;
 using ClickBar.Views.AppMain.AuxiliaryWindows.Statistic;
-using ClickBar_Database.Models;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager.Models;
+using ClickBar_DatabaseSQLManager;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -55,286 +55,123 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                     return;
                 }
 
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                SupergroupDB? supergroupDB = null;
+
+                if (_currentViewModel.CurrentSupergroupSearch != null)
                 {
-                    SupergroupDB? supergroupDB = null;
-                    
-                    if(_currentViewModel.CurrentSupergroupSearch != null)
-                    {
-                        supergroupDB = sqliteDbContext.Supergroups.Find(_currentViewModel.CurrentSupergroupSearch.Id);
-                    }
+                    supergroupDB = _currentViewModel.DbContext.Supergroups.Find(_currentViewModel.CurrentSupergroupSearch.Id);
+                }
 
-                    var invoices = sqliteDbContext.Invoices.Where(invoice => invoice.SdcDateTime >= _currentViewModel.FromDate.Value &&
-                        invoice.SdcDateTime <= _currentViewModel.ToDate.Value &&
-                        invoice.InvoiceType == 0);
+                var invoices = _currentViewModel.DbContext.Invoices.Where(invoice => invoice.SdcDateTime >= _currentViewModel.FromDate.Value &&
+                    invoice.SdcDateTime <= _currentViewModel.ToDate.Value &&
+                    invoice.InvoiceType == 0);
 
-                    if (invoices != null &&
-                        invoices.Any())
+                if (invoices != null &&
+                    invoices.Any())
+                {
+                    invoices.ForEachAsync(invoice =>
                     {
-                        invoices.ForEachAsync(invoice =>
+                        List<ItemInNormForChange> itemInNormForChanges = new List<ItemInNormForChange>();
+
+                        var itemsInInvoiceSirovine = _currentViewModel.DbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoice.Id &&
+                        itemInvoice.IsSirovina == 1);
+
+                        if (itemsInInvoiceSirovine != null &&
+                        itemsInInvoiceSirovine.Any())
                         {
-                            List<ItemInNormForChange> itemInNormForChanges = new List<ItemInNormForChange>();
-
-                            var itemsInInvoiceSirovine = sqliteDbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoice.Id &&
-                            itemInvoice.IsSirovina == 1);
-
-                            if (itemsInInvoiceSirovine != null &&
-                            itemsInInvoiceSirovine.Any())
+                            foreach (var itemInInvoice in itemsInInvoiceSirovine)
                             {
-                                foreach(var itemInInvoice in itemsInInvoiceSirovine)
+                                var itemDB = _currentViewModel.DbContext.Items.Find(itemInInvoice.ItemCode);
+
+                                if (itemDB != null)
                                 {
-                                    var itemDB = sqliteDbContext.Items.Find(itemInInvoice.ItemCode);
-
-                                    if (itemDB != null)
+                                    if (supergroupDB != null)
                                     {
-                                        if (supergroupDB != null)
+                                        var itemSuperGroup = _currentViewModel.DbContext.Items.Join(_currentViewModel.DbContext.ItemGroups,
+                                            i => i.IdItemGroup,
+                                            g => g.Id,
+                                            (i, g) => new { I = i, G = g })
+                                        .Join(_currentViewModel.DbContext.Supergroups,
+                                        g => g.G.IdSupergroup,
+                                        s => s.Id,
+                                        (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
+                                        i.G.I.Id == itemDB.Id);
+
+                                        if (itemSuperGroup == null)
                                         {
-                                            var itemSuperGroup = sqliteDbContext.Items.Join(sqliteDbContext.ItemGroups,
-                                                i => i.IdItemGroup,
-                                                g => g.Id,
-                                                (i, g) => new { I = i, G = g })
-                                            .Join(sqliteDbContext.Supergroups,
-                                            g => g.G.IdSupergroup,
-                                            s => s.Id,
-                                            (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
-                                            i.G.I.Id == itemDB.Id);
-
-                                            if(itemSuperGroup == null)
-                                            {
-                                                continue;
-                                            }
+                                            continue;
                                         }
-
-                                        ReduceNormHasNorm(sqliteDbContext,
-                                            invoice,
-                                            itemDB,
-                                            itemInInvoice,
-                                            itemInNormForChanges);
                                     }
+
+                                    ReduceNormHasNorm(invoice,
+                                        itemDB,
+                                        itemInInvoice,
+                                        itemInNormForChanges);
                                 }
                             }
-                            else
+                        }
+                        else
+                        {
+                            var itemsInInvoiceNotSirovina = _currentViewModel.DbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoice.Id);
+
+                            if (itemsInInvoiceNotSirovina != null &&
+                                itemsInInvoiceNotSirovina.Any())
                             {
-                                var itemsInInvoiceNotSirovina = sqliteDbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoice.Id);
-
-                                if (itemsInInvoiceNotSirovina != null &&
-                                    itemsInInvoiceNotSirovina.Any())
+                                itemsInInvoiceNotSirovina.ForEachAsync(itemInvoice =>
                                 {
-                                    itemsInInvoiceNotSirovina.ForEachAsync(itemInvoice =>
-                                    {
-                                        var itemDB = sqliteDbContext.Items.Find(itemInvoice.ItemCode);
-
-                                        if (itemDB != null)
-                                        {
-                                            if (itemDB.IdNorm != null)
-                                            {
-                                                var norms2 = sqliteDbContext.ItemsInNorm.Where(itemInNorm => itemInNorm.IdNorm == itemDB.IdNorm);
-
-                                                if (norms2 != null &&
-                                                norms2.Any())
-                                                {
-                                                    foreach(var itemInNorm2 in norms2)
-                                                    {
-                                                        var itemDB2 = sqliteDbContext.Items.Find(itemInNorm2.IdItem);
-
-                                                        if (itemDB2 != null)
-                                                        {
-                                                            if (itemDB2.IdNorm != null)
-                                                            {
-                                                                var norms3 = sqliteDbContext.ItemsInNorm.Where(itemInNorm =>
-                                                                itemInNorm.IdNorm == itemDB2.IdNorm);
-
-                                                                if (norms3 != null &&
-                                                                norms3.Any())
-                                                                {
-                                                                    foreach(var itemInNorm3 in norms3)
-                                                                    {
-                                                                        var itemDB3 = sqliteDbContext.Items.Find(itemInNorm3.IdItem);
-
-                                                                        if (itemDB3 != null)
-                                                                        {
-                                                                            if (supergroupDB != null)
-                                                                            {
-                                                                                var itemSuperGroup = sqliteDbContext.Items.Join(sqliteDbContext.ItemGroups,
-                                                                                    i => i.IdItemGroup,
-                                                                                    g => g.Id,
-                                                                                    (i, g) => new { I = i, G = g })
-                                                                                .Join(sqliteDbContext.Supergroups,
-                                                                                g => g.G.IdSupergroup,
-                                                                                s => s.Id,
-                                                                                (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
-                                                                                i.G.I.Id == itemDB3.Id);
-
-                                                                                if (itemSuperGroup == null)
-                                                                                {
-                                                                                    continue;
-                                                                                }
-                                                                            }
-
-                                                                            ReduceNormNoNorm(sqliteDbContext,
-                                                                                invoice,
-                                                                                itemDB3,
-                                                                                itemInNorm3.Quantity,
-                                                                                itemInNormForChanges);
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                            else
-                                                            {
-                                                                if (supergroupDB != null)
-                                                                {
-                                                                    var itemSuperGroup = sqliteDbContext.Items.Join(sqliteDbContext.ItemGroups,
-                                                                        i => i.IdItemGroup,
-                                                                        g => g.Id,
-                                                                        (i, g) => new { I = i, G = g })
-                                                                    .Join(sqliteDbContext.Supergroups,
-                                                                    g => g.G.IdSupergroup,
-                                                                    s => s.Id,
-                                                                    (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
-                                                                    i.G.I.Id == itemDB2.Id);
-
-                                                                    if (itemSuperGroup == null)
-                                                                    {
-                                                                        continue;
-                                                                    }
-                                                                }
-                                                                ReduceNormNoNorm(sqliteDbContext,
-                                                                    invoice,
-                                                                    itemDB2,
-                                                                    itemInNorm2.Quantity,
-                                                                    itemInNormForChanges);
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            //else
-                                            //{
-                                            //    ReduceNormNoNorm(sqliteDbContext,
-                                            //                    invoice,
-                                            //                    itemDB,
-                                            //                    itemInvoice.Quantity.Value,
-                                            //                    itemInNormForChanges);
-                                            //}
-                                        }
-                                    });
-                                }
-                            }
-                            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                            var itemsInInvoice = sqliteDbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoice.Id &&
-                            (itemInvoice.IsSirovina == null || itemInvoice.IsSirovina == 0));
-
-                            if (itemsInInvoice != null &&
-                            itemsInInvoice.Any())
-                            {
-                                itemsInInvoice.ForEachAsync(itemInvoice =>
-                                {
-                                    var itemDB = sqliteDbContext.Items.Find(itemInvoice.ItemCode);
+                                    var itemDB = _currentViewModel.DbContext.Items.Find(itemInvoice.ItemCode);
 
                                     if (itemDB != null)
                                     {
-                                        decimal quantity = 0;
-                                        if (itemInvoice.Quantity.HasValue)
-                                        {
-                                            quantity = itemInvoice.Quantity.Value;
-                                        }
                                         if (itemDB.IdNorm != null)
                                         {
-                                            var norms1 = sqliteDbContext.ItemsInNorm.Where(itemInNorm => itemInNorm.IdNorm == itemDB.IdNorm);
+                                            var norms2 = _currentViewModel.DbContext.ItemsInNorm.Where(itemInNorm => itemInNorm.IdNorm == itemDB.IdNorm);
 
-                                            if (norms1 != null &&
-                                            norms1.Any())
+                                            if (norms2 != null &&
+                                            norms2.Any())
                                             {
-                                                foreach(var itemInNorm1 in norms1)
+                                                foreach (var itemInNorm2 in norms2)
                                                 {
-                                                    decimal quantity1 = quantity * itemInNorm1.Quantity;
-                                                    var itemDB2 = sqliteDbContext.Items.Find(itemInNorm1.IdItem);
+                                                    var itemDB2 = _currentViewModel.DbContext.Items.Find(itemInNorm2.IdItem);
 
                                                     if (itemDB2 != null)
                                                     {
                                                         if (itemDB2.IdNorm != null)
                                                         {
-                                                            var norms2 = sqliteDbContext.ItemsInNorm.Where(itemInNorm =>
+                                                            var norms3 = _currentViewModel.DbContext.ItemsInNorm.Where(itemInNorm =>
                                                             itemInNorm.IdNorm == itemDB2.IdNorm);
 
-                                                            if (norms2 != null &&
-                                                            norms2.Any())
+                                                            if (norms3 != null &&
+                                                            norms3.Any())
                                                             {
-                                                                foreach(var itemInNorm2 in norms2)
+                                                                foreach (var itemInNorm3 in norms3)
                                                                 {
-                                                                    decimal quantity2 = quantity1 * itemInNorm2.Quantity;
-                                                                    var itemDB3 = sqliteDbContext.Items.Find(itemInNorm2.IdItem);
+                                                                    var itemDB3 = _currentViewModel.DbContext.Items.Find(itemInNorm3.IdItem);
 
                                                                     if (itemDB3 != null)
                                                                     {
-                                                                        if (itemDB3.IdNorm != null)
+                                                                        if (supergroupDB != null)
                                                                         {
-                                                                            var norms3 = sqliteDbContext.ItemsInNorm.Where(itemInNorm =>
-                                                                            itemInNorm.IdNorm == itemDB3.IdNorm);
+                                                                            var itemSuperGroup = _currentViewModel.DbContext.Items.Join(_currentViewModel.DbContext.ItemGroups,
+                                                                                i => i.IdItemGroup,
+                                                                                g => g.Id,
+                                                                                (i, g) => new { I = i, G = g })
+                                                                            .Join(_currentViewModel.DbContext.Supergroups,
+                                                                            g => g.G.IdSupergroup,
+                                                                            s => s.Id,
+                                                                            (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
+                                                                            i.G.I.Id == itemDB3.Id);
 
-                                                                            if (norms3 != null &&
-                                                                            norms3.Any())
+                                                                            if (itemSuperGroup == null)
                                                                             {
-                                                                                foreach(var itemInNorm3 in  norms3)
-                                                                                {
-                                                                                    decimal quantity3 = quantity2 * itemInNorm3.Quantity;
-                                                                                    var itemDB4 = sqliteDbContext.Items.Find(itemInNorm3.IdItem);
-
-                                                                                    if (itemDB4 != null)
-                                                                                    {
-                                                                                        if (supergroupDB != null)
-                                                                                        {
-                                                                                            var itemSuperGroup = sqliteDbContext.Items.Join(sqliteDbContext.ItemGroups,
-                                                                                                i => i.IdItemGroup,
-                                                                                                g => g.Id,
-                                                                                                (i, g) => new { I = i, G = g })
-                                                                                            .Join(sqliteDbContext.Supergroups,
-                                                                                            g => g.G.IdSupergroup,
-                                                                                            s => s.Id,
-                                                                                            (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
-                                                                                            i.G.I.Id == itemDB4.Id);
-
-                                                                                            if (itemSuperGroup == null)
-                                                                                            {
-                                                                                                continue;
-                                                                                            }
-                                                                                        }
-                                                                                        IncreaseNorm(sqliteDbContext,
-                                                                                            invoice,
-                                                                                            itemDB4,
-                                                                                            quantity3,
-                                                                                            itemInNormForChanges);
-                                                                                    }
-                                                                                }
+                                                                                continue;
                                                                             }
                                                                         }
-                                                                        else
-                                                                        {
-                                                                            if (supergroupDB != null)
-                                                                            {
-                                                                                var itemSuperGroup = sqliteDbContext.Items.Join(sqliteDbContext.ItemGroups,
-                                                                                    i => i.IdItemGroup,
-                                                                                    g => g.Id,
-                                                                                    (i, g) => new { I = i, G = g })
-                                                                                .Join(sqliteDbContext.Supergroups,
-                                                                                g => g.G.IdSupergroup,
-                                                                                s => s.Id,
-                                                                                (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
-                                                                                i.G.I.Id == itemDB3.Id);
 
-                                                                                if (itemSuperGroup == null)
-                                                                                {
-                                                                                    continue;
-                                                                                }
-                                                                            }
-                                                                            IncreaseNorm(sqliteDbContext,
-                                                                                invoice,
-                                                                                itemDB3,
-                                                                                quantity2,
-                                                                                itemInNormForChanges);
-                                                                        }
+                                                                        ReduceNormNoNorm(invoice,
+                                                                            itemDB3,
+                                                                            itemInNorm3.Quantity,
+                                                                            itemInNormForChanges);
                                                                     }
                                                                 }
                                                             }
@@ -343,11 +180,11 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                                                         {
                                                             if (supergroupDB != null)
                                                             {
-                                                                var itemSuperGroup = sqliteDbContext.Items.Join(sqliteDbContext.ItemGroups,
+                                                                var itemSuperGroup = _currentViewModel.DbContext.Items.Join(_currentViewModel.DbContext.ItemGroups,
                                                                     i => i.IdItemGroup,
                                                                     g => g.Id,
                                                                     (i, g) => new { I = i, G = g })
-                                                                .Join(sqliteDbContext.Supergroups,
+                                                                .Join(_currentViewModel.DbContext.Supergroups,
                                                                 g => g.G.IdSupergroup,
                                                                 s => s.Id,
                                                                 (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
@@ -358,10 +195,9 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                                                                     continue;
                                                                 }
                                                             }
-                                                            IncreaseNorm(sqliteDbContext,
-                                                                invoice,
+                                                            ReduceNormNoNorm(invoice,
                                                                 itemDB2,
-                                                                quantity1,
+                                                                itemInNorm2.Quantity,
                                                                 itemInNormForChanges);
                                                         }
                                                     }
@@ -370,22 +206,177 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                                         }
                                         //else
                                         //{
-                                        //    IncreaseNormNotNorm(sqliteDbContext,
-                                        //                invoice,
-                                        //                itemDB,
-                                        //                quantity);
+                                        //    ReduceNormNoNorm(sqliteDbContext,
+                                        //                    invoice,
+                                        //                    itemDB,
+                                        //                    itemInvoice.Quantity.Value,
+                                        //                    itemInNormForChanges);
                                         //}
                                     }
                                 });
                             }
-                        });
-                    }
-                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                        }
+                        _currentViewModel.DbContext.SaveChanges();
 
-                    MessageBox.Show("Uspešno ste sredili stanje sirovina za zadati period!", "Uspešno",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
+                        var itemsInInvoice = _currentViewModel.DbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoice.Id &&
+                        (itemInvoice.IsSirovina == null || itemInvoice.IsSirovina == 0));
+
+                        if (itemsInInvoice != null &&
+                        itemsInInvoice.Any())
+                        {
+                            itemsInInvoice.ForEachAsync(itemInvoice =>
+                            {
+                                var itemDB = _currentViewModel.DbContext.Items.Find(itemInvoice.ItemCode);
+
+                                if (itemDB != null)
+                                {
+                                    decimal quantity = 0;
+                                    if (itemInvoice.Quantity.HasValue)
+                                    {
+                                        quantity = itemInvoice.Quantity.Value;
+                                    }
+                                    if (itemDB.IdNorm != null)
+                                    {
+                                        var norms1 = _currentViewModel.DbContext.ItemsInNorm.Where(itemInNorm => itemInNorm.IdNorm == itemDB.IdNorm);
+
+                                        if (norms1 != null &&
+                                        norms1.Any())
+                                        {
+                                            foreach (var itemInNorm1 in norms1)
+                                            {
+                                                decimal quantity1 = quantity * itemInNorm1.Quantity;
+                                                var itemDB2 = _currentViewModel.DbContext.Items.Find(itemInNorm1.IdItem);
+
+                                                if (itemDB2 != null)
+                                                {
+                                                    if (itemDB2.IdNorm != null)
+                                                    {
+                                                        var norms2 = _currentViewModel.DbContext.ItemsInNorm.Where(itemInNorm =>
+                                                        itemInNorm.IdNorm == itemDB2.IdNorm);
+
+                                                        if (norms2 != null &&
+                                                        norms2.Any())
+                                                        {
+                                                            foreach (var itemInNorm2 in norms2)
+                                                            {
+                                                                decimal quantity2 = quantity1 * itemInNorm2.Quantity;
+                                                                var itemDB3 = _currentViewModel.DbContext.Items.Find(itemInNorm2.IdItem);
+
+                                                                if (itemDB3 != null)
+                                                                {
+                                                                    if (itemDB3.IdNorm != null)
+                                                                    {
+                                                                        var norms3 = _currentViewModel.DbContext.ItemsInNorm.Where(itemInNorm =>
+                                                                        itemInNorm.IdNorm == itemDB3.IdNorm);
+
+                                                                        if (norms3 != null &&
+                                                                        norms3.Any())
+                                                                        {
+                                                                            foreach (var itemInNorm3 in norms3)
+                                                                            {
+                                                                                decimal quantity3 = quantity2 * itemInNorm3.Quantity;
+                                                                                var itemDB4 = _currentViewModel.DbContext.Items.Find(itemInNorm3.IdItem);
+
+                                                                                if (itemDB4 != null)
+                                                                                {
+                                                                                    if (supergroupDB != null)
+                                                                                    {
+                                                                                        var itemSuperGroup = _currentViewModel.DbContext.Items.Join(_currentViewModel.DbContext.ItemGroups,
+                                                                                            i => i.IdItemGroup,
+                                                                                            g => g.Id,
+                                                                                            (i, g) => new { I = i, G = g })
+                                                                                        .Join(_currentViewModel.DbContext.Supergroups,
+                                                                                        g => g.G.IdSupergroup,
+                                                                                        s => s.Id,
+                                                                                        (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
+                                                                                        i.G.I.Id == itemDB4.Id);
+
+                                                                                        if (itemSuperGroup == null)
+                                                                                        {
+                                                                                            continue;
+                                                                                        }
+                                                                                    }
+                                                                                    IncreaseNorm(invoice,
+                                                                                        itemDB4,
+                                                                                        quantity3,
+                                                                                        itemInNormForChanges);
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        if (supergroupDB != null)
+                                                                        {
+                                                                            var itemSuperGroup = _currentViewModel.DbContext.Items.Join(_currentViewModel.DbContext.ItemGroups,
+                                                                                i => i.IdItemGroup,
+                                                                                g => g.Id,
+                                                                                (i, g) => new { I = i, G = g })
+                                                                            .Join(_currentViewModel.DbContext.Supergroups,
+                                                                            g => g.G.IdSupergroup,
+                                                                            s => s.Id,
+                                                                            (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
+                                                                            i.G.I.Id == itemDB3.Id);
+
+                                                                            if (itemSuperGroup == null)
+                                                                            {
+                                                                                continue;
+                                                                            }
+                                                                        }
+                                                                        IncreaseNorm(invoice,
+                                                                            itemDB3,
+                                                                            quantity2,
+                                                                            itemInNormForChanges);
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        if (supergroupDB != null)
+                                                        {
+                                                            var itemSuperGroup = _currentViewModel.DbContext.Items.Join(_currentViewModel.DbContext.ItemGroups,
+                                                                i => i.IdItemGroup,
+                                                                g => g.Id,
+                                                                (i, g) => new { I = i, G = g })
+                                                            .Join(_currentViewModel.DbContext.Supergroups,
+                                                            g => g.G.IdSupergroup,
+                                                            s => s.Id,
+                                                            (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
+                                                            i.G.I.Id == itemDB2.Id);
+
+                                                            if (itemSuperGroup == null)
+                                                            {
+                                                                continue;
+                                                            }
+                                                        }
+                                                        IncreaseNorm(invoice,
+                                                            itemDB2,
+                                                            quantity1,
+                                                            itemInNormForChanges);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    //else
+                                    //{
+                                    //    IncreaseNormNotNorm(sqliteDbContext,
+                                    //                invoice,
+                                    //                itemDB,
+                                    //                quantity);
+                                    //}
+                                }
+                            });
+                        }
+                    });
                 }
+                _currentViewModel.DbContext.SaveChanges();
+
+                MessageBox.Show("Uspešno ste sredili stanje sirovina za zadati period!", "Uspešno",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -395,8 +386,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                 Log.Error("FixNormCommand -> Greska prilikom sredjivanja normativa -> ", ex);
             }
         }
-        private void UpdateNorm(SqliteDbContext sqliteDbContext,
-            ItemInNormDB normDB,
+        private void UpdateNorm(ItemInNormDB normDB,
             InvoiceDB invoiceDB,
             ItemDB itemDB,
             int lastSalsItemIndex,
@@ -407,7 +397,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
             {
                 int a = 2;
             }
-            var itemInvoiceDB = sqliteDbContext.ItemInvoices.FirstOrDefault(itemInvoice =>
+            var itemInvoiceDB = _currentViewModel.DbContext.ItemInvoices.FirstOrDefault(itemInvoice =>
             itemInvoice.ItemCode == normDB.IdItem && itemInvoice.InvoiceId == invoiceDB.Id &&
             itemInvoice.Id > lastSalsItemIndex && itemInvoice.Id < currentSalsItemIndex);
 
@@ -429,13 +419,13 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
 
                     itemInvoiceDB.Quantity = quantity;
                     itemInvoiceDB.TotalAmout = quantity * price;
-                    sqliteDbContext.Items.Update(itemDB);
-                    sqliteDbContext.ItemInvoices.Update(itemInvoiceDB);
+                    _currentViewModel.DbContext.Items.Update(itemDB);
+                    _currentViewModel.DbContext.ItemInvoices.Update(itemInvoiceDB);
                 }
             }
             else
             {
-                var itemsInvoice = sqliteDbContext.ItemInvoices.Where(itemInvoice =>
+                var itemsInvoice = _currentViewModel.DbContext.ItemInvoices.Where(itemInvoice =>
                 itemInvoice.InvoiceId == invoiceDB.Id &&
                 itemInvoice.Id >= currentSalsItemIndex);
 
@@ -460,9 +450,9 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                             UnitPrice = i.UnitPrice,
                         };
 
-                        sqliteDbContext.ItemInvoices.Remove(i);
-                        sqliteDbContext.ItemInvoices.Add(itemInvoice);
-                        RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                        _currentViewModel.DbContext.ItemInvoices.Remove(i);
+                        _currentViewModel.DbContext.ItemInvoices.Add(itemInvoice);
+                        _currentViewModel.DbContext.SaveChanges();
                     });
                 }
 
@@ -480,12 +470,11 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                     TotalAmout = itemDB.SellingUnitPrice * quantity
                 };
 
-                sqliteDbContext.ItemInvoices.Add(itemInvoiceDB);
+                _currentViewModel.DbContext.ItemInvoices.Add(itemInvoiceDB);
             }
-            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+            _currentViewModel.DbContext.SaveChanges();
         }
-        private void ReduceNormHasNorm(SqliteDbContext sqliteDbContext,
-            InvoiceDB invoice,
+        private void ReduceNormHasNorm(InvoiceDB invoice,
             ItemDB itemDB,
             ItemInvoiceDB itemInInvoice,
             List<ItemInNormForChange> itemInNormForChanges)
@@ -504,7 +493,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                 {
                     itemDB.TotalQuantity -= itemInInvoice.Quantity.Value;
                 }
-                sqliteDbContext.Items.Update(itemDB);
+                _currentViewModel.DbContext.Items.Update(itemDB);
 
                 if (itemInNormForChanges.FirstOrDefault(i => i.ItemId == itemInInvoice.ItemCode &&
                 i.InvoiceId == invoice.Id) == null)
@@ -516,12 +505,11 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                         InvoiceId = invoice.Id
                     });
                 }
-                sqliteDbContext.Remove(itemInInvoice);
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                _currentViewModel.DbContext.Remove(itemInInvoice);
+                _currentViewModel.DbContext.SaveChanges();
             }
         }
-        private void ReduceNormNoNorm(SqliteDbContext sqliteDbContext,
-            InvoiceDB invoice,
+        private void ReduceNormNoNorm(InvoiceDB invoice,
             ItemDB itemDB,
             decimal quantity,
             List<ItemInNormForChange> itemInNormForChanges)
@@ -534,7 +522,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
             {
                 itemDB.TotalQuantity -= quantity;
             }
-            sqliteDbContext.Items.Update(itemDB);
+            _currentViewModel.DbContext.Items.Update(itemDB);
 
             if (itemInNormForChanges.FirstOrDefault(i => i.ItemId == itemDB.Id &&
             i.InvoiceId == invoice.Id) == null)
@@ -546,10 +534,9 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                     InvoiceId = invoice.Id
                 });
             }
-            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+            _currentViewModel.DbContext.SaveChanges();
         }
-        private void IncreaseNorm(SqliteDbContext sqliteDbContext,
-        InvoiceDB invoice,
+        private void IncreaseNorm(InvoiceDB invoice,
         ItemDB itemDB,
         decimal quantity,
         List<ItemInNormForChange> itemInNormForChanges)
@@ -562,12 +549,12 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
             {
                 itemDB.TotalQuantity += quantity;
             }
-            sqliteDbContext.Items.Update(itemDB);
+            _currentViewModel.DbContext.Items.Update(itemDB);
 
             var itemForChange = itemInNormForChanges.FirstOrDefault(i => i.ItemId == itemDB.Id &&
             i.InvoiceId == invoice.Id);
 
-            int index = sqliteDbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoice.Id).Max(i => i.Id) + 1;
+            int index = _currentViewModel.DbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoice.Id).Max(i => i.Id) + 1;
 
             ItemInvoiceDB? itemInvoiceDB = null;
             if (itemForChange != null)
@@ -602,10 +589,10 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                     TotalAmout = itemDB.SellingUnitPrice * quantity
                 };
             }
-            sqliteDbContext.ItemInvoices.Add(itemInvoiceDB);
-            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+            _currentViewModel.DbContext.ItemInvoices.Add(itemInvoiceDB);
+            _currentViewModel.DbContext.SaveChanges();
         }
-        private void IncreaseNormNotNorm(SqliteDbContext sqliteDbContext,
+        private void IncreaseNormNotNorm(SqlServerDbContext sqliteDbContext,
         InvoiceDB invoice,
         ItemDB itemDB,
         decimal quantity)
@@ -621,7 +608,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
             sqliteDbContext.Items.Update(itemDB);
 
             sqliteDbContext.Items.Update(itemDB);
-            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+            sqliteDbContext.SaveChanges();
         }
 
     }

@@ -1,7 +1,7 @@
 ﻿using ClickBar.Models.Sale;
 using ClickBar.ViewModels.AppMain.Statistic;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -43,71 +43,67 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         return;
                     }
 
-                    using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                    var groupItems = _currentViewModel.DbContext.ItemGroups.FirstOrDefault(group => group.Id == _currentViewModel.CurrentGroupItems.Id);
+
+                    if (groupItems != null)
                     {
+                        var result = MessageBox.Show("Da li zaista želite da sačuvate izmene grupe artikala?",
+                            "Izmena grupe artikala",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Question);
 
-                        var groupItems = sqliteDbContext.ItemGroups.FirstOrDefault(group => group.Id == _currentViewModel.CurrentGroupItems.Id);
-
-                        if (groupItems != null)
+                        if (result == MessageBoxResult.Yes)
                         {
-                            var result = MessageBox.Show("Da li zaista želite da sačuvate izmene grupe artikala?",
-                                "Izmena grupe artikala",
-                                MessageBoxButton.YesNo,
-                                MessageBoxImage.Question);
-
-                            if (result == MessageBoxResult.Yes)
-                            {
-                                groupItems.IdSupergroup = _currentViewModel.CurrentSupergroup.Id;
-                                groupItems.Name = _currentViewModel.CurrentGroupItems.Name;
-                                sqliteDbContext.ItemGroups.Update(groupItems);
-                            }
-                            else
-                            {
-                                return;
-                            }
+                            groupItems.IdSupergroup = _currentViewModel.CurrentSupergroup.Id;
+                            groupItems.Name = _currentViewModel.CurrentGroupItems.Name;
+                            _currentViewModel.DbContext.ItemGroups.Update(groupItems);
                         }
                         else
                         {
-                            var result = MessageBox.Show("Da li zaista želite da sačuvate novu grupu artikala?",
-                                "Nova grupa artikala",
-                                MessageBoxButton.YesNo,
-                                MessageBoxImage.Question);
-
-                            if (result == MessageBoxResult.Yes)
-                            {
-                                ItemGroupDB itemGroupDB = new ItemGroupDB()
-                                {
-                                    IdSupergroup = _currentViewModel.CurrentSupergroup.Id,
-                                    Name = _currentViewModel.CurrentGroupItems.Name
-                                };
-                                sqliteDbContext.ItemGroups.Add(itemGroupDB);
-                            }
-                            else
-                            {
-                                return;
-                            }
+                            return;
                         }
-                        RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                        _currentViewModel.AllGroupItems = new ObservableCollection<GroupItems>();
-                        _currentViewModel.AllGroups = new ObservableCollection<GroupItems>() { new GroupItems(-1, -1, "Sve grupe") };
-
-                        sqliteDbContext.ItemGroups.ForEachAsync(gropu =>
-                        {
-                            _currentViewModel.AllGroupItems.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
-                            _currentViewModel.AllGroups.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
-                        });
-
-                        _currentViewModel.CurrentGroupItems = _currentViewModel.AllGroupItems.FirstOrDefault();
-                        _currentViewModel.CurrentGroup = _currentViewModel.AllGroups.FirstOrDefault();
-
-                        MessageBox.Show("Uspešno obavljeno!",
-                                "Uspešno",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Information);
-
-                        _currentViewModel.Window.Close();
                     }
+                    else
+                    {
+                        var result = MessageBox.Show("Da li zaista želite da sačuvate novu grupu artikala?",
+                            "Nova grupa artikala",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Question);
+
+                        if (result == MessageBoxResult.Yes)
+                        {
+                            ItemGroupDB itemGroupDB = new ItemGroupDB()
+                            {
+                                IdSupergroup = _currentViewModel.CurrentSupergroup.Id,
+                                Name = _currentViewModel.CurrentGroupItems.Name
+                            };
+                            _currentViewModel.DbContext.ItemGroups.Add(itemGroupDB);
+                        }
+                        else
+                        {
+                            return;
+                        }
+                    }
+                    _currentViewModel.DbContext.SaveChanges();
+
+                    _currentViewModel.AllGroupItems = new ObservableCollection<GroupItems>();
+                    _currentViewModel.AllGroups = new ObservableCollection<GroupItems>() { new GroupItems(-1, -1, "Sve grupe") };
+
+                    _currentViewModel.DbContext.ItemGroups.ForEachAsync(gropu =>
+                    {
+                        _currentViewModel.AllGroupItems.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
+                        _currentViewModel.AllGroups.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
+                    });
+
+                    _currentViewModel.CurrentGroupItems = _currentViewModel.AllGroupItems.FirstOrDefault();
+                    _currentViewModel.CurrentGroup = _currentViewModel.AllGroups.FirstOrDefault();
+
+                    MessageBox.Show("Uspešno obavljeno!",
+                            "Uspešno",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+
+                    _currentViewModel.Window.Close();
                 }
             }
             catch

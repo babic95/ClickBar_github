@@ -1,7 +1,7 @@
 ﻿using ClickBar.Enums;
 using ClickBar.ViewModels.Login;
 using ClickBar_Common.Enums;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Settings;
 using System;
 using System.Collections.Generic;
@@ -77,13 +77,19 @@ namespace ClickBar.Commands.Login
                 AppStateParameter appStateParameter;
                 if (cashierDB.Type == CashierTypeEnumeration.Worker)
                 {
-                    appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview, cashierDB);
+                    appStateParameter = new AppStateParameter(_currentView.DbContext,
+                        _currentView.DrljaDbContext, 
+                        AppStateEnumerable.TableOverview,
+                        cashierDB);
                 }
                 else
                 {
-                    appStateParameter = new AppStateParameter(AppStateEnumerable.Main, cashierDB);
+                    appStateParameter = new AppStateParameter(_currentView.DbContext,
+                        _currentView.DrljaDbContext, 
+                        AppStateEnumerable.Main, 
+                        cashierDB);
                 }
-                _currentView.UpdateCurrentViewModelCommand.Execute(appStateParameter);
+                _currentView.UpdateCurrentAppStateViewModelCommand.Execute(appStateParameter);
             }
         }
         private void SendPin()

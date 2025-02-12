@@ -55,6 +55,18 @@ namespace ClickBar_Database_Drlja
                 return false;
             }
         }
+        public string CreateConnectionString(string connString)
+        {
+            SqliteConnectionStringBuilder connectionString = new SqliteConnectionStringBuilder()
+            {
+                DataSource = connString,
+                Cache = SqliteCacheMode.Shared,
+                Mode = SqliteOpenMode.ReadWriteCreate,
+                DefaultTimeout = 20,
+            };
+
+            return connectionString.ConnectionString;
+        }
         #endregion Public method
 
         #region Protected method
@@ -194,18 +206,6 @@ namespace ClickBar_Database_Drlja
             {
                 return false;
             }
-        }
-        private static string CreateConnectionString(string connString)
-        {
-            SqliteConnectionStringBuilder connectionString = new SqliteConnectionStringBuilder()
-            {
-                DataSource = connString,
-                Cache = SqliteCacheMode.Shared,
-                Mode = SqliteOpenMode.ReadWriteCreate,
-                DefaultTimeout = 20,
-            };
-
-            return connectionString.ConnectionString;
         }
         /// <summary>
         /// Opens sqlite database connection.

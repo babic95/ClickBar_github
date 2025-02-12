@@ -1,8 +1,9 @@
 ﻿using ClickBar.Commands.AppMain.Statistic;
 using ClickBar.Models.AppMain.Statistic;
 using ClickBar.Models.AppMain.Statistic.PocetnaStanja;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -25,18 +26,26 @@ namespace ClickBar.ViewModels.AppMain.Statistic
 
         private DateTime _popisDate;
 
-        private string _searchText; 
+        private string _searchText;
+
+        private readonly IServiceProvider _serviceProvider; // Dodato za korišćenje IServiceProvider
         #endregion Fields
 
         #region Constructors
-        public PocetnoStanjeViewModel()
+        public PocetnoStanjeViewModel(IServiceProvider serviceProvider)
         {
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
             PopisDate = DateTime.Now;
             //PopisDate = new DateTime(2025, 1, 22);
         }
         #endregion Constructors
 
         #region Properties internal
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
         #endregion Properties internal
 
         #region Properties
@@ -48,81 +57,43 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                 _popisDate = value;
                 OnPropertyChange(nameof(PopisDate));
 
-                if(value != null)
+                if (value != null)
                 {
-                    using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                    var pocetnoStanjeDB = DbContext.PocetnaStanja.FirstOrDefault(p => p.PopisDate.Date == value.Date);
+
+                    if (pocetnoStanjeDB != null)
                     {
-                        var pocetnoStanjeDB = sqliteDbContext.PocetnaStanja.FirstOrDefault(p => p.PopisDate.Date == value.Date);
+                        List<PocetnoStanjeItem> items = new List<PocetnoStanjeItem>();
 
-                        if (pocetnoStanjeDB != null)
+                        DbContext.Items.Where(i => i.IdNorm == null).ForEachAsync(itemDB =>
                         {
-                            List<PocetnoStanjeItem> items = new List<PocetnoStanjeItem>();
+                            var pocetnoStanjeItemDB = DbContext.PocetnaStanjaItems.FirstOrDefault(p => p.IdPocetnoStanje == pocetnoStanjeDB.Id &&
+                            p.IdItem == itemDB.Id);
 
-                            sqliteDbContext.Items.Where(i => i.IdNorm == null).ForEachAsync(itemDB =>
-                            {
-                                var pocetnoStanjeItemDB = sqliteDbContext.PocetnaStanjaItems.FirstOrDefault(p => p.IdPocetnoStanje == pocetnoStanjeDB.Id &&
-                                p.IdItem == itemDB.Id);
-
-                                if (pocetnoStanjeItemDB != null)
-                                {
-                                    Item item = new Item(itemDB);
-                                    var group = sqliteDbContext.ItemGroups.Find(itemDB.IdItemGroup);
-
-                                    if (group != null)
-                                    {
-                                        bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
-                                        Invertory invertory = new Invertory(item,
-                                            itemDB.IdItemGroup,
-                                            pocetnoStanjeItemDB.NewQuantity,
-                                            pocetnoStanjeItemDB.InputPrice,
-                                            itemDB.AlarmQuantity,
-                                            isSirovina);
-
-                                        PocetnoStanjeItem pocetnoStanjeItem = new PocetnoStanjeItem(invertory);
-
-                                        items.Add(pocetnoStanjeItem);
-                                    }
-                                }
-                                else
-                                {
-                                    Item item = new Item(itemDB);
-                                    var group = sqliteDbContext.ItemGroups.Find(itemDB.IdItemGroup);
-
-                                    if (group != null)
-                                    {
-                                        bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
-                                        Invertory invertory = new Invertory(item,
-                                            itemDB.IdItemGroup,
-                                            itemDB.TotalQuantity,
-                                            itemDB.InputUnitPrice != null && itemDB.InputUnitPrice.HasValue ? itemDB.InputUnitPrice.Value : 0,
-                                            itemDB.AlarmQuantity,
-                                            isSirovina);
-
-                                        PocetnoStanjeItem pocetnoStanjeItem = new PocetnoStanjeItem(invertory);
-
-                                        items.Add(pocetnoStanjeItem);
-                                    }
-                                }
-                            });
-
-                            if(CurrentPocetnoStanje == null)
-                            {
-                                CurrentPocetnoStanje = new PocetnoStanje(items);
-                            }
-
-                            CurrentPocetnoStanje.Id = pocetnoStanjeDB.Id;
-                            CurrentPocetnoStanje.Items = new ObservableCollection<PocetnoStanjeItem>(items);
-                            FilteredItems = CollectionViewSource.GetDefaultView(CurrentPocetnoStanje.Items);
-                            FilteredItems.Filter = FilterItems;
-                        }
-                        else
-                        {
-                            List<PocetnoStanjeItem> items = new List<PocetnoStanjeItem>();
-
-                            sqliteDbContext.Items.Where(i => i.IdNorm == null).ForEachAsync(itemDB =>
+                            if (pocetnoStanjeItemDB != null)
                             {
                                 Item item = new Item(itemDB);
-                                var group = sqliteDbContext.ItemGroups.Find(itemDB.IdItemGroup);
+                                var group = DbContext.ItemGroups.Find(itemDB.IdItemGroup);
+
+                                if (group != null)
+                                {
+                                    bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
+                                    Invertory invertory = new Invertory(item,
+                                        itemDB.IdItemGroup,
+                                        pocetnoStanjeItemDB.NewQuantity,
+                                        pocetnoStanjeItemDB.InputPrice,
+                                        itemDB.AlarmQuantity,
+                                        isSirovina);
+
+                                    PocetnoStanjeItem pocetnoStanjeItem = new PocetnoStanjeItem(invertory);
+
+                                    items.Add(pocetnoStanjeItem);
+                                }
+                            }
+                            else
+                            {
+                                Item item = new Item(itemDB);
+                                var group = DbContext.ItemGroups.Find(itemDB.IdItemGroup);
 
                                 if (group != null)
                                 {
@@ -131,19 +102,54 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                                         itemDB.IdItemGroup,
                                         itemDB.TotalQuantity,
                                         itemDB.InputUnitPrice != null && itemDB.InputUnitPrice.HasValue ? itemDB.InputUnitPrice.Value : 0,
-                                        itemDB.AlarmQuantity, 
+                                        itemDB.AlarmQuantity,
                                         isSirovina);
 
                                     PocetnoStanjeItem pocetnoStanjeItem = new PocetnoStanjeItem(invertory);
 
                                     items.Add(pocetnoStanjeItem);
                                 }
-                            });
+                            }
+                        });
 
+                        if (CurrentPocetnoStanje == null)
+                        {
                             CurrentPocetnoStanje = new PocetnoStanje(items);
-                            FilteredItems = CollectionViewSource.GetDefaultView(CurrentPocetnoStanje.Items);
-                            FilteredItems.Filter = FilterItems;
                         }
+
+                        CurrentPocetnoStanje.Id = pocetnoStanjeDB.Id;
+                        CurrentPocetnoStanje.Items = new ObservableCollection<PocetnoStanjeItem>(items);
+                        FilteredItems = CollectionViewSource.GetDefaultView(CurrentPocetnoStanje.Items);
+                        FilteredItems.Filter = FilterItems;
+                    }
+                    else
+                    {
+                        List<PocetnoStanjeItem> items = new List<PocetnoStanjeItem>();
+
+                        DbContext.Items.Where(i => i.IdNorm == null).ForEachAsync(itemDB =>
+                        {
+                            Item item = new Item(itemDB);
+                            var group = DbContext.ItemGroups.Find(itemDB.IdItemGroup);
+
+                            if (group != null)
+                            {
+                                bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
+                                Invertory invertory = new Invertory(item,
+                                    itemDB.IdItemGroup,
+                                    itemDB.TotalQuantity,
+                                    itemDB.InputUnitPrice != null && itemDB.InputUnitPrice.HasValue ? itemDB.InputUnitPrice.Value : 0,
+                                    itemDB.AlarmQuantity,
+                                    isSirovina);
+
+                                PocetnoStanjeItem pocetnoStanjeItem = new PocetnoStanjeItem(invertory);
+
+                                items.Add(pocetnoStanjeItem);
+                            }
+                        });
+
+                        CurrentPocetnoStanje = new PocetnoStanje(items);
+                        FilteredItems = CollectionViewSource.GetDefaultView(CurrentPocetnoStanje.Items);
+                        FilteredItems.Filter = FilterItems;
                     }
 
                     CurrentPocetnoStanje.PopisDate = value;

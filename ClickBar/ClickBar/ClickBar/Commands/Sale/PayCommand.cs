@@ -9,8 +9,8 @@ using ClickBar.Views.Sale.PaySale;
 using ClickBar_Common.Enums;
 using ClickBar_Common.Models.Invoice;
 using ClickBar_Common.Models.Invoice.FileSystemWatcher;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Database_Drlja;
 using ClickBar_Logging;
 using ClickBar_Printer;
@@ -32,14 +32,18 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Forms;
+using Microsoft.Extensions.DependencyInjection;
+using MessageBox = System.Windows.MessageBox;
 
 namespace ClickBar.Commands.Sale
 {
-    public class PayCommand : ICommand
+    public class PayCommand<TViewModel> : ICommand where TViewModel : ViewModelBase
     {
         public event EventHandler CanExecuteChanged;
 
-        private ViewModelBase _viewModel;
+        private readonly IServiceProvider _serviceProvider;
+        private TViewModel _viewModel;
 
         private const int ERROR_SHARING_VIOLATION = 32;
         private const int ERROR_LOCK_VIOLATION = 33;
@@ -47,9 +51,10 @@ namespace ClickBar.Commands.Sale
         private DateTime _timer;
         private List<Payment> _payment;
 
-        public PayCommand(ViewModelBase viewModel)
+        public PayCommand(IServiceProvider serviceProvider, TViewModel viewModel)
         {
-          _viewModel = viewModel;
+            _serviceProvider = serviceProvider;
+            _viewModel = viewModel;
         }
 
         public bool CanExecute(object? parameter)
@@ -58,7 +63,7 @@ namespace ClickBar.Commands.Sale
         }
         public async void Execute(object parameter)
         {
-            if(_viewModel is SaleViewModel saleViewModel)
+            if (_viewModel is SaleViewModel saleViewModel)
             {
                 if (saleViewModel.OldItemsInvoice.Any() ||
                     saleViewModel.ItemsInvoice.Any())
@@ -69,7 +74,7 @@ namespace ClickBar.Commands.Sale
                         {
                             var it = saleViewModel.ItemsInvoice.FirstOrDefault(i => i.Item.Id == item.Item.Id);
 
-                            if(it == null)
+                            if (it == null)
                             {
                                 it = new ItemInvoice(item.Item, item.Quantity);
                                 saleViewModel.ItemsInvoice.Add(it);
@@ -82,26 +87,25 @@ namespace ClickBar.Commands.Sale
                         });
                     }
 
-                    PaySaleWindow paySaleWindow = new PaySaleWindow(saleViewModel);
+                    PaySaleWindow paySaleWindow = _serviceProvider.GetRequiredService<PaySaleWindow>();
                     paySaleWindow.ShowDialog();
 
                     saleViewModel.Reset();
                 }
-                else 
-                { 
+                else
+                {
                     MessageBox.Show("Nema artikala za prodaju!", "", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
-            else if(_viewModel is PaySaleViewModel)
+            else if (_viewModel is PaySaleViewModel paySaleViewModel)
             {
-                if(parameter is not string)
+                if (parameter is not string)
                 {
                     return;
                 }
 
                 string paymentType = parameter as string;
 
-                PaySaleViewModel paySaleViewModel = (PaySaleViewModel)_viewModel;
                 paySaleViewModel.ChangeFocusCommand.Execute("Pay");
 
                 if (paySaleViewModel.Amount < paySaleViewModel.TotalAmount &&
@@ -158,34 +162,31 @@ namespace ClickBar.Commands.Sale
                         }
                     }
 
-                    using (var sqliteDBContext = new SqliteDbContext())
+                    var partnerDB = paySaleViewModel.DbContext.Partners.AsNoTracking().FirstOrDefault(partner => partner.Pib == paySaleViewModel.BuyerId);
+                    if (partnerDB == null)
                     {
-                        var partnerDB = sqliteDBContext.Partners.FirstOrDefault(partner => partner.Pib == paySaleViewModel.BuyerId);
-                        if (partnerDB == null)
+                        if (string.IsNullOrEmpty(paySaleViewModel.BuyerName))
                         {
-                            if (string.IsNullOrEmpty(paySaleViewModel.BuyerName))
-                            {
-                                var result = MessageBox.Show("Ako želite da zavedete kupca u bazu, morate da unesete i naziv firme?",
-                                    "Unos nove firme?",
-                                    MessageBoxButton.YesNo,
-                                    MessageBoxImage.Question);
+                            var result = MessageBox.Show("Ako želite da zavedete kupca u bazu, morate da unesete i naziv firme?",
+                                "Unos nove firme?",
+                                MessageBoxButton.YesNo,
+                                MessageBoxImage.Question);
 
-                                if (result == MessageBoxResult.Yes)
-                                {
-                                    return;
-                                }
-                            }
-                            else
+                            if (result == MessageBoxResult.Yes)
                             {
-                                partnerDB = new PartnerDB()
-                                {
-                                    Pib = paySaleViewModel.BuyerId,
-                                    Name = paySaleViewModel.BuyerName,
-                                    Address = !string.IsNullOrEmpty(paySaleViewModel.BuyerAdress) ? paySaleViewModel.BuyerAdress : null
-                                };
-                                sqliteDBContext.Partners.Add(partnerDB);
-                                RetryHelper.ExecuteWithRetry(() => { sqliteDBContext.SaveChanges(); });
+                                return;
                             }
+                        }
+                        else
+                        {
+                            partnerDB = new PartnerDB()
+                            {
+                                Pib = paySaleViewModel.BuyerId,
+                                Name = paySaleViewModel.BuyerName,
+                                Address = !string.IsNullOrEmpty(paySaleViewModel.BuyerAdress) ? paySaleViewModel.BuyerAdress : null
+                            };
+                            paySaleViewModel.DbContext.Partners.Add(partnerDB);
+                            paySaleViewModel.DbContext.SaveChanges();
                         }
                     }
                 }
@@ -208,14 +209,14 @@ namespace ClickBar.Commands.Sale
                 decimal popust = 0;
                 if (!string.IsNullOrEmpty(paySaleViewModel.Popust))
                 {
-                    try 
+                    try
                     {
                         popust = Convert.ToDecimal(paySaleViewModel.Popust);
                     }
                     catch { }
                 }
 
-                if(popust > 0)
+                if (popust > 0)
                 {
                     paySaleViewModel.Amount = paySaleViewModel.TotalAmount = paySaleViewModel.TotalAmount * ((100 - popust) / 100);
                 }
@@ -231,10 +232,8 @@ namespace ClickBar.Commands.Sale
 
                 paySaleViewModel.Window.Close();
             }
-            else if (_viewModel is SplitOrderViewModel)
+            else if (_viewModel is SplitOrderViewModel splitOrderViewModel)
             {
-                SplitOrderViewModel splitOrderViewModel = (SplitOrderViewModel)_viewModel;
-
                 splitOrderViewModel.PaySaleViewModel.SplitOrderWindow.Close();
 
                 if (splitOrderViewModel.ItemsInvoiceForPay.Any())
@@ -417,7 +416,7 @@ namespace ClickBar.Commands.Sale
                 Cashier = paySaleViewModel.SaleViewModel.LoggedCashier.Name,
                 InvoiceType = (InvoiceTypeEenumeration)paySaleViewModel.InvoiceType,
                 TransactionType = TransactionTypeEnumeration.Sale,
-                BuyerId = string.IsNullOrEmpty(paySaleViewModel.BuyerId) == true ? null : 
+                BuyerId = string.IsNullOrEmpty(paySaleViewModel.BuyerId) == true ? null :
                 $"{paySaleViewModel.CurrentBuyerIdElement.Id}:{paySaleViewModel.BuyerId}",
                 BuyerAddress = string.IsNullOrEmpty(paySaleViewModel.BuyerAdress) == true ? null :
                 paySaleViewModel.BuyerAdress,
@@ -451,7 +450,7 @@ namespace ClickBar.Commands.Sale
             invoiceRequset.Items = items;
             Black(invoiceRequset, paySaleViewModel, total, items);
 #else
-             paySaleViewModel.ItemsInvoice.ToList().ForEach(item =>
+            paySaleViewModel.ItemsInvoice.ToList().ForEach(item =>
             {
                 if (item.TotalAmout > 0)
                 {
@@ -482,132 +481,110 @@ namespace ClickBar.Commands.Sale
         {
             try
             {
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                var unprocessedOrders = paySaleViewModel.DbContext.UnprocessedOrders.FirstOrDefault(order => order.PaymentPlaceId == tableId);
+
+                if (unprocessedOrders != null)
                 {
-
-                    var unprocessedOrders = sqliteDbContext.UnprocessedOrders.FirstOrDefault(order => order.PaymentPlaceId == tableId);
-
-                    if (unprocessedOrders != null)
+                    OrderDB orderDB = new OrderDB()
                     {
-                        OrderDB orderDB = new OrderDB()
+                        InvoiceId = invoice.Id,
+                        PaymentPlaceId = tableId,
+                        CashierId = paySaleViewModel.SaleViewModel.LoggedCashier.Id
+                    };
+                    paySaleViewModel.DbContext.Orders.Add(orderDB);
+
+                    var itemsInUnprocessedOrder = paySaleViewModel.DbContext.ItemsInUnprocessedOrder.AsNoTracking().Where(item => item.UnprocessedOrderId == unprocessedOrders.Id);
+
+                    //decimal totalAmount = unprocessedOrders.TotalAmount;
+                    if (itemsInUnprocessedOrder != null &&
+                        itemsInUnprocessedOrder.Any())
+                    {
+                        if (itemsInUnprocessedOrder.Sum(a => a.Quantity) == invoice.ItemInvoices.Where(a => a.IsSirovina == null ||
+                        a.IsSirovina == 0).Sum(b => b.Quantity))
                         {
-                            InvoiceId = invoice.Id,
-                            PaymentPlaceId = tableId,
-                            CashierId = paySaleViewModel.SaleViewModel.LoggedCashier.Id
-                        };
-                        sqliteDbContext.Orders.Add(orderDB);
-
-                        var itemsInUnprocessedOrder = sqliteDbContext.ItemsInUnprocessedOrder.Where(item => item.UnprocessedOrderId == unprocessedOrders.Id);
-
-                        //decimal totalAmount = unprocessedOrders.TotalAmount;
-                        if (itemsInUnprocessedOrder != null &&
-                            itemsInUnprocessedOrder.Any())
-                        {
-                            if (itemsInUnprocessedOrder.Sum(a => a.Quantity) == invoice.ItemInvoices.Where(a => a.IsSirovina == null ||
-                            a.IsSirovina == 0).Sum(b => b.Quantity))
-                            {
-                                sqliteDbContext.ItemsInUnprocessedOrder.RemoveRange(itemsInUnprocessedOrder);
-                                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-                            }
-                            else
-                            {
-                                await itemsInUnprocessedOrder.ForEachAsync(item =>
-                                {
-                                    var invoiceItem = invoice.ItemInvoices.FirstOrDefault(itemInvoice => itemInvoice.ItemCode == item.ItemId);
-
-                                    if (invoiceItem != null)
-                                    {
-                                        if (invoiceItem.Quantity.HasValue &&
-                                        invoiceItem.TotalAmout.HasValue &&
-                                        invoiceItem.UnitPrice.HasValue)
-                                        {
-                                            decimal ta = 0;
-                                            if (item.Quantity <= invoiceItem.Quantity.Value)
-                                            {
-                                                ta = item.Quantity * invoiceItem.UnitPrice.Value;
-                                                sqliteDbContext.ItemsInUnprocessedOrder.Remove(item);
-
-                                                Log.Debug($"PayCommand -> TakingDownOrder -> obrisan je artikal sa stola_{unprocessedOrders.PaymentPlaceId} - {item.ItemId}: {item.Quantity}  {ta} din");
-                                            }
-                                            else if (item.Quantity > invoiceItem.Quantity.Value)
-                                            {
-                                                Log.Debug($"PayCommand -> TakingDownOrder -> update artikla {item.ItemId}: stara vrednost: {item.Quantity} -> nova vrednost: {invoiceItem.Quantity.Value}");
-                                                item.Quantity -= invoiceItem.Quantity.Value;
-                                                ta = invoiceItem.TotalAmout.Value;
-                                                sqliteDbContext.ItemsInUnprocessedOrder.Update(item);
-
-                                                Log.Debug($"PayCommand -> TakingDownOrder -> update je artikal sa stola_{unprocessedOrders.PaymentPlaceId} - {item.ItemId}: {item.Quantity}  {ta} din");
-                                            }
-                                            unprocessedOrders.TotalAmount -= ta;
-
-                                            sqliteDbContext.UnprocessedOrders.Update(unprocessedOrders);
-                                            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-                                        }
-                                    }
-                                });
-                            }
-                        }
-
-                        itemsInUnprocessedOrder = sqliteDbContext.ItemsInUnprocessedOrder.Where(item => item.UnprocessedOrderId == unprocessedOrders.Id);
-
-                        if (itemsInUnprocessedOrder != null &&
-                            itemsInUnprocessedOrder.Any())
-                        {
-                            Log.Debug($"PayCommand -> TakingDownOrder -> Preostali iznos na stolu {unprocessedOrders.PaymentPlaceId} je: {unprocessedOrders.TotalAmount}");
-                            //unprocessedOrders.TotalAmount = totalAmount;
-                            //sqliteDbContext.UnprocessedOrders.Update(unprocessedOrders);
+                            paySaleViewModel.DbContext.ItemsInUnprocessedOrder.RemoveRange(itemsInUnprocessedOrder);
+                            paySaleViewModel.DbContext.SaveChanges();
                         }
                         else
                         {
-                            sqliteDbContext.UnprocessedOrders.Remove(unprocessedOrders);
-
-                            var pathToDrljaDB = SettingsManager.Instance.GetPathToDrljaKuhinjaDB();
-
-                            if (!string.IsNullOrEmpty(pathToDrljaDB))
+                            await itemsInUnprocessedOrder.ForEachAsync(item =>
                             {
-                                using (SqliteDrljaDbContext sqliteDrljaDbContext = new SqliteDrljaDbContext())
+                                var invoiceItem = invoice.ItemInvoices.FirstOrDefault(itemInvoice => itemInvoice.ItemCode == item.ItemId);
+
+                                if (invoiceItem != null)
                                 {
-                                    var narudzbineDrlja = sqliteDrljaDbContext.Narudzbine.Where(nar => nar.TR_STO.Contains(tableId.ToString())
-                                            && nar.TR_FAZA != 4);
-                                    if (narudzbineDrlja != null &&
-                                        narudzbineDrlja.Any())
+                                    if (invoiceItem.Quantity.HasValue &&
+                                    invoiceItem.TotalAmout.HasValue &&
+                                    invoiceItem.UnitPrice.HasValue)
                                     {
-                                        narudzbineDrlja.ToList().ForEach(narudzbinaDrlja =>
+                                        decimal ta = 0;
+                                        if (item.Quantity <= invoiceItem.Quantity.Value)
                                         {
-                                            narudzbinaDrlja.TR_FAZA = 4;
-                                            sqliteDrljaDbContext.Narudzbine.Update(narudzbinaDrlja);
-                                            RetryHelperDrlja.ExecuteWithRetry(() => { sqliteDrljaDbContext.SaveChanges(); });
-                                        });
+                                            ta = item.Quantity * invoiceItem.UnitPrice.Value;
+                                            paySaleViewModel.DbContext.ItemsInUnprocessedOrder.Remove(item);
+
+                                            Log.Debug($"PayCommand -> TakingDownOrder -> obrisan je artikal sa stola_{unprocessedOrders.PaymentPlaceId} - {item.ItemId}: {item.Quantity}  {ta} din");
+                                        }
+                                        else if (item.Quantity > invoiceItem.Quantity.Value)
+                                        {
+                                            Log.Debug($"PayCommand -> TakingDownOrder -> update artikla {item.ItemId}: stara vrednost: {item.Quantity} -> nova vrednost: {invoiceItem.Quantity.Value}");
+                                            item.Quantity -= invoiceItem.Quantity.Value;
+                                            ta = invoiceItem.TotalAmout.Value;
+                                            paySaleViewModel.DbContext.ItemsInUnprocessedOrder.Update(item);
+
+                                            Log.Debug($"PayCommand -> TakingDownOrder -> update je artikal sa stola_{unprocessedOrders.PaymentPlaceId} - {item.ItemId}: {item.Quantity}  {ta} din");
+                                        }
+                                        unprocessedOrders.TotalAmount -= ta;
+
+                                        paySaleViewModel.DbContext.UnprocessedOrders.Update(unprocessedOrders);
+                                        paySaleViewModel.DbContext.SaveChanges();
                                     }
                                 }
-                            }
+                            });
                         }
-                        RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                    }
 
-                        //if (totalAmount > 0)
-                        //{
-                        //        if(paySaleViewModel.SaleViewModel.CurrentOrder != null)
-                        //        {
-                        //            paySaleViewModel.SaleViewModel.CurrentOrder.Items = items;
-                        //            paySaleViewModel.SaleViewModel.CurrentOrder.TableId = tableId;
-                        //            paySaleViewModel.SaleViewModel.CurrentOrder.CashierName = paySaleViewModel.SaleViewModel.LoggedCashier.Name;
-                        //            paySaleViewModel.SaleViewModel.CurrentOrder.Cashier = paySaleViewModel.SaleViewModel.LoggedCashier;
+                    itemsInUnprocessedOrder = paySaleViewModel.DbContext.ItemsInUnprocessedOrder.AsNoTracking().Where(item => item.UnprocessedOrderId == unprocessedOrders.Id);
 
-                        //            paySaleViewModel.SaleViewModel.TableOverviewViewModel.SetOrder(paySaleViewModel.SaleViewModel.CurrentOrder);
-                        //        }
-                        //}
+                    if (itemsInUnprocessedOrder != null &&
+                        itemsInUnprocessedOrder.Any())
+                    {
+                        Log.Debug($"PayCommand -> TakingDownOrder -> Preostali iznos na stolu {unprocessedOrders.PaymentPlaceId} je: {unprocessedOrders.TotalAmount}");
                     }
                     else
                     {
-                        OrderDB orderDB = new OrderDB()
+                        paySaleViewModel.DbContext.UnprocessedOrders.Remove(unprocessedOrders);
+
+                        var pathToDrljaDB = SettingsManager.Instance.GetPathToDrljaKuhinjaDB();
+
+                        if (!string.IsNullOrEmpty(pathToDrljaDB))
                         {
-                            InvoiceId = invoice.Id,
-                            PaymentPlaceId = tableId,
-                            CashierId = paySaleViewModel.SaleViewModel.LoggedCashier.Id
-                        };
-                        sqliteDbContext.Orders.Add(orderDB);
-                        RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                            var narudzbineDrlja = paySaleViewModel.DrljaDbContext.Narudzbine.AsNoTracking().Where(nar => nar.TR_STO.Contains(tableId.ToString())
+                                    && nar.TR_FAZA != 4);
+                            if (narudzbineDrlja != null &&
+                                narudzbineDrlja.Any())
+                            {
+                                narudzbineDrlja.ToList().ForEach(narudzbinaDrlja =>
+                                {
+                                    narudzbinaDrlja.TR_FAZA = 4;
+                                    paySaleViewModel.DrljaDbContext.Narudzbine.Update(narudzbinaDrlja);
+                                    RetryHelperDrlja.ExecuteWithRetry(() => { paySaleViewModel.DrljaDbContext.SaveChanges(); });
+                                });
+                            }
+                        }
                     }
+                    paySaleViewModel.DbContext.SaveChanges();
+                }
+                else
+                {
+                    OrderDB orderDB = new OrderDB()
+                    {
+                        InvoiceId = invoice.Id,
+                        PaymentPlaceId = tableId,
+                        CashierId = paySaleViewModel.SaleViewModel.LoggedCashier.Id
+                    };
+                    paySaleViewModel.DbContext.Orders.Add(orderDB);
+                    paySaleViewModel.DbContext.SaveChanges();
                 }
             }
             catch (Exception ex)
@@ -615,40 +592,40 @@ namespace ClickBar.Commands.Sale
                 Log.Error("PayCommand -> TakingDownOrder -> Greska prilikom skidanja porudzbine sa stola: ", ex);
             }
         }
-        private async Task UpdateInvode(InvoiceDB invoiceDB, decimal total, ResponseJson responseJson)
+        private async Task UpdateInvode(InvoiceDB invoiceDB,
+            decimal total,
+            ResponseJson responseJson,
+            PaySaleViewModel paySaleViewModel)
         {
             try
             {
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                invoiceDB.SdcDateTime = Convert.ToDateTime(responseJson.DateTime);
+                invoiceDB.TotalAmount = total;
+                invoiceDB.InvoiceCounter = responseJson.TotalInvoiceNumber;
+                invoiceDB.InvoiceNumberResult = responseJson.InvoiceNumber;
+
+                paySaleViewModel.DbContext.Invoices.Update(invoiceDB);
+                paySaleViewModel.DbContext.SaveChanges();
+
+                if (responseJson.TaxItems != null &&
+                    responseJson.TaxItems.Any())
                 {
-                    invoiceDB.SdcDateTime = Convert.ToDateTime(responseJson.DateTime);
-                    invoiceDB.TotalAmount = total;
-                    invoiceDB.InvoiceCounter = responseJson.TotalInvoiceNumber;
-                    invoiceDB.InvoiceNumberResult = responseJson.InvoiceNumber;
-
-                    sqliteDbContext.Invoices.Update(invoiceDB);
-                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                    if (responseJson.TaxItems != null &&
-                        responseJson.TaxItems.Any())
+                    responseJson.TaxItems.ToList().ForEach(taxItem =>
                     {
-                        responseJson.TaxItems.ToList().ForEach(taxItem =>
+                        TaxItemInvoiceDB taxItemInvoiceDB = new TaxItemInvoiceDB()
                         {
-                            TaxItemInvoiceDB taxItemInvoiceDB = new TaxItemInvoiceDB()
-                            {
-                                Amount = taxItem.Amount,
-                                CategoryName = taxItem.CategoryName,
-                                CategoryType = (int)taxItem.CategoryType.Value,
-                                Label = taxItem.Label,
-                                Rate = taxItem.Rate,
-                                InvoiceId = invoiceDB.Id
-                            };
+                            Amount = taxItem.Amount,
+                            CategoryName = taxItem.CategoryName,
+                            CategoryType = (int)taxItem.CategoryType.Value,
+                            Label = taxItem.Label,
+                            Rate = taxItem.Rate,
+                            InvoiceId = invoiceDB.Id
+                        };
 
-                            sqliteDbContext.TaxItemInvoices.Add(taxItemInvoiceDB);
-                        });
-                    }
-                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                        paySaleViewModel.DbContext.TaxItemInvoices.Add(taxItemInvoiceDB);
+                    });
                 }
+                paySaleViewModel.DbContext.SaveChanges();
             }
             catch (Exception ex)
             {
@@ -664,141 +641,110 @@ namespace ClickBar.Commands.Sale
             PaySaleViewModel paySaleViewModel,
             DateTime dateTimeOfIssue)
         {
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            invoiceRequset.Items = items;
+
+            InvoiceDB invoiceDB = new InvoiceDB()
             {
+                Id = Guid.NewGuid().ToString(),
+                DateAndTimeOfIssue = dateTimeOfIssue,
+                Cashier = paySaleViewModel.SaleViewModel.LoggedCashier.Id,
+                InvoiceType = (int)invoiceRequset.InvoiceType,
+                TransactionType = (int)invoiceRequset.TransactionType,
+                BuyerId = invoiceRequset.BuyerId,
+                BuyerName = invoiceRequset.BuyerName,
+                BuyerAddress = invoiceRequset.BuyerAddress,
+            };
 
-                invoiceRequset.Items = items;
+            paySaleViewModel.DbContext.Add(invoiceDB);
+            paySaleViewModel.DbContext.SaveChanges();
 
-                InvoiceDB invoiceDB = new InvoiceDB()
+            int itemInvoiceId = 0;
+            paySaleViewModel.ItemsInvoice.ToList().ForEach(item =>
+            {
+                ItemDB? itemDB = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == item.Item.Id);
+                if (itemDB != null)
                 {
-                    Id = Guid.NewGuid().ToString(),
-                    DateAndTimeOfIssue = dateTimeOfIssue,
-                    Cashier = paySaleViewModel.SaleViewModel.LoggedCashier.Id,
-                    InvoiceType = (int)invoiceRequset.InvoiceType,
-                    TransactionType = (int)invoiceRequset.TransactionType,
-                    //SdcDateTime = Convert.ToDateTime(responseJson.DateTime),
-                    //TotalAmount = total,
-                    //InvoiceCounter = responseJson.TotalInvoiceNumber,
-                    //InvoiceNumberResult = responseJson.InvoiceNumber,
-                    BuyerId = invoiceRequset.BuyerId,
-                    BuyerName = invoiceRequset.BuyerName,
-                    BuyerAddress = invoiceRequset.BuyerAddress,
-                };
-
-                sqliteDbContext.Add(invoiceDB);
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                int itemInvoiceId = 0;
-                paySaleViewModel.ItemsInvoice.ToList().ForEach(item =>
-                {
-                    ItemDB? itemDB = sqliteDbContext.Items.Find(item.Item.Id);
-                    if (itemDB != null)
+                    if (itemDB.IdNorm != null)
                     {
-                        if (itemDB.IdNorm != null)
+                        var norms = paySaleViewModel.DbContext.ItemsInNorm.AsNoTracking().Where(norm => norm.IdNorm == itemDB.IdNorm);
+
+                        if (norms != null &&
+                            norms.Any())
                         {
-                            var norms = sqliteDbContext.ItemsInNorm.Where(norm => norm.IdNorm == itemDB.IdNorm);
-
-                            if (norms != null &&
-                                norms.Any())
+                            norms.ForEachAsync(norm =>
                             {
-                                norms.ForEachAsync(norm =>
+                                var normItem = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm.IdItem);
+                                if (normItem != null)
                                 {
-                                    var normItem = sqliteDbContext.Items.Find(norm.IdItem);
-                                    if (normItem != null)
+                                    if (normItem.IdNorm != null)
                                     {
-                                        if (normItem.IdNorm != null)
+                                        var norms2 = paySaleViewModel.DbContext.ItemsInNorm.AsNoTracking().Where(norm => norm.IdNorm == normItem.IdNorm);
+
+                                        if (norms2 != null &&
+                                            norms2.Any())
                                         {
-                                            var norms2 = sqliteDbContext.ItemsInNorm.Where(norm => norm.IdNorm == normItem.IdNorm);
-
-                                            if (norms2 != null &&
-                                                norms2.Any())
+                                            norms2.ForEachAsync(norm2 =>
                                             {
-                                                norms2.ForEachAsync(norm2 =>
+                                                var normItem2 = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm2.IdItem);
+
+                                                if (normItem2 != null)
                                                 {
-                                                    var normItem2 = sqliteDbContext.Items.Find(norm2.IdItem);
-                                                    if (normItem2 != null)
+                                                    if (normItem2.IdNorm != null)
                                                     {
-                                                        if (normItem2.IdNorm != null)
+                                                        var norms3 = paySaleViewModel.DbContext.ItemsInNorm.AsNoTracking().Where(norm => norm.IdNorm == normItem2.IdNorm);
+                                                        if (norms3 != null &&
+                                                            norms3.Any())
                                                         {
-                                                            var norms3 = sqliteDbContext.ItemsInNorm.Where(norm => norm.IdNorm == normItem2.IdNorm);
-                                                            if (norms3 != null &&
-                                                                norms3.Any())
+                                                            norms3.ForEachAsync(norm3 =>
                                                             {
-                                                                norms3.ForEachAsync(norm3 =>
+                                                                var normItem3 = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm3.IdItem);
+                                                                if (normItem3 != null)
                                                                 {
-                                                                    var normItem3 = sqliteDbContext.Items.Find(norm3.IdItem);
-                                                                    if (normItem3 != null)
+                                                                    decimal unitPrice = normItem3.InputUnitPrice != null && normItem3.InputUnitPrice.HasValue ?
+                                                                    normItem3.InputUnitPrice.Value : 0;
+
+                                                                    var itemInvoice = new ItemInvoiceDB()
                                                                     {
-                                                                        decimal unitPrice = normItem3.InputUnitPrice != null && normItem3.InputUnitPrice.HasValue ?
-                                                                        normItem3.InputUnitPrice.Value : 0;
-
-                                                                        var itemInvoice = new ItemInvoiceDB()
-                                                                        {
-                                                                            Id = itemInvoiceId++,
-                                                                            Quantity = item.Quantity * norm.Quantity * norm2.Quantity * norm3.Quantity,
-                                                                            TotalAmout = item.Quantity * norm.Quantity * norm2.Quantity * norm3.Quantity * unitPrice,
-                                                                            Label = normItem3.Label,
-                                                                            Name = normItem3.Name,
-                                                                            UnitPrice = unitPrice,
-                                                                            ItemCode = normItem3.Id,
-                                                                            OriginalUnitPrice = unitPrice,
-                                                                            InvoiceId = invoiceDB.Id,
-                                                                            IsSirovina = 1,
-                                                                            InputUnitPrice = unitPrice
-                                                                            //Item = itemDB
-                                                                        };
-                                                                        sqliteDbContext.Add(itemInvoice);
-                                                                    }
-                                                                });
-                                                            }
-                                                        }
-                                                        else
-                                                        {
-                                                            decimal unitPrice = normItem2.InputUnitPrice != null && normItem2.InputUnitPrice.HasValue ?
-                                                            normItem2.InputUnitPrice.Value : 0;
-
-                                                            var itemInvoice = new ItemInvoiceDB()
-                                                            {
-                                                                Id = itemInvoiceId++,
-                                                                Quantity = item.Quantity * norm.Quantity * norm2.Quantity,
-                                                                TotalAmout = item.Quantity * norm.Quantity * norm2.Quantity * unitPrice,
-                                                                Label = normItem2.Label,
-                                                                Name = normItem2.Name,
-                                                                UnitPrice = unitPrice,
-                                                                ItemCode = normItem2.Id,
-                                                                OriginalUnitPrice = unitPrice,
-                                                                InvoiceId = invoiceDB.Id,
-                                                                IsSirovina = 1,
-                                                                InputUnitPrice = unitPrice
-                                                                //Item = itemDB
-                                                            };
-                                                            sqliteDbContext.Add(itemInvoice);
+                                                                        Id = itemInvoiceId++,
+                                                                        Quantity = item.Quantity * norm.Quantity * norm2.Quantity * norm3.Quantity,
+                                                                        TotalAmout = item.Quantity * norm.Quantity * norm2.Quantity * norm3.Quantity * unitPrice,
+                                                                        Label = normItem3.Label,
+                                                                        Name = normItem3.Name,
+                                                                        UnitPrice = unitPrice,
+                                                                        ItemCode = normItem3.Id,
+                                                                        OriginalUnitPrice = unitPrice,
+                                                                        InvoiceId = invoiceDB.Id,
+                                                                        IsSirovina = 1,
+                                                                        InputUnitPrice = unitPrice
+                                                                    };
+                                                                    paySaleViewModel.DbContext.Add(itemInvoice);
+                                                                }
+                                                            });
                                                         }
                                                     }
-                                                });
-                                            }
-                                            else
-                                            {
-                                                decimal unitPrice = normItem.InputUnitPrice != null && normItem.InputUnitPrice.HasValue ?
-                                                normItem.InputUnitPrice.Value : 0;
+                                                    else
+                                                    {
+                                                        decimal unitPrice = normItem2.InputUnitPrice != null && normItem2.InputUnitPrice.HasValue ?
+                                                        normItem2.InputUnitPrice.Value : 0;
 
-                                                var itemInvoice = new ItemInvoiceDB()
-                                                {
-                                                    Id = itemInvoiceId++,
-                                                    Quantity = item.Quantity * norm.Quantity,
-                                                    TotalAmout = item.Quantity * norm.Quantity * unitPrice,
-                                                    Label = normItem.Label,
-                                                    Name = normItem.Name,
-                                                    UnitPrice = unitPrice,
-                                                    ItemCode = normItem.Id,
-                                                    OriginalUnitPrice = unitPrice,
-                                                    InvoiceId = invoiceDB.Id,
-                                                    IsSirovina = 1,
-                                                    InputUnitPrice = unitPrice
-                                                    //Item = itemDB
-                                                };
-                                                sqliteDbContext.Add(itemInvoice);
-                                            }
+                                                        var itemInvoice = new ItemInvoiceDB()
+                                                        {
+                                                            Id = itemInvoiceId++,
+                                                            Quantity = item.Quantity * norm.Quantity * norm2.Quantity,
+                                                            TotalAmout = item.Quantity * norm.Quantity * norm2.Quantity * unitPrice,
+                                                            Label = normItem2.Label,
+                                                            Name = normItem2.Name,
+                                                            UnitPrice = unitPrice,
+                                                            ItemCode = normItem2.Id,
+                                                            OriginalUnitPrice = unitPrice,
+                                                            InvoiceId = invoiceDB.Id,
+                                                            IsSirovina = 1,
+                                                            InputUnitPrice = unitPrice
+                                                        };
+                                                        paySaleViewModel.DbContext.Add(itemInvoice);
+                                                    }
+                                                }
+                                            });
                                         }
                                         else
                                         {
@@ -818,148 +764,165 @@ namespace ClickBar.Commands.Sale
                                                 InvoiceId = invoiceDB.Id,
                                                 IsSirovina = 1,
                                                 InputUnitPrice = unitPrice
-                                                //Item = itemDB
                                             };
-                                            sqliteDbContext.Add(itemInvoice);
+                                            paySaleViewModel.DbContext.Add(itemInvoice);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        decimal unitPrice = normItem.InputUnitPrice != null && normItem.InputUnitPrice.HasValue ?
+                                        normItem.InputUnitPrice.Value : 0;
+
+                                        var itemInvoice = new ItemInvoiceDB()
+                                        {
+                                            Id = itemInvoiceId++,
+                                            Quantity = item.Quantity * norm.Quantity,
+                                            TotalAmout = item.Quantity * norm.Quantity * unitPrice,
+                                            Label = normItem.Label,
+                                            Name = normItem.Name,
+                                            UnitPrice = unitPrice,
+                                            ItemCode = normItem.Id,
+                                            OriginalUnitPrice = unitPrice,
+                                            InvoiceId = invoiceDB.Id,
+                                            IsSirovina = 1,
+                                            InputUnitPrice = unitPrice
+                                        };
+                                        paySaleViewModel.DbContext.Add(itemInvoice);
+                                    }
+                                }
+                            });
+                        }
+                    }
+
+                    var itemInvoice = new ItemInvoiceDB()
+                    {
+                        Id = itemInvoiceId++,
+                        Quantity = item.Quantity,
+                        TotalAmout = item.Quantity * item.Item.SellingUnitPrice,
+                        Label = item.Item.Label,
+                        Name = item.Item.Name,
+                        UnitPrice = item.Item.SellingUnitPrice,
+                        ItemCode = item.Item.Id,
+                        OriginalUnitPrice = itemDB.SellingUnitPrice,
+                        InvoiceId = invoiceDB.Id,
+                        IsSirovina = 0,
+                        InputUnitPrice = itemDB.InputUnitPrice
+                    };
+                    paySaleViewModel.DbContext.Add(itemInvoice);
+                }
+            });
+
+            _payment.ForEach(payment =>
+            {
+                PaymentInvoiceDB paymentInvoice = new PaymentInvoiceDB()
+                {
+                    InvoiceId = invoiceDB.Id,
+                    Amout = payment.Amount,
+                    PaymentType = payment.PaymentType
+                };
+
+                paySaleViewModel.DbContext.PaymentInvoices.Add(paymentInvoice);
+            });
+            paySaleViewModel.DbContext.SaveChanges();
+
+            return invoiceDB;
+        }
+        private async Task TakingDownNorm(InvoiceDB invoice,
+            PaySaleViewModel paySaleViewModel)
+        {
+            try
+            {
+                List<ItemDB> itemsForCondition = new List<ItemDB>();
+
+                var itemsInInvoice = paySaleViewModel.DbContext.ItemInvoices.AsNoTracking().Where(item => item.IsSirovina == 0);
+
+                if (itemsInInvoice != null &&
+                    itemsInInvoice.Any())
+                {
+                    itemsInInvoice.ToList().ForEach(item =>
+                    {
+                        var it = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == item.ItemCode);
+                        if (it != null &&
+                        item.Quantity.HasValue)
+                        {
+                            var itemInNorm = paySaleViewModel.DbContext.ItemsInNorm.AsNoTracking().Where(norm => it.IdNorm == norm.IdNorm);
+
+                            if (itemInNorm != null &&
+                            itemInNorm.Any())
+                            {
+                                itemInNorm.ForEachAsync(norm =>
+                                {
+                                    var itm = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm.IdItem);
+
+                                    if (itm != null)
+                                    {
+                                        if (itm.IdNorm == null)
+                                        {
+                                            itm.TotalQuantity -= item.Quantity.Value * norm.Quantity;
+                                            paySaleViewModel.DbContext.Items.Update(itm);
+                                        }
+                                        else
+                                        {
+                                            var itemInNorm2 = paySaleViewModel.DbContext.ItemsInNorm.AsNoTracking().Where(norm => itm.IdNorm == norm.IdNorm);
+                                            if (itemInNorm2.Any())
+                                            {
+                                                itemInNorm2.ToList().ForEach(norm2 =>
+                                                {
+                                                    var itm2 = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm2.IdItem);
+
+                                                    if (itm2 != null)
+                                                    {
+                                                        if (itm2.IdNorm == null)
+                                                        {
+                                                            itm2.TotalQuantity -= item.Quantity.Value * norm.Quantity * norm2.Quantity;
+                                                            paySaleViewModel.DbContext.Items.Update(itm2);
+                                                        }
+                                                        else
+                                                        {
+                                                            var itemInNorm3 = paySaleViewModel.DbContext.ItemsInNorm.AsNoTracking().Where(norm => itm2.IdNorm == norm2.IdNorm);
+                                                            if (itemInNorm3.Any())
+                                                            {
+                                                                itemInNorm3.ToList().ForEach(norm3 =>
+                                                                {
+                                                                    var itm3 = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm3.IdItem);
+
+                                                                    if (itm3 != null)
+                                                                    {
+                                                                        if (itm3.IdNorm == null)
+                                                                        {
+                                                                            itm3.TotalQuantity -= item.Quantity.Value * norm.Quantity * norm2.Quantity * norm3.Quantity;
+                                                                            paySaleViewModel.DbContext.Items.Update(itm3);
+                                                                        }
+                                                                    }
+                                                                });
+                                                            }
+                                                            else
+                                                            {
+                                                                itm2.TotalQuantity -= item.Quantity.Value * norm.Quantity * norm2.Quantity;
+                                                                paySaleViewModel.DbContext.Items.Update(itm2);
+                                                            }
+                                                        }
+                                                    }
+                                                });
+                                            }
+                                            else
+                                            {
+                                                itm.TotalQuantity -= item.Quantity.Value * norm.Quantity;
+                                                paySaleViewModel.DbContext.Items.Update(itm);
+                                            }
                                         }
                                     }
                                 });
                             }
-                        }
-
-                        var itemInvoice = new ItemInvoiceDB()
-                        {
-                            Id = itemInvoiceId++,
-                            Quantity = item.Quantity,
-                            TotalAmout = item.Quantity * item.Item.SellingUnitPrice,
-                            Label = item.Item.Label,
-                            Name = item.Item.Name,
-                            UnitPrice = item.Item.SellingUnitPrice,
-                            ItemCode = item.Item.Id,
-                            OriginalUnitPrice = itemDB.SellingUnitPrice,
-                            InvoiceId = invoiceDB.Id,
-                            IsSirovina = 0,
-                            InputUnitPrice = itemDB.InputUnitPrice
-                            //Item = itemDB
-                        };
-                        sqliteDbContext.Add(itemInvoice);
-                    }
-                });
-
-                _payment.ForEach(payment =>
-                {
-                    PaymentInvoiceDB paymentInvoice = new PaymentInvoiceDB()
-                    {
-                        InvoiceId = invoiceDB.Id,
-                        Amout = payment.Amount,
-                        PaymentType = payment.PaymentType
-                    };
-
-                    sqliteDbContext.PaymentInvoices.Add(paymentInvoice);
-                });
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                return invoiceDB;
-            }
-        }
-        private async Task TakingDownNorm(InvoiceDB invoice)
-        {
-            try
-            {
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
-                {
-                    List<ItemDB> itemsForCondition = new List<ItemDB>();
-
-                    var itemsInInvoice = invoice.ItemInvoices.Where(item => item.IsSirovina == 0);
-
-                    if (itemsInInvoice != null &&
-                        itemsInInvoice.Any())
-                    {
-                        itemsInInvoice.ToList().ForEach(item =>
-                        {
-                            var it = sqliteDbContext.Items.Find(item.ItemCode);
-                            if (it != null &&
-                            item.Quantity.HasValue)
+                            else
                             {
-                                var itemInNorm = sqliteDbContext.ItemsInNorm.Where(norm => it.IdNorm == norm.IdNorm);
-
-                                if (itemInNorm != null &&
-                                itemInNorm.Any())
-                                {
-                                    itemInNorm.ForEachAsync(norm =>
-                                    {
-                                        var itm = sqliteDbContext.Items.Find(norm.IdItem);
-
-                                        if (itm != null)
-                                        {
-                                            if (itm.IdNorm == null)
-                                            {
-                                                itm.TotalQuantity -= item.Quantity.Value * norm.Quantity;
-                                                sqliteDbContext.Items.Update(itm);
-                                            }
-                                            else
-                                            {
-                                                var itemInNorm2 = sqliteDbContext.ItemsInNorm.Where(norm => itm.IdNorm == norm.IdNorm);
-                                                if (itemInNorm2.Any())
-                                                {
-                                                    itemInNorm2.ToList().ForEach(norm2 =>
-                                                    {
-                                                        var itm2 = sqliteDbContext.Items.Find(norm2.IdItem);
-
-                                                        if (itm2 != null)
-                                                        {
-                                                            if (itm2.IdNorm == null)
-                                                            {
-                                                                itm2.TotalQuantity -= item.Quantity.Value * norm.Quantity * norm2.Quantity;
-                                                                sqliteDbContext.Items.Update(itm2);
-                                                            }
-                                                            else
-                                                            {
-                                                                var itemInNorm3 = sqliteDbContext.ItemsInNorm.Where(norm => itm2.IdNorm == norm2.IdNorm);
-                                                                if (itemInNorm3.Any())
-                                                                {
-                                                                    itemInNorm3.ToList().ForEach(norm3 =>
-                                                                    {
-                                                                        var itm3 = sqliteDbContext.Items.Find(norm3.IdItem);
-
-                                                                        if (itm3 != null)
-                                                                        {
-                                                                            if (itm3.IdNorm == null)
-                                                                            {
-                                                                                itm3.TotalQuantity -= item.Quantity.Value * norm.Quantity * norm2.Quantity * norm3.Quantity;
-                                                                                sqliteDbContext.Items.Update(itm3);
-                                                                            }
-                                                                        }
-                                                                    });
-                                                                }
-                                                                else
-                                                                {
-                                                                    itm2.TotalQuantity -= item.Quantity.Value * norm.Quantity * norm2.Quantity;
-                                                                    sqliteDbContext.Items.Update(itm2);
-                                                                }
-                                                            }
-                                                        }
-                                                    });
-                                                }
-                                                else
-                                                {
-                                                    itm.TotalQuantity -= item.Quantity.Value * norm.Quantity;
-                                                    sqliteDbContext.Items.Update(itm);
-                                                }
-                                            }
-                                        }
-                                    });
-                                }
-                                else
-                                {
-                                    it.TotalQuantity -= item.Quantity.Value;
-                                    sqliteDbContext.Items.Update(it);
-                                }
+                                it.TotalQuantity -= item.Quantity.Value;
+                                paySaleViewModel.DbContext.Items.Update(it);
                             }
-                        });
+                        }
+                    });
 
-                        RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-                    }
+                    paySaleViewModel.DbContext.SaveChanges();
                 }
             }
             catch (Exception ex)
@@ -976,8 +939,8 @@ namespace ClickBar.Commands.Sale
             ResponseJson responseJson,
             InvoiceDB invoiceDB)
         {
-            await UpdateInvode(invoiceDB, total, responseJson);
-            await TakingDownNorm(invoiceDB);
+            await UpdateInvode(invoiceDB, total, responseJson, paySaleViewModel);
+            await TakingDownNorm(invoiceDB, paySaleViewModel);
             await TakingDownOrder(invoiceDB, paySaleViewModel, tableId, itemsInvoice);
         }
         private void Black(InvoceRequestFileSystemWatcher invoiceRequset,
@@ -1008,62 +971,59 @@ namespace ClickBar.Commands.Sale
                 SdcDateTime = DateTime.Now,
                 TotalAmount = total,
             };
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            paySaleViewModel.DbContext.Add(invoiceDB);
+
+            paySaleViewModel.DbContext.SaveChanges();
+
+            int itemInvoiceId = 0;
+            List<ItemInvoiceDB> itemsInvoiceDB = new List<ItemInvoiceDB>();
+            items.ForEach(item =>
             {
-                sqliteDbContext.Add(invoiceDB);
-
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                int itemInvoiceId = 0;
-                List<ItemInvoiceDB> itemsInvoiceDB = new List<ItemInvoiceDB>();
-                items.ForEach(item =>
+                ItemDB? itemDB = paySaleViewModel.DbContext.Items.Find(item.Id);
+                if (itemDB != null)
                 {
-                    ItemDB? itemDB = sqliteDbContext.Items.Find(item.Id);
-                    if (itemDB != null)
+                    itemsInvoiceDB.Add(new ItemInvoiceDB()
                     {
-                        itemsInvoiceDB.Add(new ItemInvoiceDB()
-                        {
-                            Id = itemInvoiceId++,
-                            Quantity = item.Quantity,
-                            TotalAmout = item.TotalAmount,
-                            Label = item.Label,
-                            Name = item.Name,
-                            UnitPrice = item.UnitPrice,
-                            ItemCode = item.Id
-                            //Item = itemDB
-                        });
-                    }
-                });
-
-                itemsInvoiceDB.ForEach(itemInvoice =>
-                {
-                    itemInvoice.InvoiceId = invoiceDB.Id;
-                    //itemInvoice.Invoice = invoice;
-
-                    sqliteDbContext.Add(itemInvoice);
-                });
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                TakingDownOrder(invoiceDB, paySaleViewModel, paySaleViewModel.SaleViewModel.TableId, itemsInvoice);
-
-                if (SettingsManager.Instance.EnableSmartCard())
-                {
-                    paySaleViewModel.SaleViewModel.LogoutCommand.Execute(true);
+                        Id = itemInvoiceId++,
+                        Quantity = item.Quantity,
+                        TotalAmout = item.TotalAmount,
+                        Label = item.Label,
+                        Name = item.Name,
+                        UnitPrice = item.UnitPrice,
+                        ItemCode = item.Id
+                    });
                 }
-                else
-                {
-                    paySaleViewModel.SaleViewModel.Reset();
+            });
 
-                    AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
-                        paySaleViewModel.SaleViewModel.LoggedCashier,
-                        paySaleViewModel.SaleViewModel);
-                    paySaleViewModel.SaleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
-                }
+            itemsInvoiceDB.ForEach(itemInvoice =>
+            {
+                itemInvoice.InvoiceId = invoiceDB.Id;
+
+                paySaleViewModel.DbContext.Add(itemInvoice);
+            });
+            paySaleViewModel.DbContext.SaveChanges();
+
+            TakingDownOrder(invoiceDB, paySaleViewModel, paySaleViewModel.SaleViewModel.TableId, itemsInvoice);
+
+            if (SettingsManager.Instance.EnableSmartCard())
+            {
+                paySaleViewModel.SaleViewModel.LogoutCommand.Execute(true);
+            }
+            else
+            {
+                paySaleViewModel.SaleViewModel.Reset();
+
+                AppStateParameter appStateParameter = new AppStateParameter(paySaleViewModel.DbContext, 
+                    paySaleViewModel.DrljaDbContext,
+                    AppStateEnumerable.TableOverview,
+                    paySaleViewModel.SaleViewModel.LoggedCashier,
+                    paySaleViewModel.SaleViewModel);
+                paySaleViewModel.SaleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
             }
         }
         private async void Normal(InvoceRequestFileSystemWatcher invoiceRequset,
             PaySaleViewModel paySaleViewModel,
-            decimal total, 
+            decimal total,
             List<ItemFileSystemWatcher> items,
             decimal popust,
             CashierDB cashierDB)
@@ -1093,8 +1053,8 @@ namespace ClickBar.Commands.Sale
                 int tableId = paySaleViewModel.SaleViewModel.TableId;
                 ObservableCollection<ItemInvoice> itemsInvoice = new ObservableCollection<ItemInvoice>(paySaleViewModel.SaleViewModel.ItemsInvoice);
 
-                InvoiceDB invoiceDB = await InsertInvoiceInDB(invoiceRequset, 
-                    items, 
+                InvoiceDB invoiceDB = await InsertInvoiceInDB(invoiceRequset,
+                    items,
                     paySaleViewModel,
                     dateTimeOfIssue);
 
@@ -1131,11 +1091,6 @@ namespace ClickBar.Commands.Sale
                                                 itemsInvoice,
                                                 responseJson,
                                                 invoiceDB);
-
-                                            //if(tableId == 0)
-                                            //{
-                                            //    PrintOrder(cashierDB, itemsInvoice.ToList());
-                                            //}
                                         }
                                         catch
                                         {
@@ -1166,17 +1121,19 @@ namespace ClickBar.Commands.Sale
                 {
                     paySaleViewModel.SaleViewModel.Reset();
 
-                    AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
+                    AppStateParameter appStateParameter = new AppStateParameter(paySaleViewModel.DbContext,
+                        paySaleViewModel.DrljaDbContext,
+                        AppStateEnumerable.TableOverview,
                         paySaleViewModel.SaleViewModel.LoggedCashier,
                         paySaleViewModel.SaleViewModel);
                     paySaleViewModel.SaleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
                 }
             }
         }
-        private void PrintOrder(CashierDB cashierDB, List<ItemInvoice> items)
+        private void PrintOrder(CashierDB cashierDB, 
+            List<ItemInvoice> items,
+            PaySaleViewModel paySaleViewModel)
         {
-            var sqliteDbContext = new SqliteDbContext();
-
             DateTime orderTime = DateTime.Now;
 
             ClickBar_Common.Models.Order.Order orderKuhinja = new ClickBar_Common.Models.Order.Order()
@@ -1197,7 +1154,7 @@ namespace ClickBar.Commands.Sale
                 PartHall = "Za poneti",
                 OrderName = "S"
             };
-            ClickBar_Common.Models.Order.Order orderDrugo= new ClickBar_Common.Models.Order.Order()
+            ClickBar_Common.Models.Order.Order orderDrugo = new ClickBar_Common.Models.Order.Order()
             {
                 CashierName = cashierDB.Name,
                 TableId = 0,
@@ -1208,11 +1165,11 @@ namespace ClickBar.Commands.Sale
 
             items.ForEach(item =>
             {
-                var itemNadgroup = sqliteDbContext.Items.Join(sqliteDbContext.ItemGroups,
+                var itemNadgroup = paySaleViewModel.DbContext.Items.Join(paySaleViewModel.DbContext.ItemGroups,
                 item => item.IdItemGroup,
                 itemGroup => itemGroup.Id,
                 (item, itemGroup) => new { Item = item, ItemGroup = itemGroup })
-                .Join(sqliteDbContext.Supergroups,
+                .Join(paySaleViewModel.DbContext.Supergroups,
                 group => group.ItemGroup.IdSupergroup,
                 supergroup => supergroup.Id,
                 (group, supergroup) => new { Group = group, Supergroup = supergroup })
@@ -1266,7 +1223,7 @@ namespace ClickBar.Commands.Sale
                     }
                     else
                     {
-                        if(itemNadgroup.Supergroup.Name.ToLower().Contains("pice") ||
+                        if (itemNadgroup.Supergroup.Name.ToLower().Contains("pice") ||
                         itemNadgroup.Supergroup.Name.ToLower().Contains("piće") ||
                         itemNadgroup.Supergroup.Name.ToLower().Contains("sank") ||
                         itemNadgroup.Supergroup.Name.ToLower().Contains("šank"))
@@ -1303,10 +1260,10 @@ namespace ClickBar.Commands.Sale
                     });
                 }
             });
-            
+
             int orderCounterTotal = 1;
 
-            var ordersTodayTotalDB = sqliteDbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date);
+            var ordersTodayTotalDB = paySaleViewModel.DbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date);
 
             if (ordersTodayTotalDB != null &&
                 ordersTodayTotalDB.Any())
@@ -1321,7 +1278,7 @@ namespace ClickBar.Commands.Sale
             {
                 int orderCounterType = 1;
 
-                var ordersTodayTypeDB = sqliteDbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
+                var ordersTodayTypeDB = paySaleViewModel.DbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
                 !string.IsNullOrEmpty(o.Name) &&
                 o.Name.ToLower().Contains(orderSank.OrderName.ToLower()));
 
@@ -1348,8 +1305,8 @@ namespace ClickBar.Commands.Sale
                     TableId = 0,
                 };
 
-                sqliteDbContext.OrdersToday.Add(orderTodayDB);
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                paySaleViewModel.DbContext.OrdersToday.Add(orderTodayDB);
+                paySaleViewModel.DbContext.SaveChanges();
 
                 orderSank.Items.ForEach(item =>
                 {
@@ -1360,9 +1317,9 @@ namespace ClickBar.Commands.Sale
                         Quantity = item.Quantity,
                         TotalPrice = item.TotalAmount,
                     };
-                    sqliteDbContext.OrderTodayItems.Add(orderTodayItemDB);
+                    paySaleViewModel.DbContext.OrderTodayItems.Add(orderTodayItemDB);
                 });
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                paySaleViewModel.DbContext.SaveChanges();
 
                 FormatPos.PrintOrder(orderSank, posType, ClickBar_Printer.Enums.OrderTypeEnumeration.Sank);
             }
@@ -1370,7 +1327,7 @@ namespace ClickBar.Commands.Sale
             {
                 int orderCounter = 1;
 
-                var ordersTodayDB = sqliteDbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
+                var ordersTodayDB = paySaleViewModel.DbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
                 !string.IsNullOrEmpty(o.Name) &&
                 o.Name.ToLower().Contains(orderKuhinja.OrderName.ToLower()));
 
@@ -1397,19 +1354,19 @@ namespace ClickBar.Commands.Sale
                     TableId = 0
                 };
 
-                sqliteDbContext.OrdersToday.Add(orderTodayDB);
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                paySaleViewModel.DbContext.OrdersToday.Add(orderTodayDB);
+                paySaleViewModel.DbContext.SaveChanges();
 
                 orderKuhinja.Items.ForEach(item =>
                 {
-                    var orderTodayItemDB = sqliteDbContext.OrderTodayItems.FirstOrDefault(o => o.ItemId == item.Id &&
+                    var orderTodayItemDB = paySaleViewModel.DbContext.OrderTodayItems.FirstOrDefault(o => o.ItemId == item.Id &&
                     o.OrderTodayId == orderTodayDB.Id);
 
                     if (orderTodayItemDB != null)
                     {
                         orderTodayItemDB.Quantity += item.Quantity;
                         orderTodayItemDB.TotalPrice += item.TotalAmount;
-                        sqliteDbContext.OrderTodayItems.Update(orderTodayItemDB);
+                        paySaleViewModel.DbContext.OrderTodayItems.Update(orderTodayItemDB);
                     }
                     else
                     {
@@ -1420,9 +1377,9 @@ namespace ClickBar.Commands.Sale
                             Quantity = item.Quantity,
                             TotalPrice = item.TotalAmount,
                         };
-                        sqliteDbContext.OrderTodayItems.Add(orderTodayItemDB);
+                        paySaleViewModel.DbContext.OrderTodayItems.Add(orderTodayItemDB);
                     }
-                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                    paySaleViewModel.DbContext.SaveChanges();
                 });
 
                 FormatPos.PrintOrder(orderKuhinja, posType, ClickBar_Printer.Enums.OrderTypeEnumeration.Kuhinja);
@@ -1431,7 +1388,7 @@ namespace ClickBar.Commands.Sale
             {
                 int orderCounter = 1;
 
-                var ordersTodayDB = sqliteDbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
+                var ordersTodayDB = paySaleViewModel.DbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
                 !string.IsNullOrEmpty(o.Name) &&
                 o.Name.ToLower().Contains(orderDrugo.OrderName.ToLower()));
 
@@ -1458,8 +1415,8 @@ namespace ClickBar.Commands.Sale
                     TableId = 0
                 };
 
-                sqliteDbContext.OrdersToday.Add(orderTodayDB);
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                paySaleViewModel.DbContext.OrdersToday.Add(orderTodayDB);
+                paySaleViewModel.DbContext.SaveChanges();
 
                 orderDrugo.Items.ForEach(item =>
                 {
@@ -1470,16 +1427,15 @@ namespace ClickBar.Commands.Sale
                         Quantity = item.Quantity,
                         TotalPrice = item.TotalAmount,
                     };
-                    sqliteDbContext.OrderTodayItems.Add(orderTodayItemDB);
+                    paySaleViewModel.DbContext.OrderTodayItems.Add(orderTodayItemDB);
                 });
-                RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                paySaleViewModel.DbContext.SaveChanges();
 
                 FormatPos.PrintOrder(orderDrugo, posType, ClickBar_Printer.Enums.OrderTypeEnumeration.Sank);
             }
         }
         private bool IsFileLocked(string file)
         {
-            //check that problem is not in destination file
             if (File.Exists(file))
             {
                 FileStream stream = null;
@@ -1489,7 +1445,6 @@ namespace ClickBar.Commands.Sale
                 }
                 catch (Exception ex2)
                 {
-                    //_log.WriteLog(ex2, "Error in checking whether file is locked " + file);
                     int errorCode = Marshal.GetHRForException(ex2) & ((1 << 16) - 1);
                     if ((ex2 is IOException) && (errorCode == ERROR_SHARING_VIOLATION || errorCode == ERROR_LOCK_VIOLATION))
                     {

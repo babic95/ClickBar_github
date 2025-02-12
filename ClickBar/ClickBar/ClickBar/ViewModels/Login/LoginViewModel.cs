@@ -1,9 +1,14 @@
-﻿using ClickBar.Commands.Login;
+﻿using ClickBar.Commands;
+using ClickBar.Commands.AppMain;
+using ClickBar.Commands.Login;
 using ClickBar_API;
 using ClickBar_Common.Enums;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_Database_Drlja;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Settings;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,13 +25,13 @@ namespace ClickBar.ViewModels.Login
 {
     public class LoginViewModel : ViewModelBase
     {
+        private IServiceProvider _serviceProvider;
         private string _message;
         private string _password;
         private ImageSource _logo;
         private Timer _timer;
         private DateTime? _validTo;
         private Task _initializationTask;
-
         private Visibility _visibilityBlack;
 
         public readonly CashierDB CashierAdmin = new CashierDB()
@@ -36,24 +41,37 @@ namespace ClickBar.ViewModels.Login
             Name = "CleanCodeSirmium"
         };
 
-        public LoginViewModel(ICommand updateCurrentViewModelCommand)
+        public LoginViewModel(IServiceProvider serviceProvider, IDbContextFactory<SqlServerDbContext> dbContextFactory, IDbContextFactory<SqliteDrljaDbContext> drljaDbContextFactory)
         {
+            _serviceProvider = serviceProvider;
+            DbContext = dbContextFactory.CreateDbContext();
+            DrljaDbContext = drljaDbContextFactory.CreateDbContext();
+            UpdateCurrentAppStateViewModelCommand = serviceProvider.GetRequiredService<UpdateCurrentAppStateViewModelCommand>();
+
             Initialization();
 
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            AllCashiers = DbContext.Cashiers.ToList();
+
+            string? logoUrl = SettingsManager.Instance.GetPathToLogo();
+
+            if (File.Exists(logoUrl))
             {
-                AllCashiers = sqliteDbContext.Cashiers.ToList();
-                UpdateCurrentViewModelCommand = updateCurrentViewModelCommand;
-
-                string? logoUrl = SettingsManager.Instance.GetPathToLogo();
-
-                if (File.Exists(logoUrl))
-                {
-                    Logo = new BitmapImage(new Uri(logoUrl));
-                }
+                Logo = new BitmapImage(new Uri(logoUrl));
             }
         }
 
+        #region Internal Properties
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
+        internal SqliteDrljaDbContext DrljaDbContext
+        {
+            get; private set;
+        }
+        #endregion Internal Properties
+
+        #region Properties
         public List<CashierDB> AllCashiers { get; private set; }
 
         public Visibility VisibilityBlack
@@ -92,8 +110,9 @@ namespace ClickBar.ViewModels.Login
                 OnPropertyChange(nameof(Password));
             }
         }
+        #endregion Properties
 
-        public ICommand UpdateCurrentViewModelCommand { get; set; }
+        public ICommand UpdateCurrentAppStateViewModelCommand { get; set; }
         public ICommand ClickOnLoginButtonCommand => new ClickOnLoginButtonCommand(this);
 
         private void KillApp()
@@ -151,58 +170,14 @@ namespace ClickBar.ViewModels.Login
 
             return true;
         }
+
         private void Initialization()
         {
-
 #if CRNO
             VisibilityBlack = Visibility.Hidden;
 #else
             VisibilityBlack = Visibility.Visible;
 #endif
-            //if (SettingsManager.Instance.GetEnableCCS_Server())
-            //{
-            //    bool initializationCCS_Server = CCS_Fiscalization_ApiManager.Instance.Initialization().Result;
-
-            //    if (!initializationCCS_Server)
-            //    {
-            //        MessageBox.Show("CCS ESIR nije pravilno aktiviran! Putanja do CCS SERVER-a ne postoji. Obratite se proizvođaču.", 
-            //            "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
-
-            //        KillApp();
-            //    }
-
-            //    if (!ValidDateTime())
-            //    {
-            //        return;
-            //    }
-            //    bool firstValid = true;
-
-            //    if (_timer is null)
-            //    {
-            //        _timer = new Timer(
-            //            (e) =>
-            //            {
-            //                if (firstValid)
-            //                {
-            //                    firstValid = false;
-            //                }
-            //                else
-            //                {
-            //                    ValidDateTime();
-            //                }
-            //            },
-            //            null,
-            //            0,
-            //            43200000);
-            //    }
-            //}
-            ////if (_initializationTask is null)
-            ////{
-            ////    _initializationTask = Task.Run(async () =>
-            ////    {
-            ////        bool connectedWithLPFR = await ApiManager.Instance.Initialization();
-            ////    });
-            ////}
         }
     }
 }

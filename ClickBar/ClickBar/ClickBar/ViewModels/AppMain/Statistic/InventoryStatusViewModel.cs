@@ -4,10 +4,11 @@ using ClickBar.Commands.AppMain.Statistic.InventoryStatus;
 using ClickBar.Commands.AppMain.Statistic.Norm;
 using ClickBar.Models.AppMain.Statistic;
 using ClickBar.Models.Sale;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Settings;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -22,6 +23,8 @@ namespace ClickBar.ViewModels.AppMain.Statistic
     public class InventoryStatusViewModel : ViewModelBase
     {
         #region Fields
+        private IServiceProvider _serviceProvider;
+
         private Supergroup? _currentSupergroupSearch;
         private Supergroup? _currentSupergroup;
         private GroupItems? _currentGroupItems;
@@ -29,7 +32,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         private ObservableCollection<Supergroup> _allSupergroups;
         private ObservableCollection<GroupItems> _allGroupItems;
 
-        private Invertory _currentInventoryStatus; 
+        private Invertory _currentInventoryStatus;
         private ObservableCollection<Invertory> _inventoryStatus;
         private ObservableCollection<Invertory> _inventoryStatusNorm;
         private Invertory _currentInventoryStatusNorm;
@@ -47,7 +50,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         private Visibility _visibilityNext;
         private Visibility _visibilityAllSupergroup;
         private Visibility _visibilityAllGroupItems;
-        private Visibility _nadgrupeVisibility; 
+        private Visibility _nadgrupeVisibility;
 
         private string _quantityCommandParameter;
         private ObservableCollection<GroupItems> _allGroups;
@@ -75,102 +78,31 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #endregion Fields
 
         #region Constructors
-        public InventoryStatusViewModel()
+        public InventoryStatusViewModel(IServiceProvider serviceProvider)
         {
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
             AllGroupItems = new ObservableCollection<GroupItems>();
             AllSupergroups = new ObservableCollection<Supergroup>() { new Supergroup(-1, "Sve nadgrupe") };
             AllGroups = new ObservableCollection<GroupItems>() { new GroupItems(-1, -1, "Sve grupe") };
 
             AllLabels = new ObservableCollection<TaxLabel>(_labels);
 
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
-            {
-
-                if (sqliteDbContext.Items != null &&
-                    sqliteDbContext.Items.Any())
-                {
-                    sqliteDbContext.Items.ForEachAsync(x =>
-                    {
-                        Item item = new Item(x);
-                        var group = sqliteDbContext.ItemGroups.Find(x.IdItemGroup);
-
-                        if (group != null)
-                        {
-                            bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
-                            InventoryStatusAll.Add(new Invertory(item, x.IdItemGroup, x.TotalQuantity, 0, x.AlarmQuantity, isSirovina));
-                        }
-                    });
-                }
-
-                if (sqliteDbContext.Supergroups != null &&
-                    sqliteDbContext.Supergroups.Any())
-                {
-                    sqliteDbContext.Supergroups.ForEachAsync(supergroup =>
-                    {
-                        AllSupergroups.Add(new Supergroup(supergroup.Id, supergroup.Name));
-                    });
-
-                    CurrentSupergroup = AllSupergroups.FirstOrDefault();
-                }
-
-                if (SettingsManager.Instance.EnableSuperGroup())
-                {
-                    NadgrupeVisibility = Visibility.Visible;
-                    CurrentSupergroupSearch = AllSupergroups.FirstOrDefault();
-                }
-                else
-                {
-                    NadgrupeVisibility = Visibility.Collapsed;
-                }
-
-                if (sqliteDbContext.ItemGroups != null &&
-                    sqliteDbContext.ItemGroups.Any())
-                {
-                    sqliteDbContext.ItemGroups.ForEachAsync(gropu =>
-                    {
-                        AllGroupItems.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
-                        AllGroups.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
-                    });
-
-                    CurrentGroupItems = AllGroupItems.FirstOrDefault();
-                    CurrentGroup = AllGroups.FirstOrDefault();
-                }
-
-                if (sqliteDbContext.Items != null &&
-                    sqliteDbContext.Items.Any())
-                {
-                    var normItems = sqliteDbContext.Items.Where(i => i.IdNorm != null)
-                        .ForEachAsync(itemDB =>
-                        {
-                            var itemInNorm = sqliteDbContext.ItemsInNorm.Where(i => i.IdNorm == itemDB.IdNorm);
-
-                            if (itemInNorm == null ||
-                            !itemInNorm.Any())
-                            {
-                                itemDB.IdNorm = null;
-                                sqliteDbContext.Items.Update(itemDB);
-                            }
-                        });
-                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-                }
-                Norma = new ObservableCollection<Invertory>();
-
-                InventoryStatus = new ObservableCollection<Invertory>(InventoryStatusAll);
-                InventoryStatusNorm = new ObservableCollection<Invertory>(InventoryStatusAll);
-
-                NormQuantityString = "0";
-                VisibilityNext = Visibility.Hidden;
-            }
+            LoadData();
         }
-#endregion Constructors
+        #endregion Constructors
 
-#region Properties internal
+        #region Properties internal
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
         internal List<Invertory> InventoryStatusAll = new List<Invertory>();
         internal Window Window { get; set; }
         internal Window WindowHelper { get; set; }
         internal int CurrentNorm { get; set; }
         internal Window PrintTypeWindow { get; set; }
-#endregion Properties internal
+        #endregion Properties internal
 
         #region Properties
         public ObservableCollection<Supergroup> AllSupergroups
@@ -209,7 +141,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                 OnPropertyChange(nameof(NadgrupeVisibility));
             }
         }
-        
+
         public ObservableCollection<TaxLabel> AllLabels
         {
             get { return _allLabels; }
@@ -397,11 +329,11 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                 _currentInventoryStatus = value;
                 OnPropertyChange(nameof(CurrentInventoryStatus));
 
-                if(value != null)
+                if (value != null)
                 {
                     VisibilityNext = Visibility.Visible;
 
-                    if(value.Item != null &&
+                    if (value.Item != null &&
                         !string.IsNullOrEmpty(value.Item.Label))
                     {
                         var label = AllLabels.FirstOrDefault(lab => lab.Id == value.Item.Label);
@@ -497,7 +429,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                 {
                     InventoryStatusNorm = new ObservableCollection<Invertory>(InventoryStatusAll.Where(inventory => inventory.Item.Name.ToLower().Contains(value.ToLower())));
 
-                    if(CurrentInventoryStatusNorm != null &&
+                    if (CurrentInventoryStatusNorm != null &&
                         !InventoryStatusNorm.Where(inventory => inventory.Item.Id == CurrentInventoryStatusNorm.Item.Id).Any())
                     {
                         VisibilityNext = Visibility.Hidden;
@@ -516,9 +448,9 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                 OnPropertyChange(nameof(QuantityCommandParameter));
             }
         }
-#endregion Properties
+        #endregion Properties
 
-#region Commands
+        #region Commands
         public ICommand OpenAddEditWindow => new OpenAddEditWindow(this);
         public ICommand OpenPrintCommand => new OpenPrintCommand(this);
         public ICommand PrintCommand => new PrintCommand(this);
@@ -537,13 +469,102 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         public ICommand FixInputPriceCommand => new FixInputPriceCommand(this);
         public ICommand FixQuantityCommand => new FixQuantityCommand(this);
         public ICommand DeleteZeljaCommand => new DeleteZeljaCommand(this);
-        public ICommand AddNewZeljaCommand => new AddNewZeljaCommand(this); 
+        public ICommand AddNewZeljaCommand => new AddNewZeljaCommand(this);
         #endregion Commands
 
-        #region Public methods
-        #endregion Public methods
-
         #region Private methods
+        private void LoadData()
+        {
+            LoadItems();
+            LoadSupergroups();
+            LoadItemGroups();
+            UpdateNormItems();
+        }
+
+        private void LoadItems()
+        {
+            if (DbContext.Items != null && DbContext.Items.Any())
+            {
+                var items = DbContext.Items.AsNoTracking().ToList();
+                foreach (var x in items)
+                {
+                    Item item = new Item(x);
+                    var group = DbContext.ItemGroups.AsNoTracking().FirstOrDefault(g => g.Id == x.IdItemGroup);
+
+                    if (group != null)
+                    {
+                        bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine");
+                        InventoryStatusAll.Add(new Invertory(item, x.IdItemGroup, x.TotalQuantity, 0, x.AlarmQuantity, isSirovina));
+                    }
+                }
+            }
+        }
+
+        private void LoadSupergroups()
+        {
+            if (DbContext.Supergroups != null && DbContext.Supergroups.Any())
+            {
+                foreach (var supergroup in DbContext.Supergroups.AsNoTracking().ToList())
+                {
+                    AllSupergroups.Add(new Supergroup(supergroup.Id, supergroup.Name));
+                }
+
+                CurrentSupergroup = AllSupergroups.FirstOrDefault();
+            }
+
+            if (SettingsManager.Instance.EnableSuperGroup())
+            {
+                NadgrupeVisibility = Visibility.Visible;
+                CurrentSupergroupSearch = AllSupergroups.FirstOrDefault();
+            }
+            else
+            {
+                NadgrupeVisibility = Visibility.Collapsed;
+            }
+        }
+
+        private void LoadItemGroups()
+        {
+            if (DbContext.ItemGroups != null && DbContext.ItemGroups.Any())
+            {
+                foreach (var group in DbContext.ItemGroups.AsNoTracking().ToList())
+                {
+                    AllGroupItems.Add(new GroupItems(group.Id, group.IdSupergroup, group.Name));
+                    AllGroups.Add(new GroupItems(group.Id, group.IdSupergroup, group.Name));
+                }
+
+                CurrentGroupItems = AllGroupItems.FirstOrDefault();
+                CurrentGroup = AllGroups.FirstOrDefault();
+            }
+        }
+
+        private void UpdateNormItems()
+        {
+            if (DbContext.Items != null && DbContext.Items.Any())
+            {
+                var normItems = DbContext.Items.Where(i => i.IdNorm != null).ToList();
+
+                foreach (var itemDB in normItems)
+                {
+                    var itemInNorm = DbContext.ItemsInNorm.Where(i => i.IdNorm == itemDB.IdNorm);
+
+                    if (itemInNorm == null || !itemInNorm.Any())
+                    {
+                        itemDB.IdNorm = null;
+                        DbContext.Items.Update(itemDB);
+                    }
+                }
+
+                DbContext.SaveChanges();
+            }
+
+            Norma = new ObservableCollection<Invertory>();
+            InventoryStatus = new ObservableCollection<Invertory>(InventoryStatusAll);
+            InventoryStatusNorm = new ObservableCollection<Invertory>(InventoryStatusAll);
+
+            NormQuantityString = "0";
+            VisibilityNext = Visibility.Hidden;
+        }
         #endregion Private methods
     }
 }

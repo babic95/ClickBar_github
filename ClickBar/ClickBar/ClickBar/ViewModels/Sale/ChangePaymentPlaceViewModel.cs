@@ -4,8 +4,10 @@ using ClickBar.Commands.TableOverview;
 using ClickBar.Enums.AppMain.Admin;
 using ClickBar.Models.Sale;
 using ClickBar.Models.TableOverview;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -20,6 +22,8 @@ namespace ClickBar.ViewModels.Sale
     public class ChangePaymentPlaceViewModel : ViewModelBase
     {
         #region Fields
+        private IServiceProvider _serviceProvider;
+
         private ObservableCollection<PartHall> _rooms;
         private ObservableCollection<PaymentPlace> _allNormalPaymentPlaces;
         private ObservableCollection<PaymentPlace> _normalPaymentPlaces;
@@ -31,8 +35,14 @@ namespace ClickBar.ViewModels.Sale
         #endregion Fields
 
         #region Constructors
-        public ChangePaymentPlaceViewModel(SplitOrderViewModel splitOrderViewModel)
+        public ChangePaymentPlaceViewModel(IServiceProvider serviceProvider)
         {
+            _serviceProvider = serviceProvider;
+
+            var dbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
+            var splitOrderViewModel = serviceProvider.GetRequiredService<SplitOrderViewModel>();
+
+            DbContext = dbContext;
             SplitOrderViewModel = splitOrderViewModel;
 
             Rooms = new ObservableCollection<PartHall>();
@@ -123,6 +133,10 @@ namespace ClickBar.ViewModels.Sale
         #endregion Properties
 
         #region Internal Properties
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
         internal SplitOrderViewModel SplitOrderViewModel { get; set; }
         internal Order? Order { get; set; }
         #endregion Internal Properties
@@ -139,90 +153,86 @@ namespace ClickBar.ViewModels.Sale
         #region Private methods
         private void LoadingDB()
         {
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            DbContext.PartHalls.ToList().ForEach(part =>
             {
-
-                sqliteDbContext.PartHalls.ToList().ForEach(part =>
+                PartHall partHall = new PartHall()
                 {
-                    PartHall partHall = new PartHall()
-                    {
-                        Id = part.Id,
-                        Name = part.Name,
-                        Image = part.Image
-                    };
+                    Id = part.Id,
+                    Name = part.Name,
+                    Image = part.Image
+                };
 
-                    Rooms.Add(partHall);
-                });
+                Rooms.Add(partHall);
+            });
 
-                sqliteDbContext.PaymentPlaces.ToList().ForEach(payment =>
+            DbContext.PaymentPlaces.ToList().ForEach(payment =>
+            {
+                PaymentPlace paymentPlace = new PaymentPlace()
                 {
-                    PaymentPlace paymentPlace = new PaymentPlace()
-                    {
-                        Id = payment.Id,
-                        PartHallId = payment.PartHallId,
-                        Left = payment.LeftCanvas.Value,
-                        Top = payment.TopCanvas.Value,
-                        Type = payment.Type.HasValue ? (PaymentPlaceTypeEnumeration)payment.Type.Value : PaymentPlaceTypeEnumeration.Normal
-                    };
+                    Id = payment.Id,
+                    PartHallId = payment.PartHallId,
+                    Left = payment.LeftCanvas.Value,
+                    Top = payment.TopCanvas.Value,
+                    Type = payment.Type.HasValue ? (PaymentPlaceTypeEnumeration)payment.Type.Value : PaymentPlaceTypeEnumeration.Normal
+                };
 
-                    if (paymentPlace.Type == PaymentPlaceTypeEnumeration.Normal)
-                    {
-                        paymentPlace.Width = payment.Width.Value;
-                        paymentPlace.Height = payment.Height.Value;
-                    }
-                    else
-                    {
-                        paymentPlace.Diameter = payment.Width.Value;
-                    }
+                if (paymentPlace.Type == PaymentPlaceTypeEnumeration.Normal)
+                {
+                    paymentPlace.Width = payment.Width.Value;
+                    paymentPlace.Height = payment.Height.Value;
+                }
+                else
+                {
+                    paymentPlace.Diameter = payment.Width.Value;
+                }
 
-                    var unprocessedOrders = sqliteDbContext.UnprocessedOrders.FirstOrDefault(order => order.PaymentPlaceId == payment.Id);
+                var unprocessedOrders = DbContext.UnprocessedOrders.FirstOrDefault(order => order.PaymentPlaceId == payment.Id);
 
-                    if (unprocessedOrders != null)
+                if (unprocessedOrders != null)
+                {
+                    CashierDB? cashierDB = DbContext.Cashiers.Find(unprocessedOrders.CashierId);
+                    var itemsInUnprocessedOrder = DbContext.Items.Join(DbContext.ItemsInUnprocessedOrder,
+                        item => item.Id,
+                        itemInUnprocessedOrder => itemInUnprocessedOrder.ItemId,
+                        (item, itemInUnprocessedOrder) => new { Item = item, ItemInUnprocessedOrder = itemInUnprocessedOrder })
+                    .Where(item => item.ItemInUnprocessedOrder.UnprocessedOrderId == unprocessedOrders.Id);
+
+                    if (cashierDB != null && itemsInUnprocessedOrder.Any())
                     {
-                        CashierDB? cashierDB = sqliteDbContext.Cashiers.Find(unprocessedOrders.CashierId);
-                        var itemsInUnprocessedOrder = sqliteDbContext.Items.Join(sqliteDbContext.ItemsInUnprocessedOrder,
-                            item => item.Id,
-                            itemInUnprocessedOrder => itemInUnprocessedOrder.ItemId,
-                            (item, itemInUnprocessedOrder) => new { Item = item, ItemInUnprocessedOrder = itemInUnprocessedOrder })
-                        .Where(item => item.ItemInUnprocessedOrder.UnprocessedOrderId == unprocessedOrders.Id);
+                        ObservableCollection<ItemInvoice> items = new ObservableCollection<ItemInvoice>();
+                        decimal total = 0;
 
-                        if (cashierDB != null && itemsInUnprocessedOrder.Any())
+                        itemsInUnprocessedOrder.ToList().ForEach(item =>
                         {
-                            ObservableCollection<ItemInvoice> items = new ObservableCollection<ItemInvoice>();
-                            decimal total = 0;
+                            ItemInvoice itemInvoice = new ItemInvoice(new Item(item.Item), item.ItemInUnprocessedOrder.Quantity);
+                            items.Add(itemInvoice);
+                            total += itemInvoice.TotalAmout;
+                        });
 
-                            itemsInUnprocessedOrder.ToList().ForEach(item =>
-                            {
-                                ItemInvoice itemInvoice = new ItemInvoice(new Item(item.Item), item.ItemInUnprocessedOrder.Quantity);
-                                items.Add(itemInvoice);
-                                total += itemInvoice.TotalAmout;
-                            });
+                        paymentPlace.Order = new Order(cashierDB, items);
+                        paymentPlace.Order.TableId = payment.Id;
+                        paymentPlace.Order.PartHall = payment.PartHallId;
+                        paymentPlace.Background = Brushes.Red;
+                        paymentPlace.Total = total;
+                    }
+                }
+                else
+                {
+                    paymentPlace.Order = new Order(payment.Id, payment.PartHallId);
+                    paymentPlace.Background = Brushes.Green;
+                    paymentPlace.Total = 0;
+                }
 
-                            paymentPlace.Order = new Order(cashierDB, items);
-                            paymentPlace.Order.TableId = payment.Id;
-                            paymentPlace.Order.PartHall = payment.PartHallId;
-                            paymentPlace.Background = Brushes.Red;
-                            paymentPlace.Total = total;
-                        }
-                    }
-                    else
-                    {
-                        paymentPlace.Order = new Order(payment.Id, payment.PartHallId);
-                        paymentPlace.Background = Brushes.Green;
-                        paymentPlace.Total = 0;
-                    }
-
-                    switch (paymentPlace.Type)
-                    {
-                        case PaymentPlaceTypeEnumeration.Normal:
-                            AllNormalPaymentPlaces.Add(paymentPlace);
-                            break;
-                        case PaymentPlaceTypeEnumeration.Round:
-                            AllRoundPaymentPlaces.Add(paymentPlace);
-                            break;
-                    }
-                });
-            }
+                switch (paymentPlace.Type)
+                {
+                    case PaymentPlaceTypeEnumeration.Normal:
+                        AllNormalPaymentPlaces.Add(paymentPlace);
+                        break;
+                    case PaymentPlaceTypeEnumeration.Round:
+                        AllRoundPaymentPlaces.Add(paymentPlace);
+                        break;
+                }
+            });
         }
         #endregion Private methods
     }

@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ClickBar_Common\ClickBar_Common.csproj" />
+    <ProjectReference Include="..\ClickBar_DatabaseSQLManager\ClickBar_DatabaseSQLManager.csproj" />
     <ProjectReference Include="..\ClickBar_Logging\ClickBar_Logging.csproj" />
   </ItemGroup>
 

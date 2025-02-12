@@ -1,7 +1,7 @@
 ﻿using ClickBar.Models.AppMain.Statistic.Radnici;
 using ClickBar.ViewModels.AppMain.Statistic;
 using ClickBar.Views.AppMain.AuxiliaryWindows.Statistic.Radnici;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using ClickBar_Logging;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -35,68 +35,64 @@ namespace ClickBar.Commands.AppMain.Statistic.Radnici
         {
             try
             {
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                var radnikDB = _currentViewModel.DbContext.Cashiers.Find(parameter.ToString());
+
+                if (radnikDB != null)
                 {
+                    var items = _currentViewModel.DbContext.Invoices.Join(_currentViewModel.DbContext.ItemInvoices,
+                        invoice => invoice.Id,
+                        item => item.InvoiceId,
+                        (invoice, item) => new { Invoice = invoice, Item = item })
+                        .Where(i => i.Invoice.SdcDateTime.HasValue &&
+                        i.Invoice.SdcDateTime.Value.Date == DateTime.Now.Date &&
+                        !string.IsNullOrEmpty(i.Invoice.Cashier) &&
+                        i.Invoice.Cashier == radnikDB.Id);
 
-                    var radnikDB = sqliteDbContext.Cashiers.Find(parameter.ToString());
-
-                    if (radnikDB != null)
+                    if (items != null &&
+                        items.Any())
                     {
-                        var items = sqliteDbContext.Invoices.Join(sqliteDbContext.ItemInvoices,
-                            invoice => invoice.Id,
-                            item => item.InvoiceId,
-                            (invoice, item) => new { Invoice = invoice, Item = item })
-                            .Where(i => i.Invoice.SdcDateTime.HasValue &&
-                            i.Invoice.SdcDateTime.Value.Date == DateTime.Now.Date &&
-                            !string.IsNullOrEmpty(i.Invoice.Cashier) &&
-                            i.Invoice.Cashier == radnikDB.Id);
+                        _currentViewModel.WhatDidWorkerSells = new ObservableCollection<WhatDidWorkerSell>();
+                        _currentViewModel.Total = 0;
 
-                        if (items != null &&
-                            items.Any())
+                        items.ForEachAsync(item =>
                         {
-                            _currentViewModel.WhatDidWorkerSells = new ObservableCollection<WhatDidWorkerSell>();
-                            _currentViewModel.Total = 0;
-
-                            items.ForEachAsync(item =>
+                            var itemDB = _currentViewModel.DbContext.Items.Find(item.Item.ItemCode);
+                            if (itemDB != null &&
+                            item.Item.TotalAmout != null)
                             {
-                                var itemDB = sqliteDbContext.Items.Find(item.Item.ItemCode);
-                                if (itemDB != null &&
-                                item.Item.TotalAmout != null)
+                                WhatDidWorkerSell whatDidWorkerSell = new WhatDidWorkerSell()
                                 {
-                                    WhatDidWorkerSell whatDidWorkerSell = new WhatDidWorkerSell()
-                                    {
-                                        Item = item.Item,
-                                        Invoice = item.Invoice,
-                                        ItemName = itemDB.Name,
-                                        ItemJm = itemDB.Jm
-                                    };
+                                    Item = item.Item,
+                                    Invoice = item.Invoice,
+                                    ItemName = itemDB.Name,
+                                    ItemJm = itemDB.Jm
+                                };
 
-                                    _currentViewModel.WhatDidWorkerSells.Add(whatDidWorkerSell);
+                                _currentViewModel.WhatDidWorkerSells.Add(whatDidWorkerSell);
 
-                                    _currentViewModel.Total += item.Item.TotalAmout.Value;
-                                }
-                            });
+                                _currentViewModel.Total += item.Item.TotalAmout.Value;
+                            }
+                        });
 
-                            WhatDidWorkerSellWindow whatDidWorkerSellWindow = new WhatDidWorkerSellWindow(_currentViewModel);
-                            whatDidWorkerSellWindow.ShowDialog();
-                        }
-                        else
-                        {
-                            MessageBox.Show("Radnik nije nista prodao.",
-                                "Informacija",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Information);
-                        }
+                        WhatDidWorkerSellWindow whatDidWorkerSellWindow = new WhatDidWorkerSellWindow(_currentViewModel);
+                        whatDidWorkerSellWindow.ShowDialog();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Radnik nije nista prodao.",
+                            "Informacija",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                MessageBox.Show("Desila se neočekivana greška.\nObratite se serviseru.", 
+                MessageBox.Show("Desila se neočekivana greška.\nObratite se serviseru.",
                     "Greška",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
-                
+
                 Log.Error("Desila se neočekivana greška.\nObratite se serviseru.", ex);
             }
         }

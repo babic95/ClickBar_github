@@ -1,7 +1,7 @@
 ﻿using ClickBar.Models.AppMain.Statistic;
 using ClickBar.ViewModels.AppMain.Statistic;
 using ClickBar.Views.AppMain.AuxiliaryWindows.Statistic.ViewCalculation;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using DocumentFormat.OpenXml.Spreadsheet;
 using System;
 using System.Collections.Generic;
@@ -37,40 +37,36 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
                 _currentViewModel.EditWindow.Close();
             }
 
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            _currentViewModel.Groups = new List<Models.Sale.GroupItems>() { new Models.Sale.GroupItems(-1, -1, "Sve grupe") };
+            _currentViewModel.DbContext.Items.ToList().ForEach(x =>
             {
+                Models.Sale.Item item = new Models.Sale.Item(x);
 
-                _currentViewModel.Groups = new List<Models.Sale.GroupItems>() { new Models.Sale.GroupItems(-1, -1, "Sve grupe") };
-                sqliteDbContext.Items.ToList().ForEach(x =>
+                var group = _currentViewModel.DbContext.ItemGroups.Find(x.IdItemGroup);
+                if (group != null)
                 {
-                    Models.Sale.Item item = new Models.Sale.Item(x);
+                    bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
 
-                    var group = sqliteDbContext.ItemGroups.Find(x.IdItemGroup);
-                    if (group != null)
-                    {
-                        bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
-
-                        _currentViewModel.InventoryStatusAll.Add(new Invertory(item, x.IdItemGroup, x.TotalQuantity, 0, x.AlarmQuantity, isSirovina));
-                    }
-                });
-                _currentViewModel.SearchItems = new List<Invertory>(_currentViewModel.InventoryStatusAll);
-
-                if (sqliteDbContext.ItemGroups != null &&
-                    sqliteDbContext.ItemGroups.Any())
-                {
-                    sqliteDbContext.ItemGroups.ToList().ForEach(gropu =>
-                    {
-                        _currentViewModel.Groups.Add(new Models.Sale.GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
-                    });
+                    _currentViewModel.InventoryStatusAll.Add(new Invertory(item, x.IdItemGroup, x.TotalQuantity, 0, x.AlarmQuantity, isSirovina));
                 }
-                _currentViewModel.AllGroups = new ObservableCollection<Models.Sale.GroupItems>(_currentViewModel.Groups);
-                _currentViewModel.CurrentGroup = _currentViewModel.AllGroups.FirstOrDefault();
+            });
+            _currentViewModel.SearchItems = new List<Invertory>(_currentViewModel.InventoryStatusAll);
 
-                _currentViewModel.InventoryStatusCalculation = new ObservableCollection<Invertory>(_currentViewModel.InventoryStatusAll);
-
-                _currentViewModel.EditWindow = new EditCalculationWindow(_currentViewModel);
-                _currentViewModel.EditWindow.ShowDialog();
+            if (_currentViewModel.DbContext.ItemGroups != null &&
+                _currentViewModel.DbContext.ItemGroups.Any())
+            {
+                _currentViewModel.DbContext.ItemGroups.ToList().ForEach(gropu =>
+                {
+                    _currentViewModel.Groups.Add(new Models.Sale.GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
+                });
             }
+            _currentViewModel.AllGroups = new ObservableCollection<Models.Sale.GroupItems>(_currentViewModel.Groups);
+            _currentViewModel.CurrentGroup = _currentViewModel.AllGroups.FirstOrDefault();
+
+            _currentViewModel.InventoryStatusCalculation = new ObservableCollection<Invertory>(_currentViewModel.InventoryStatusAll);
+
+            _currentViewModel.EditWindow = new EditCalculationWindow(_currentViewModel);
+            _currentViewModel.EditWindow.ShowDialog();
         }
     }
 }

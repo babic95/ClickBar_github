@@ -3,11 +3,12 @@ using ClickBar.Commands.AppMain.Statistic.Norm;
 using ClickBar.Commands.AppMain.Statistic.ViewCalculation;
 using ClickBar.Models.AppMain.Statistic;
 using ClickBar.Models.Sale;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Printer.Enums;
 using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -22,6 +23,8 @@ namespace ClickBar.ViewModels.AppMain.Statistic
     public class ViewCalculationViewModel : ViewModelBase
     {
         #region Fields
+        private IServiceProvider _serviceProvider;
+
         private ObservableCollection<Calculation> _calculationsAll;
         private ObservableCollection<Calculation> _calculations;
 
@@ -59,8 +62,10 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #endregion Fields
 
         #region Constructors
-        public ViewCalculationViewModel()
+        public ViewCalculationViewModel(IServiceProvider serviceProvider)
         {
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
             TotalInputPrice = 0;
             TotalOutputPrice = 0;
             SearchToCalculationDate = DateTime.Now;
@@ -70,59 +75,60 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             SearchSupplier = Suppliers.FirstOrDefault();
             CalculationsAll = new ObservableCollection<Calculation>();
             Calculations = new ObservableCollection<Calculation>();
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+
+            DbContext.Suppliers.ToList().ForEach(x =>
             {
+                Suppliers.Add(new Supplier(x));
+            });
 
-                sqliteDbContext.Suppliers.ToList().ForEach(x =>
+            var calculations = DbContext.Calculations.Where(cal => cal.CalculationDate.Date >= SearchFromCalculationDate.Value.Date &&
+            cal.CalculationDate.Date <= SearchToCalculationDate.Value.Date)
+                .Join(DbContext.Suppliers,
+                cal => cal.SupplierId,
+                supp => supp.Id,
+                (cal, supp) => new { Cal = cal, Supp = supp })
+                .Join(DbContext.Cashiers,
+                cal => cal.Cal.CashierId,
+                cash => cash.Id,
+                (cal, cash) => new { Cal = cal, Cash = cash });
+
+            InventoryStatusCalculation = new ObservableCollection<Invertory>(InventoryStatusAll);
+
+            if (calculations != null &&
+                calculations.Any())
+            {
+                calculations.ForEachAsync(cal =>
                 {
-                    Suppliers.Add(new Supplier(x));
-                });
-
-                var calculations = sqliteDbContext.Calculations.Where(cal => cal.CalculationDate.Date >= SearchFromCalculationDate.Value.Date &&
-                cal.CalculationDate.Date <= SearchToCalculationDate.Value.Date)
-                    .Join(sqliteDbContext.Suppliers,
-                    cal => cal.SupplierId,
-                    supp => supp.Id,
-                    (cal, supp) => new { Cal = cal, Supp = supp })
-                    .Join(sqliteDbContext.Cashiers,
-                    cal => cal.Cal.CashierId,
-                    cash => cash.Id,
-                    (cal, cash) => new { Cal = cal, Cash = cash });
-
-                InventoryStatusCalculation = new ObservableCollection<Invertory>(InventoryStatusAll);
-
-                if (calculations != null &&
-                    calculations.Any())
-                {
-                    calculations.ForEachAsync(cal =>
+                    Calculation calculation = new Calculation()
                     {
-                        Calculation calculation = new Calculation()
-                        {
-                            Id = cal.Cal.Cal.Id,
-                            CalculationDate = cal.Cal.Cal.CalculationDate,
-                            InputTotalPrice = cal.Cal.Cal.InputTotalPrice,
-                            InvoiceNumber = cal.Cal.Cal.InvoiceNumber,
-                            OutputTotalPrice = cal.Cal.Cal.OutputTotalPrice,
-                            Counter = cal.Cal.Cal.Counter,
-                            Name = $"Kalkulacija_{cal.Cal.Cal.Counter}-{cal.Cal.Cal.CalculationDate.Year}",
-                            Supplier = cal.Cal.Supp == null ? null : new Supplier(cal.Cal.Supp),
-                            Cashier = cal.Cash
-                        };
-                        //calculation.CalculationItems = await GetAllItemsInCalculation(cal);
-                        //calculation.Supplier = GetSupplierForCalculation(cal);
-                        //calculation.Cashier = GetCashierNameForCalculation(cal);
+                        Id = cal.Cal.Cal.Id,
+                        CalculationDate = cal.Cal.Cal.CalculationDate,
+                        InputTotalPrice = cal.Cal.Cal.InputTotalPrice,
+                        InvoiceNumber = cal.Cal.Cal.InvoiceNumber,
+                        OutputTotalPrice = cal.Cal.Cal.OutputTotalPrice,
+                        Counter = cal.Cal.Cal.Counter,
+                        Name = $"Kalkulacija_{cal.Cal.Cal.Counter}-{cal.Cal.Cal.CalculationDate.Year}",
+                        Supplier = cal.Cal.Supp == null ? null : new Supplier(cal.Cal.Supp),
+                        Cashier = cal.Cash
+                    };
+                    //calculation.CalculationItems = await GetAllItemsInCalculation(cal);
+                    //calculation.Supplier = GetSupplierForCalculation(cal);
+                    //calculation.Cashier = GetCashierNameForCalculation(cal);
 
-                        CalculationsAll.Add(calculation);
-                        TotalInputPrice += calculation.InputTotalPrice;
-                        TotalOutputPrice += calculation.OutputTotalPrice;
-                    });
-                }
-                Calculations = new ObservableCollection<Calculation>(CalculationsAll.OrderBy(cal => cal.CalculationDate));
+                    CalculationsAll.Add(calculation);
+                    TotalInputPrice += calculation.InputTotalPrice;
+                    TotalOutputPrice += calculation.OutputTotalPrice;
+                });
             }
+            Calculations = new ObservableCollection<Calculation>(CalculationsAll.OrderBy(cal => cal.CalculationDate));
         }
         #endregion Constructors
 
         #region Properties internal
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
         internal List<Models.Sale.GroupItems> Groups;
         internal List<Invertory> SearchItems = new List<Invertory>();
         internal List<Invertory> InventoryStatusAll = new List<Invertory>();
@@ -477,41 +483,39 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #region Private methods
         internal async Task<ObservableCollection<Invertory>> GetAllItemsInCalculation(CalculationDB calculationDB)
         {
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            ObservableCollection<Invertory> calculationItems = new ObservableCollection<Invertory>();
+
+            var calculationItemsDB = DbContext.CalculationItems.Where(item => item.CalculationId == calculationDB.Id);
+
+            if (calculationItemsDB != null &&
+                calculationItemsDB.Any())
             {
-                ObservableCollection<Invertory> calculationItems = new ObservableCollection<Invertory>();
-
-                var calculationItemsDB = sqliteDbContext.CalculationItems.Where(item => item.CalculationId == calculationDB.Id);
-
-                if (calculationItemsDB != null &&
-                    calculationItemsDB.Any())
+                calculationItemsDB.ToList().ForEach(async item =>
                 {
-                    calculationItemsDB.ToList().ForEach(async item =>
+                    var itemDB = await DbContext.Items.FindAsync(item.ItemId);
+
+                    if (itemDB != null)
                     {
-                        var itemDB = await sqliteDbContext.Items.FindAsync(item.ItemId);
-
-                        if (itemDB != null)
+                        Invertory calculationItem = new Invertory()
                         {
-                            Invertory calculationItem = new Invertory()
-                            {
-                                Item = new Models.Sale.Item(itemDB),
-                                Alarm = itemDB.AlarmQuantity,
-                                InputPrice = item.InputPrice * item.Quantity,
-                                Quantity = item.Quantity,
-                                TotalAmout = item.OutputPrice,
-                                IdGroupItems = itemDB.IdItemGroup,
-                            };
+                            Item = new Models.Sale.Item(itemDB),
+                            Alarm = itemDB.AlarmQuantity,
+                            InputPrice = item.InputPrice * item.Quantity,
+                            Quantity = item.Quantity,
+                            TotalAmout = item.OutputPrice,
+                            IdGroupItems = itemDB.IdItemGroup,
+                        };
 
-                            calculationItems.Add(calculationItem);
-                        }
-                    });
-                }
+                        calculationItems.Add(calculationItem);
+                    }
+                });
 
-                return calculationItems;
             }
+            return calculationItems;
+        }
             //internal Supplier? GetSupplierForCalculation(CalculationDB calculationDB)
             //{
-            //    SqliteDbContext sqliteDbContext = new SqliteDbContext();
+            //    SqlServerDbContext sqliteDbContext = new SqlServerDbContext();
 
             //    var supplierDB = sqliteDbContext.Suppliers.Find(calculationDB.SupplierId);
 
@@ -525,7 +529,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             //}
             //internal CashierDB? GetCashierNameForCalculation(CalculationDB calculationDB)
             //{
-            //    SqliteDbContext sqliteDbContext = new SqliteDbContext();
+            //    SqlServerDbContext sqliteDbContext = new SqlServerDbContext();
 
             //    var cashierDB = sqliteDbContext.Cashiers.Find(calculationDB.CashierId);
 
@@ -536,7 +540,6 @@ namespace ClickBar.ViewModels.AppMain.Statistic
 
             //    return null;
             //}
-            #endregion Private methods
-        }
+        #endregion Private methods
     }
 }

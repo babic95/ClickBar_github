@@ -55,7 +55,8 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
                     kep.Add(itemKEP);
                 });
 
-                PrinterManager.Instance.Print1010(_currentViewModel.SearchFromCalculationDate.Value,
+                PrinterManager.Instance.Print1010(_currentViewModel.DbContext,
+                    _currentViewModel.SearchFromCalculationDate.Value,
                     _currentViewModel.SearchToCalculationDate.Value,
                     kep);
             }

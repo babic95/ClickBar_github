@@ -2,6 +2,7 @@
 using ClickBar.ViewModels.Sale;
 using ClickBar.Views.Sale.PaySale;
 using ClickBar_Logging;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,10 +18,12 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder
         public event EventHandler CanExecuteChanged;
 
         private SplitOrderViewModel _viewModel;
+        private IServiceProvider _serviceProvider;
 
-        public ChangePaymentPlaceCommand(SplitOrderViewModel viewModel)
+        public ChangePaymentPlaceCommand(IServiceProvider serviceProvider, SplitOrderViewModel viewModel)
         {
             _viewModel = viewModel;
+            _serviceProvider = serviceProvider;
         }
 
         public bool CanExecute(object? parameter)
@@ -31,7 +34,7 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder
         {
             try
             {
-                ChangePaymentPlaceViewModel changePaymentPlaceViewModel = new ChangePaymentPlaceViewModel(_viewModel);
+                ChangePaymentPlaceViewModel changePaymentPlaceViewModel = _serviceProvider.GetRequiredService<ChangePaymentPlaceViewModel>();
                 _viewModel.ChangePaymentPlaceWindow = new ChangePaymentPlaceWindow(changePaymentPlaceViewModel);
                 _viewModel.ChangePaymentPlaceWindow.ShowDialog();
 
@@ -39,7 +42,9 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder
 
                 _viewModel.PaySaleViewModel.SaleViewModel.Reset();
 
-                AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
+                AppStateParameter appStateParameter = new AppStateParameter(_viewModel.DbContext,
+                    _viewModel.DrljaDbContext,
+                    AppStateEnumerable.TableOverview,
                     _viewModel.PaySaleViewModel.SaleViewModel.LoggedCashier,
                     _viewModel.PaySaleViewModel.SaleViewModel);
                 _viewModel.PaySaleViewModel.SaleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);

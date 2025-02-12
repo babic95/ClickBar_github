@@ -2,9 +2,10 @@
 using ClickBar.Commands.AppMain.Statistic.LagerLista;
 using ClickBar.Models.AppMain.Statistic;
 using ClickBar.Models.Sale;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -18,6 +19,8 @@ namespace ClickBar.ViewModels.AppMain.Statistic
     public class LagerListaViewModel : ViewModelBase
     {
         #region Fields
+        private IServiceProvider _serviceProvider;
+
         private ObservableCollection<Invertory> _allItems;
 
         private DateTime _selectedDate;
@@ -31,13 +34,19 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #endregion Fields
 
         #region Constructors
-        public LagerListaViewModel()
+        public LagerListaViewModel(IServiceProvider serviceProvider)
         {
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
             Initialize();
         }
         #endregion Constructors
 
         #region Properties internal
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
         internal List<Invertory> Items { get; set; }
         #endregion Properties internal
 
@@ -145,20 +154,16 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         {
             AllGroups = new ObservableCollection<GroupItems>() { new GroupItems(-1, -1, "Sve grupe") };
 
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            if (DbContext.ItemGroups != null &&
+                DbContext.ItemGroups.Any())
             {
-
-                if (sqliteDbContext.ItemGroups != null &&
-                    sqliteDbContext.ItemGroups.Any())
+                DbContext.ItemGroups.ToList().ForEach(gropu =>
                 {
-                    sqliteDbContext.ItemGroups.ToList().ForEach(gropu =>
-                    {
-                        AllGroups.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
-                    });
-                }
-
-                SelectedDate = DateTime.Now;
+                    AllGroups.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
+                });
             }
+
+            SelectedDate = DateTime.Now;
         }
         private void ChangeDate()
         {
@@ -166,119 +171,115 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             TotalLagerLista = 0;
             Items = new List<Invertory>();
 
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            PocetnoStanjeDB? pocetnoStanjeDB = null;
+
+            if (DbContext.PocetnaStanja != null &&
+                DbContext.PocetnaStanja.Any())
             {
-
-                PocetnoStanjeDB? pocetnoStanjeDB = null;
-
-                if (sqliteDbContext.PocetnaStanja != null &&
-                    sqliteDbContext.PocetnaStanja.Any())
-                {
-                    pocetnoStanjeDB = sqliteDbContext.PocetnaStanja.OrderByDescending(p => p.PopisDate).FirstOrDefault();
-                }
-
-                DateTime pocetnoStanjeDate = new DateTime(DateTime.Now.Year, 1, 1, 0, 0, 0);
-
-                if (pocetnoStanjeDB != null)
-                {
-                    if (pocetnoStanjeDB.PopisDate.Date > pocetnoStanjeDate.Date)
-                    {
-                        pocetnoStanjeDate = pocetnoStanjeDB.PopisDate.Date;
-                    }
-                }
-
-                var allCalculations = sqliteDbContext.Calculations.Join(sqliteDbContext.CalculationItems,
-                    calculation => calculation.Id,
-                    calculationItem => calculationItem.CalculationId,
-                    (calculation, calculationItem) => new { Calculation = calculation, CalculationItem = calculationItem })
-                    .Where(cal => cal.Calculation.CalculationDate.Date > SelectedDate.Date);
-
-                var pazar = sqliteDbContext.Invoices.Join(sqliteDbContext.ItemInvoices,
-                    invoice => invoice.Id,
-                    invoiceItem => invoiceItem.InvoiceId,
-                    (invoice, invoiceItem) => new { Invoice = invoice, InvoiceItem = invoiceItem })
-                    .Where(inv => inv.Invoice.SdcDateTime != null && inv.Invoice.SdcDateTime.Value.Date > SelectedDate.Date);
-
-                if (sqliteDbContext.Items != null &&
-                    sqliteDbContext.Items.Any())
-                {
-                    sqliteDbContext.Items.ForEachAsync(x =>
-                    {
-                        decimal totalQuantityPocetnoStanje = 0;
-
-                        if (pocetnoStanjeDB != null)
-                        {
-                            var pocetnoStanjeItemDB = sqliteDbContext.PocetnaStanjaItems.FirstOrDefault(p => p.IdPocetnoStanje == pocetnoStanjeDB.Id &&
-                            p.IdItem == x.Id);
-
-                            if (pocetnoStanjeItemDB != null)
-                            {
-                                totalQuantityPocetnoStanje = pocetnoStanjeItemDB.NewQuantity;
-                            }
-                        }
-
-                        Item item = new Item(x);
-                        var group = sqliteDbContext.ItemGroups.Find(x.IdItemGroup);
-
-                        if (group != null)
-                        {
-                            decimal quantity = x.TotalQuantity;
-
-                            if (x.IdNorm == null)
-                            {
-                                if (allCalculations != null &&
-                                allCalculations.Any())
-                                {
-                                    var itemsInCal = allCalculations.Where(cal => cal.CalculationItem.ItemId == x.Id);
-
-                                    if (itemsInCal != null &&
-                                    itemsInCal.Any())
-                                    {
-                                        itemsInCal.ForEachAsync(i =>
-                                        {
-                                            quantity -= i.CalculationItem.Quantity;
-                                        });
-                                    }
-                                }
-
-                                if (pazar != null &&
-                                pazar.Any())
-                                {
-                                    var itemsInPazar = pazar.Where(paz => paz.InvoiceItem.ItemCode == x.Id);
-
-                                    if (itemsInPazar != null &&
-                                    itemsInPazar.Any())
-                                    {
-                                        itemsInPazar.ForEachAsync(i =>
-                                        {
-                                            if (i.InvoiceItem.Quantity != null)
-                                            {
-                                                quantity += i.InvoiceItem.Quantity.Value;
-                                            }
-                                        });
-                                    }
-                                }
-                            }
-
-                            bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
-
-                            var it = new Invertory(item, x.IdItemGroup, quantity, 0, x.AlarmQuantity, isSirovina);
-                            Items.Add(it);
-
-                            TotalLagerLista += it.TotalAmout;
-
-                            if (it.Item.InputUnitPrice.HasValue)
-                            {
-                                TotalUlazLagerLista += Decimal.Round(it.Item.InputUnitPrice.Value * it.Quantity, 2);
-                            }
-                        }
-                    });
-                }
-
-                CurrentGroup = AllGroups.FirstOrDefault();
-                SearchText = string.Empty;
+                pocetnoStanjeDB = DbContext.PocetnaStanja.OrderByDescending(p => p.PopisDate).FirstOrDefault();
             }
-            #endregion Private methods
+
+            DateTime pocetnoStanjeDate = new DateTime(DateTime.Now.Year, 1, 1, 0, 0, 0);
+
+            if (pocetnoStanjeDB != null)
+            {
+                if (pocetnoStanjeDB.PopisDate.Date > pocetnoStanjeDate.Date)
+                {
+                    pocetnoStanjeDate = pocetnoStanjeDB.PopisDate.Date;
+                }
+            }
+
+            var allCalculations = DbContext.Calculations.Join(DbContext.CalculationItems,
+                calculation => calculation.Id,
+                calculationItem => calculationItem.CalculationId,
+                (calculation, calculationItem) => new { Calculation = calculation, CalculationItem = calculationItem })
+                .Where(cal => cal.Calculation.CalculationDate.Date > SelectedDate.Date);
+
+            var pazar = DbContext.Invoices.Join(DbContext.ItemInvoices,
+                invoice => invoice.Id,
+                invoiceItem => invoiceItem.InvoiceId,
+                (invoice, invoiceItem) => new { Invoice = invoice, InvoiceItem = invoiceItem })
+                .Where(inv => inv.Invoice.SdcDateTime != null && inv.Invoice.SdcDateTime.Value.Date > SelectedDate.Date);
+
+            if (DbContext.Items != null &&
+                DbContext.Items.Any())
+            {
+                DbContext.Items.ForEachAsync(x =>
+                {
+                    decimal totalQuantityPocetnoStanje = 0;
+
+                    if (pocetnoStanjeDB != null)
+                    {
+                        var pocetnoStanjeItemDB = DbContext.PocetnaStanjaItems.FirstOrDefault(p => p.IdPocetnoStanje == pocetnoStanjeDB.Id &&
+                        p.IdItem == x.Id);
+
+                        if (pocetnoStanjeItemDB != null)
+                        {
+                            totalQuantityPocetnoStanje = pocetnoStanjeItemDB.NewQuantity;
+                        }
+                    }
+
+                    Item item = new Item(x);
+                    var group = DbContext.ItemGroups.Find(x.IdItemGroup);
+
+                    if (group != null)
+                    {
+                        decimal quantity = x.TotalQuantity;
+
+                        if (x.IdNorm == null)
+                        {
+                            if (allCalculations != null &&
+                            allCalculations.Any())
+                            {
+                                var itemsInCal = allCalculations.Where(cal => cal.CalculationItem.ItemId == x.Id);
+
+                                if (itemsInCal != null &&
+                                itemsInCal.Any())
+                                {
+                                    itemsInCal.ForEachAsync(i =>
+                                    {
+                                        quantity -= i.CalculationItem.Quantity;
+                                    });
+                                }
+                            }
+
+                            if (pazar != null &&
+                            pazar.Any())
+                            {
+                                var itemsInPazar = pazar.Where(paz => paz.InvoiceItem.ItemCode == x.Id);
+
+                                if (itemsInPazar != null &&
+                                itemsInPazar.Any())
+                                {
+                                    itemsInPazar.ForEachAsync(i =>
+                                    {
+                                        if (i.InvoiceItem.Quantity != null)
+                                        {
+                                            quantity += i.InvoiceItem.Quantity.Value;
+                                        }
+                                    });
+                                }
+                            }
+                        }
+
+                        bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
+
+                        var it = new Invertory(item, x.IdItemGroup, quantity, 0, x.AlarmQuantity, isSirovina);
+                        Items.Add(it);
+
+                        TotalLagerLista += it.TotalAmout;
+
+                        if (it.Item.InputUnitPrice.HasValue)
+                        {
+                            TotalUlazLagerLista += Decimal.Round(it.Item.InputUnitPrice.Value * it.Quantity, 2);
+                        }
+                    }
+                });
+            }
+
+            CurrentGroup = AllGroups.FirstOrDefault();
+            SearchText = string.Empty;
         }
+        #endregion Private methods
     }
 }

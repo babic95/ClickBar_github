@@ -3,6 +3,7 @@ using ClickBar.ViewModels.Login;
 using ClickBar_API;
 using ClickBar_Common.Models.CCS_Server;
 using ClickBar_Settings;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,9 +21,11 @@ namespace ClickBar.Commands.Activation
 
         private string[] _activationCodes;
         private MainViewModel _viewModel;
+        private IServiceProvider _serviceProvider;
 
-        public ActivationCommand(MainViewModel viewModel)
+        public ActivationCommand(MainViewModel viewModel, IServiceProvider serviceProvider)
         {
+            _serviceProvider = serviceProvider;
             _activationCodes = File.ReadAllLines("ActivationCodes.cvs");
             _viewModel = viewModel;
         }
@@ -67,7 +70,7 @@ namespace ClickBar.Commands.Activation
                         }
                     }
                     MessageBox.Show("Uspešno sačuvan 'Aktivacioni broj uređaja'!", "Uspešno!", MessageBoxButton.OK, MessageBoxImage.Information);
-                    _viewModel.CurrentViewModel = new LoginViewModel(_viewModel.UpdateCurrentViewModelCommand);
+                    _viewModel.CurrentViewModel = _serviceProvider.GetRequiredService<LoginViewModel>();
                 }
                 else
                 {

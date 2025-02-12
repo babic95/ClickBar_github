@@ -1,8 +1,8 @@
 ﻿using ClickBar.Models.AppMain.Statistic.Knjizenje;
 using ClickBar.Models.Sale;
 using ClickBar.ViewModels.AppMain.Statistic;
-using ClickBar_Database.Models;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager.Models;
+using ClickBar_DatabaseSQLManager;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -13,6 +13,7 @@ using System.Windows.Input;
 using System.Windows;
 using ClickBar.Views.AppMain.AuxiliaryWindows.Statistic.Knjizenje;
 using ClickBar.ViewModels;
+using Microsoft.EntityFrameworkCore;
 
 namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
 {
@@ -21,6 +22,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
         public event EventHandler CanExecuteChanged;
 
         private ViewModelBase _currentViewModel;
+        private SqlServerDbContext _dbContext;
 
         public OpenItemsInInvoicesCommand(ViewModelBase currentViewModel)
         {
@@ -34,12 +36,14 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
 
         public void Execute(object parameter)
         {
-            if (_currentViewModel is KnjizenjeViewModel)
+            if (_currentViewModel is KnjizenjeViewModel knjizenjeViewModel)
             {
+                _dbContext = knjizenjeViewModel.DbContext;
                 KnjizenjePazara(parameter);
             }
-            else if (_currentViewModel is PregledPazaraViewModel)
+            else if (_currentViewModel is PregledPazaraViewModel pregledPazaraViewModel)
             {
+                _dbContext = pregledPazaraViewModel.DbContext;
                 PregledPazara(parameter);
             }
             else
@@ -56,47 +60,43 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
             {
                 string invoiceId = (string)parameter;
 
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                var invoice = knjizenjeViewModel.Invoices.FirstOrDefault(inv => inv.Id == invoiceId);
+
+                if (invoice != null)
                 {
+                    knjizenjeViewModel.ItemsInInvoice = new ObservableCollection<ItemInvoice>();
 
-                    var invoice = knjizenjeViewModel.Invoices.FirstOrDefault(inv => inv.Id == invoiceId);
+                    var itemsDB = _dbContext.ItemInvoices.Where(inv => inv.InvoiceId == invoiceId &&
+                                (inv.IsSirovina == null || inv.IsSirovina == 0));
 
-                    if (invoice != null)
+                    if (itemsDB != null &&
+                        itemsDB.Any())
                     {
-                        knjizenjeViewModel.ItemsInInvoice = new ObservableCollection<ItemInvoice>();
-
-                        var itemsDB = sqliteDbContext.ItemInvoices.Where(inv => inv.InvoiceId == invoiceId &&
-                                    (inv.IsSirovina == null || inv.IsSirovina == 0));
-
-                        if (itemsDB != null &&
-                            itemsDB.Any())
+                        itemsDB.ToList().ForEach(itemInvoiceDB =>
                         {
-                            itemsDB.ToList().ForEach(itemInvoiceDB =>
+
+                            if (!string.IsNullOrEmpty(itemInvoiceDB.ItemCode))
                             {
+                                var itemDB = _dbContext.Items.FirstOrDefault(item => item.Id == itemInvoiceDB.ItemCode);
 
-                                if (!string.IsNullOrEmpty(itemInvoiceDB.ItemCode))
+                                if (itemDB != null &&
+                                itemInvoiceDB.Quantity.HasValue)
                                 {
-                                    var itemDB = sqliteDbContext.Items.FirstOrDefault(item => item.Id == itemInvoiceDB.ItemCode);
-
-                                    if (itemDB != null &&
-                                    itemInvoiceDB.Quantity.HasValue)
-                                    {
-                                        Item item = new Item(itemDB);
-                                        ItemInvoice itemInvoice = new ItemInvoice(item, itemInvoiceDB);
-                                        knjizenjeViewModel.ItemsInInvoice.Add(itemInvoice);
-                                    }
+                                    Item item = new Item(itemDB);
+                                    ItemInvoice itemInvoice = new ItemInvoice(item, itemInvoiceDB);
+                                    knjizenjeViewModel.ItemsInInvoice.Add(itemInvoice);
                                 }
-                            });
-                        }
-
-                        if (knjizenjeViewModel.Window != null &&
-                            knjizenjeViewModel.Window.IsActive)
-                        {
-                            knjizenjeViewModel.Window.Close();
-                        }
-                        knjizenjeViewModel.Window = new ItemsInInvoiceWindow(knjizenjeViewModel);
-                        knjizenjeViewModel.Window.ShowDialog();
+                            }
+                        });
                     }
+
+                    if (knjizenjeViewModel.Window != null &&
+                        knjizenjeViewModel.Window.IsActive)
+                    {
+                        knjizenjeViewModel.Window.Close();
+                    }
+                    knjizenjeViewModel.Window = new ItemsInInvoiceWindow(knjizenjeViewModel);
+                    knjizenjeViewModel.Window.ShowDialog();
                 }
             }
         }
@@ -109,46 +109,42 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
             {
                 string invoiceId = (string)parameter;
 
-                using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                var invoice = pregledPazaraViewModel.Invoices.FirstOrDefault(inv => inv.Id == invoiceId);
+
+                if (invoice != null)
                 {
+                    pregledPazaraViewModel.ItemsInInvoice = new ObservableCollection<ItemInvoice>();
 
-                    var invoice = pregledPazaraViewModel.Invoices.FirstOrDefault(inv => inv.Id == invoiceId);
+                    var itemsDB = _dbContext.ItemInvoices.Where(inv => inv.InvoiceId == invoiceId);
 
-                    if (invoice != null)
+                    if (itemsDB != null &&
+                        itemsDB.Any())
                     {
-                        pregledPazaraViewModel.ItemsInInvoice = new ObservableCollection<ItemInvoice>();
-
-                        var itemsDB = sqliteDbContext.ItemInvoices.Where(inv => inv.InvoiceId == invoiceId);
-
-                        if (itemsDB != null &&
-                            itemsDB.Any())
+                        itemsDB.ToList().ForEach(itemInvoiceDB =>
                         {
-                            itemsDB.ToList().ForEach(itemInvoiceDB =>
+
+                            if (!string.IsNullOrEmpty(itemInvoiceDB.ItemCode))
                             {
+                                var itemDB = _dbContext.Items.FirstOrDefault(item => item.Id == itemInvoiceDB.ItemCode);
 
-                                if (!string.IsNullOrEmpty(itemInvoiceDB.ItemCode))
+                                if (itemDB != null &&
+                                itemInvoiceDB.Quantity.HasValue)
                                 {
-                                    var itemDB = sqliteDbContext.Items.FirstOrDefault(item => item.Id == itemInvoiceDB.ItemCode);
-
-                                    if (itemDB != null &&
-                                    itemInvoiceDB.Quantity.HasValue)
-                                    {
-                                        Item item = new Item(itemDB);
-                                        ItemInvoice itemInvoice = new ItemInvoice(item, itemInvoiceDB);
-                                        pregledPazaraViewModel.ItemsInInvoice.Add(itemInvoice);
-                                    }
+                                    Item item = new Item(itemDB);
+                                    ItemInvoice itemInvoice = new ItemInvoice(item, itemInvoiceDB);
+                                    pregledPazaraViewModel.ItemsInInvoice.Add(itemInvoice);
                                 }
-                            });
-                        }
-
-                        if (pregledPazaraViewModel.Window != null &&
-                            pregledPazaraViewModel.Window.IsActive)
-                        {
-                            pregledPazaraViewModel.Window.Close();
-                        }
-                        pregledPazaraViewModel.Window = new ItemsInInvoiceWindow(pregledPazaraViewModel);
-                        pregledPazaraViewModel.Window.ShowDialog();
+                            }
+                        });
                     }
+
+                    if (pregledPazaraViewModel.Window != null &&
+                        pregledPazaraViewModel.Window.IsActive)
+                    {
+                        pregledPazaraViewModel.Window.Close();
+                    }
+                    pregledPazaraViewModel.Window = new ItemsInInvoiceWindow(pregledPazaraViewModel);
+                    pregledPazaraViewModel.Window.ShowDialog();
                 }
             }
         }

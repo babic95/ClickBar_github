@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows;
 using ClickBar_Logging;
-using ClickBar_Database.Models;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager.Models;
+using ClickBar_DatabaseSQLManager;
 using ClickBar.Models.Sale;
 using System.Collections.ObjectModel;
 using ClickBar.Models.AppMain.Statistic.Otpis;
@@ -46,86 +46,82 @@ namespace ClickBar.Commands.AppMain.Statistic.Otpis
                 {
                     if (_currentViewModel.ItemsInOtpis.Any())
                     {
-                        using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                        int counter = 1;
+
+                        DateTime odDatuma = new DateTime(DateTime.Now.Year, 1, 1, 0, 0, 0);
+                        DateTime doDatuma = new DateTime(DateTime.Now.Year, 12, 31, 23, 59, 59);
+
+                        var otpisiDB = _currentViewModel.DbContext.Otpisi.Where(o => o.OtpisDate.Date >= odDatuma &&
+                        o.OtpisDate.Date <= doDatuma);
+
+                        if (otpisiDB != null &&
+                            otpisiDB.Any())
                         {
-
-                            int counter = 1;
-
-                            DateTime odDatuma = new DateTime(DateTime.Now.Year, 1, 1, 0, 0, 0);
-                            DateTime doDatuma = new DateTime(DateTime.Now.Year, 12, 31, 23, 59, 59);
-
-                            var otpisiDB = sqliteDbContext.Otpisi.Where(o => o.OtpisDate.Date >= odDatuma &&
-                            o.OtpisDate.Date <= doDatuma);
-
-                            if (otpisiDB != null &&
-                                otpisiDB.Any())
-                            {
-                                counter = otpisiDB.Max(o => o.Counter);
-                                counter++;
-                            }
-
-                            DateTime otpisDate = DateTime.Now;
-                            decimal totalOtpis = 0;
-
-                            OtpisDB otpisDB = new OtpisDB()
-                            {
-                                Id = Guid.NewGuid().ToString(),
-                                OtpisDate = otpisDate,
-                                Counter = counter,
-                                Name = $"Otpis robe {counter}/{otpisDate.ToString("yy")}",
-                                CashierId = _currentViewModel.LoggedCashier.Id
-                            };
-
-                            sqliteDbContext.Otpisi.Add(otpisDB);
-                            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                            _currentViewModel.ItemsInOtpis.ToList().ForEach(item =>
-                            {
-                                var itemDB = sqliteDbContext.Items.Find(item.ItemInOtpis.Id);
-
-                                if (itemDB != null)
-                                {
-                                    itemDB.TotalQuantity -= item.Quantity;
-                                    sqliteDbContext.Items.Update(itemDB);
-
-                                    OtpisItemDB otpisItemDB = new OtpisItemDB()
-                                    {
-                                        OtpisId = otpisDB.Id,
-                                        ItemId = item.ItemInOtpis.Id,
-                                        Quantity = item.Quantity,
-                                        TotalPrice = Decimal.Round(-1 * item.Quantity * item.ItemInOtpis.SellingUnitPrice, 2),
-                                    };
-
-                                    sqliteDbContext.OtpisItems.Add(otpisItemDB);
-
-                                    totalOtpis += otpisItemDB.TotalPrice;
-                                }
-                            });
-
-                            KepDB kepOtpisDB = new KepDB()
-                            {
-                                Id = Guid.NewGuid().ToString(),
-                                KepDate = otpisDate,
-                                Type = (int)KepStateEnumeration.Otpis,
-                                Razduzenje = 0,
-                                Zaduzenje = totalOtpis,
-                                Description = otpisDB.Name
-                            };
-                            sqliteDbContext.Kep.Add(kepOtpisDB);
-
-                            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                            _currentViewModel.CurrentItem = null;
-                            _currentViewModel.TextSearch = string.Empty;
-                            _currentViewModel.SelectedItem = null;
-                            _currentViewModel.QuantityString = "0";
-                            _currentViewModel.ItemsInOtpis = new ObservableCollection<OtpisItem>();
+                            counter = otpisiDB.Max(o => o.Counter);
+                            counter++;
                         }
-                        MessageBox.Show("Uspešno kreiran otpis",
-                            "Uspešno",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
+
+                        DateTime otpisDate = DateTime.Now;
+                        decimal totalOtpis = 0;
+
+                        OtpisDB otpisDB = new OtpisDB()
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            OtpisDate = otpisDate,
+                            Counter = counter,
+                            Name = $"Otpis robe {counter}/{otpisDate.ToString("yy")}",
+                            CashierId = _currentViewModel.LoggedCashier.Id
+                        };
+
+                        _currentViewModel.DbContext.Otpisi.Add(otpisDB);
+                        _currentViewModel.DbContext.SaveChanges();
+
+                        _currentViewModel.ItemsInOtpis.ToList().ForEach(item =>
+                        {
+                            var itemDB = _currentViewModel.DbContext.Items.Find(item.ItemInOtpis.Id);
+
+                            if (itemDB != null)
+                            {
+                                itemDB.TotalQuantity -= item.Quantity;
+                                _currentViewModel.DbContext.Items.Update(itemDB);
+
+                                OtpisItemDB otpisItemDB = new OtpisItemDB()
+                                {
+                                    OtpisId = otpisDB.Id,
+                                    ItemId = item.ItemInOtpis.Id,
+                                    Quantity = item.Quantity,
+                                    TotalPrice = Decimal.Round(-1 * item.Quantity * item.ItemInOtpis.SellingUnitPrice, 2),
+                                };
+
+                                _currentViewModel.DbContext.OtpisItems.Add(otpisItemDB);
+
+                                totalOtpis += otpisItemDB.TotalPrice;
+                            }
+                        });
+
+                        KepDB kepOtpisDB = new KepDB()
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            KepDate = otpisDate,
+                            Type = (int)KepStateEnumeration.Otpis,
+                            Razduzenje = 0,
+                            Zaduzenje = totalOtpis,
+                            Description = otpisDB.Name
+                        };
+                        _currentViewModel.DbContext.Kep.Add(kepOtpisDB);
+
+                        _currentViewModel.DbContext.SaveChanges();
+
+                        _currentViewModel.CurrentItem = null;
+                        _currentViewModel.TextSearch = string.Empty;
+                        _currentViewModel.SelectedItem = null;
+                        _currentViewModel.QuantityString = "0";
+                        _currentViewModel.ItemsInOtpis = new ObservableCollection<OtpisItem>();
                     }
+                    MessageBox.Show("Uspešno kreiran otpis",
+                        "Uspešno",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)

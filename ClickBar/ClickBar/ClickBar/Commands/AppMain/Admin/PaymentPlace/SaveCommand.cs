@@ -1,6 +1,6 @@
 ﻿using ClickBar.ViewModels.AppMain;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,62 +39,58 @@ namespace ClickBar.Commands.AppMain.Admin
                     {
                         await Task.Run(() =>
                         {
-                            using(SqliteDbContext sqliteDbContext = new SqliteDbContext()){
-                                _currentViewModel.NormalPaymentPlaces.ToList().ForEach(p =>
-                                {
-                                    var paymentPlace = sqliteDbContext.PaymentPlaces.Find(p.Id);
+                            _currentViewModel.NormalPaymentPlaces.ToList().ForEach(p =>
+                            {
+                                var paymentPlace = _currentViewModel.DbContext.PaymentPlaces.Find(p.Id);
 
-                                    if (paymentPlace != null)
+                                if (paymentPlace != null)
+                                {
+                                    paymentPlace.TopCanvas = p.Top;
+                                    paymentPlace.LeftCanvas = p.Left;
+                                }
+                                else
+                                {
+                                    PaymentPlaceDB paymentPlaceDB = new PaymentPlaceDB()
                                     {
-                                        paymentPlace.TopCanvas = p.Top;
-                                        paymentPlace.LeftCanvas = p.Left;
-                                    }
-                                    else
-                                    {
-                                        PaymentPlaceDB paymentPlaceDB = new PaymentPlaceDB()
-                                        {
-                                            LeftCanvas = p.Left,
-                                            TopCanvas = p.Top,
-                                            Height = p.Height,
-                                            Width = p.Width,
-                                            PartHallId = p.PartHallId,
-                                            Type = (int)p.Type
-                                        };
-                                        sqliteDbContext.PaymentPlaces.Add(paymentPlaceDB);
-                                    }
-                                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-                                }); 
-                            }
+                                        LeftCanvas = p.Left,
+                                        TopCanvas = p.Top,
+                                        Height = p.Height,
+                                        Width = p.Width,
+                                        PartHallId = p.PartHallId,
+                                        Type = (int)p.Type
+                                    };
+                                    _currentViewModel.DbContext.PaymentPlaces.Add(paymentPlaceDB);
+                                }
+                                _currentViewModel.DbContext.SaveChanges();
+                            });
+
                         });
                         await Task.Run(() =>
                         {
-                            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                            _currentViewModel.RoundPaymentPlaces.ToList().ForEach(p =>
                             {
-                                _currentViewModel.RoundPaymentPlaces.ToList().ForEach(p =>
-                                {
-                                    var paymentPlace = sqliteDbContext.PaymentPlaces.Find(p.Id);
+                                var paymentPlace = _currentViewModel.DbContext.PaymentPlaces.Find(p.Id);
 
-                                    if (paymentPlace != null)
+                                if (paymentPlace != null)
+                                {
+                                    paymentPlace.TopCanvas = p.Top;
+                                    paymentPlace.LeftCanvas = p.Left;
+                                }
+                                else
+                                {
+                                    PaymentPlaceDB paymentPlaceDB = new PaymentPlaceDB()
                                     {
-                                        paymentPlace.TopCanvas = p.Top;
-                                        paymentPlace.LeftCanvas = p.Left;
-                                    }
-                                    else
-                                    {
-                                        PaymentPlaceDB paymentPlaceDB = new PaymentPlaceDB()
-                                        {
-                                            LeftCanvas = p.Left,
-                                            TopCanvas = p.Top,
-                                            Height = p.Height,
-                                            Width = p.Width,
-                                            PartHallId = p.PartHallId,
-                                            Type = (int)p.Type
-                                        };
-                                        sqliteDbContext.PaymentPlaces.Add(paymentPlaceDB);
-                                    }
-                                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-                                });
-                            }
+                                        LeftCanvas = p.Left,
+                                        TopCanvas = p.Top,
+                                        Height = p.Height,
+                                        Width = p.Width,
+                                        PartHallId = p.PartHallId,
+                                        Type = (int)p.Type
+                                    };
+                                    _currentViewModel.DbContext.PaymentPlaces.Add(paymentPlaceDB);
+                                }
+                                _currentViewModel.DbContext.SaveChanges();
+                            });
                         });
                         MessageBox.Show("Uspešno ste sačuvali izmene?", "Uspešno čuvanje", MessageBoxButton.OK, MessageBoxImage.Information);
                         _currentViewModel.Change = false;

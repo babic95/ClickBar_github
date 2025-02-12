@@ -2,8 +2,8 @@
 using ClickBar.Models.AppMain.Statistic;
 using ClickBar.Models.Sale;
 using ClickBar.ViewModels.AppMain.Statistic;
-using ClickBar_Database.Models;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager.Models;
+using ClickBar_DatabaseSQLManager;
 using ClickBar_Report.Models;
 using System;
 using System.Collections.Generic;
@@ -17,6 +17,7 @@ using ClickBar.ViewModels;
 using System.Collections.ObjectModel;
 using ClickBar_Printer;
 using ClosedXML.Excel;
+using Microsoft.EntityFrameworkCore;
 
 namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
 {
@@ -25,6 +26,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
         public event EventHandler CanExecuteChanged;
 
         private ViewModelBase _currentViewModel;
+        private SqlServerDbContext _dbContext;
 
         public PrintDnevniPazarCommand(ViewModelBase currentViewModel)
         {
@@ -43,11 +45,17 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
             if(_currentViewModel is KnjizenjeViewModel)
             {
                 KnjizenjeViewModel knjizenjeViewModel = (KnjizenjeViewModel)_currentViewModel;
+
+                _dbContext = knjizenjeViewModel.DbContext;
+
                 invoices = new ObservableCollection<Invoice>(knjizenjeViewModel.Invoices.OrderBy(i => i.SdcDateTime));
             }
             else if(_currentViewModel is PregledPazaraViewModel)
             {
                 PregledPazaraViewModel pregledPazaraViewModel = (PregledPazaraViewModel)_currentViewModel;
+
+                _dbContext = pregledPazaraViewModel.DbContext;
+
                 invoices = new ObservableCollection<Invoice>(pregledPazaraViewModel.Invoices.OrderBy(i => i.SdcDateTime));
             }
             else
@@ -59,299 +67,298 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
             {
                 try
                 {
-                    using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                    Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems10PDV = new Dictionary<string, Dictionary<string, List<ReportPerItems>>>();
+                    Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems20PDV = new Dictionary<string, Dictionary<string, List<ReportPerItems>>>();
+                    Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems0PDV = new Dictionary<string, Dictionary<string, List<ReportPerItems>>>();
+                    Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsNoPDV = new Dictionary<string, Dictionary<string, List<ReportPerItems>>>();
+
+                    Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovina10PDV = new Dictionary<string, Dictionary<string, List<ReportPerItems>>>();
+                    Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovina20PDV = new Dictionary<string, Dictionary<string, List<ReportPerItems>>>();
+                    Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovina0PDV = new Dictionary<string, Dictionary<string, List<ReportPerItems>>>();
+                    Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovinaNoPDV = new Dictionary<string, Dictionary<string, List<ReportPerItems>>>();
+
+                    decimal nivelacija = 0;
+
+                    invoices.ToList().ForEach(invoice =>
                     {
-                        Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems10PDV = new Dictionary<string, Dictionary<string, List<ReportPerItems>>>();
-                        Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems20PDV = new Dictionary<string, Dictionary<string, List<ReportPerItems>>>();
-                        Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems0PDV = new Dictionary<string, Dictionary<string, List<ReportPerItems>>>();
-                        Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsNoPDV = new Dictionary<string, Dictionary<string, List<ReportPerItems>>>();
-
-                        Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovina10PDV = new Dictionary<string, Dictionary<string, List<ReportPerItems>>>();
-                        Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovina20PDV = new Dictionary<string, Dictionary<string, List<ReportPerItems>>>();
-                        Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovina0PDV = new Dictionary<string, Dictionary<string, List<ReportPerItems>>>();
-                        Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovinaNoPDV = new Dictionary<string, Dictionary<string, List<ReportPerItems>>>();
-
-                        decimal nivelacija = 0;
-
-                        invoices.ToList().ForEach(invoice =>
+                        try
                         {
-                            try
+                            var invoiceDB = _dbContext.Invoices.FirstOrDefault(inv => inv.Id == invoice.Id);
+
+                            if (invoiceDB != null)
                             {
-                                var invoiceDB = sqliteDbContext.Invoices.FirstOrDefault(inv => inv.Id == invoice.Id);
+                                var itemsDB = _dbContext.ItemInvoices.Where(inv => inv.InvoiceId == invoiceDB.Id);
 
-                                if (invoiceDB != null)
+                                if (itemsDB != null &&
+                                    itemsDB.Any())
                                 {
-                                    var itemsDB = sqliteDbContext.ItemInvoices.Where(inv => inv.InvoiceId == invoiceDB.Id);
-
-                                    if (itemsDB != null &&
-                                        itemsDB.Any())
+                                    itemsDB.ToList().ForEach(itemInvoiceDB =>
                                     {
-                                        itemsDB.ToList().ForEach(itemInvoiceDB =>
+                                        if (!string.IsNullOrEmpty(itemInvoiceDB.ItemCode))
                                         {
-                                            if (!string.IsNullOrEmpty(itemInvoiceDB.ItemCode))
+                                            ItemDB? itemDB = null;
+                                            if (is1010)
                                             {
-                                                ItemDB? itemDB = null;
-                                                if (is1010)
-                                                {
-                                                    itemDB = sqliteDbContext.Items.FirstOrDefault(item => item.Id == itemInvoiceDB.ItemCode &&
-                                                    item.InputUnitPrice != null &&
-                                                    item.InputUnitPrice.HasValue);
-                                                }
-                                                else
-                                                {
-                                                    itemDB = sqliteDbContext.Items.FirstOrDefault(item => item.Id == itemInvoiceDB.ItemCode);
-                                                }
+                                                itemDB = _dbContext.Items.FirstOrDefault(item => item.Id == itemInvoiceDB.ItemCode &&
+                                                item.InputUnitPrice != null &&
+                                                item.InputUnitPrice.HasValue);
+                                            }
+                                            else
+                                            {
+                                                itemDB = _dbContext.Items.FirstOrDefault(item => item.Id == itemInvoiceDB.ItemCode);
+                                            }
 
-                                                if (itemDB != null &&
-                                                itemInvoiceDB.Quantity.HasValue)
-                                                {
-                                                    var groupDB = sqliteDbContext.ItemGroups.Find(itemDB.IdItemGroup);
+                                            if (itemDB != null &&
+                                            itemInvoiceDB.Quantity.HasValue)
+                                            {
+                                                var groupDB = _dbContext.ItemGroups.Find(itemDB.IdItemGroup);
 
-                                                    if (groupDB != null)
+                                                if (groupDB != null)
+                                                {
+                                                    Item item = new Item(itemDB);
+                                                    ItemInvoice itemInvoice = new ItemInvoice(item, itemInvoiceDB);
+
+                                                    bool isRefund = invoice.TransactionType == Enums.Sale.TransactionTypeEnumeration.Refundacija ? true : false;
+
+                                                    switch (itemDB.Label)
                                                     {
-                                                        Item item = new Item(itemDB);
-                                                        ItemInvoice itemInvoice = new ItemInvoice(item, itemInvoiceDB);
-
-                                                        bool isRefund = invoice.TransactionType == Enums.Sale.TransactionTypeEnumeration.Refundacija ? true : false;
-
-                                                        switch (itemDB.Label)
-                                                        {
-                                                            case "Ђ":
-                                                                if (!itemInvoice.IsSirovina)
-                                                                {
-                                                                    SetItemsPDV(allItems20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                else
-                                                                {
-                                                                    SetItemsPDV(allItemsSirovina20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                break;
-                                                            case "6":
-                                                                if (!itemInvoice.IsSirovina)
-                                                                {
-                                                                    SetItemsPDV(allItems20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                else
-                                                                {
-                                                                    SetItemsPDV(allItemsSirovina20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                break;
-                                                            case "Е":
-                                                                if (!itemInvoice.IsSirovina)
-                                                                {
-                                                                    SetItemsPDV(allItems10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                else
-                                                                {
-                                                                    SetItemsPDV(allItemsSirovina10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                break;
-                                                            case "7":
-                                                                if (!itemInvoice.IsSirovina)
-                                                                {
-                                                                    SetItemsPDV(allItems10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                else
-                                                                {
-                                                                    SetItemsPDV(allItemsSirovina10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                break;
-                                                            case "Г":
-                                                                if (!itemInvoice.IsSirovina)
-                                                                {
-                                                                    SetItemsPDV(allItems0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                else
-                                                                {
-                                                                    SetItemsPDV(allItemsSirovina0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                break;
-                                                            case "4":
-                                                                if (!itemInvoice.IsSirovina)
-                                                                {
-                                                                    SetItemsPDV(allItems0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                else
-                                                                {
-                                                                    SetItemsPDV(allItemsSirovina0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                break;
-                                                            case "А":
-                                                                if (!itemInvoice.IsSirovina)
-                                                                {
-                                                                    SetItemsPDV(allItemsNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                else
-                                                                {
-                                                                    SetItemsPDV(allItemsSirovinaNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                break;
-                                                            case "1":
-                                                                if (!itemInvoice.IsSirovina)
-                                                                {
-                                                                    SetItemsPDV(allItemsNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                else
-                                                                {
-                                                                    SetItemsPDV(allItemsSirovinaNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                break;
-                                                            case "Ж":
-                                                                if (!itemInvoice.IsSirovina)
-                                                                {
-                                                                    SetItemsPDV(allItems20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                else
-                                                                {
-                                                                    SetItemsPDV(allItemsSirovina20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                break;
-                                                            case "8":
-                                                                if (!itemInvoice.IsSirovina)
-                                                                {
-                                                                    SetItemsPDV(allItems20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                else
-                                                                {
-                                                                    SetItemsPDV(allItemsSirovina20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                break;
-                                                            case "A":
-                                                                if (!itemInvoice.IsSirovina)
-                                                                {
-                                                                    SetItemsPDV(allItems10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                else
-                                                                {
-                                                                    SetItemsPDV(allItemsSirovina10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                break;
-                                                            case "31":
-                                                                if (!itemInvoice.IsSirovina)
-                                                                {
-                                                                    SetItemsPDV(allItems10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                else
-                                                                {
-                                                                    SetItemsPDV(allItemsSirovina10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                break;
-                                                            case "N":
-                                                                if (!itemInvoice.IsSirovina)
-                                                                {
-                                                                    SetItemsPDV(allItemsNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                else
-                                                                {
-                                                                    SetItemsPDV(allItemsSirovinaNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                break;
-                                                            case "47":
-                                                                if (!itemInvoice.IsSirovina)
-                                                                {
-                                                                    SetItemsPDV(allItemsNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                else
-                                                                {
-                                                                    SetItemsPDV(allItemsSirovinaNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                break;
-                                                            case "P":
-                                                                if (!itemInvoice.IsSirovina)
-                                                                {
-                                                                    SetItemsPDV(allItems0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                else
-                                                                {
-                                                                    SetItemsPDV(allItemsSirovina0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                break;
-                                                            case "49":
-                                                                if (!itemInvoice.IsSirovina)
-                                                                {
-                                                                    SetItemsPDV(allItems0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                else
-                                                                {
-                                                                    SetItemsPDV(allItemsSirovina0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                                }
-                                                                break;
-                                                        }
+                                                        case "Ђ":
+                                                            if (!itemInvoice.IsSirovina)
+                                                            {
+                                                                SetItemsPDV(allItems20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            else
+                                                            {
+                                                                SetItemsPDV(allItemsSirovina20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            break;
+                                                        case "6":
+                                                            if (!itemInvoice.IsSirovina)
+                                                            {
+                                                                SetItemsPDV(allItems20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            else
+                                                            {
+                                                                SetItemsPDV(allItemsSirovina20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            break;
+                                                        case "Е":
+                                                            if (!itemInvoice.IsSirovina)
+                                                            {
+                                                                SetItemsPDV(allItems10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            else
+                                                            {
+                                                                SetItemsPDV(allItemsSirovina10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            break;
+                                                        case "7":
+                                                            if (!itemInvoice.IsSirovina)
+                                                            {
+                                                                SetItemsPDV(allItems10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            else
+                                                            {
+                                                                SetItemsPDV(allItemsSirovina10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            break;
+                                                        case "Г":
+                                                            if (!itemInvoice.IsSirovina)
+                                                            {
+                                                                SetItemsPDV(allItems0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            else
+                                                            {
+                                                                SetItemsPDV(allItemsSirovina0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            break;
+                                                        case "4":
+                                                            if (!itemInvoice.IsSirovina)
+                                                            {
+                                                                SetItemsPDV(allItems0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            else
+                                                            {
+                                                                SetItemsPDV(allItemsSirovina0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            break;
+                                                        case "А":
+                                                            if (!itemInvoice.IsSirovina)
+                                                            {
+                                                                SetItemsPDV(allItemsNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            else
+                                                            {
+                                                                SetItemsPDV(allItemsSirovinaNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            break;
+                                                        case "1":
+                                                            if (!itemInvoice.IsSirovina)
+                                                            {
+                                                                SetItemsPDV(allItemsNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            else
+                                                            {
+                                                                SetItemsPDV(allItemsSirovinaNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            break;
+                                                        case "Ж":
+                                                            if (!itemInvoice.IsSirovina)
+                                                            {
+                                                                SetItemsPDV(allItems20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            else
+                                                            {
+                                                                SetItemsPDV(allItemsSirovina20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            break;
+                                                        case "8":
+                                                            if (!itemInvoice.IsSirovina)
+                                                            {
+                                                                SetItemsPDV(allItems20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            else
+                                                            {
+                                                                SetItemsPDV(allItemsSirovina20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            break;
+                                                        case "A":
+                                                            if (!itemInvoice.IsSirovina)
+                                                            {
+                                                                SetItemsPDV(allItems10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            else
+                                                            {
+                                                                SetItemsPDV(allItemsSirovina10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            break;
+                                                        case "31":
+                                                            if (!itemInvoice.IsSirovina)
+                                                            {
+                                                                SetItemsPDV(allItems10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            else
+                                                            {
+                                                                SetItemsPDV(allItemsSirovina10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            break;
+                                                        case "N":
+                                                            if (!itemInvoice.IsSirovina)
+                                                            {
+                                                                SetItemsPDV(allItemsNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            else
+                                                            {
+                                                                SetItemsPDV(allItemsSirovinaNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            break;
+                                                        case "47":
+                                                            if (!itemInvoice.IsSirovina)
+                                                            {
+                                                                SetItemsPDV(allItemsNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            else
+                                                            {
+                                                                SetItemsPDV(allItemsSirovinaNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            break;
+                                                        case "P":
+                                                            if (!itemInvoice.IsSirovina)
+                                                            {
+                                                                SetItemsPDV(allItems0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            else
+                                                            {
+                                                                SetItemsPDV(allItemsSirovina0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            break;
+                                                        case "49":
+                                                            if (!itemInvoice.IsSirovina)
+                                                            {
+                                                                SetItemsPDV(allItems0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            else
+                                                            {
+                                                                SetItemsPDV(allItemsSirovina0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
+                                                            }
+                                                            break;
                                                     }
                                                 }
                                             }
-                                        });
-                                    }
+                                        }
+                                    });
                                 }
                             }
-                            catch (Exception ex)
-                            {
-                                int aaa = 2;
-                            }
-                        });
-
-                        if (_currentViewModel is KnjizenjeViewModel)
-                        {
-                            KnjizenjeViewModel knjizenjeViewModel = (KnjizenjeViewModel)_currentViewModel;
-
-                            if (is1010)
-                            {
-                                PrinterManager.Instance.PrintIzlaz1010(knjizenjeViewModel.CurrentDate, null,
-                                    allItems20PDV,
-                                    allItems10PDV,
-                                    allItems0PDV,
-                                    allItemsNoPDV,
-                                    allItemsSirovina20PDV,
-                                    allItemsSirovina10PDV,
-                                    allItemsSirovina0PDV,
-                                    allItemsSirovinaNoPDV);
-                            }
-                            else
-                            {
-                                PrinterManager.Instance.PrintDnevniPazar(knjizenjeViewModel.CurrentDate, null,
-                                    allItems20PDV,
-                                    allItems10PDV,
-                                    allItems0PDV,
-                                    allItemsNoPDV,
-                                    allItemsSirovina20PDV,
-                                    allItemsSirovina10PDV,
-                                    allItemsSirovina0PDV,
-                                    allItemsSirovinaNoPDV);
-                            }
-
-                            knjizenjeViewModel.SearchInvoicesCommand.Execute(null);
                         }
-                        else if (_currentViewModel is PregledPazaraViewModel)
+                        catch (Exception ex)
                         {
-                            PregledPazaraViewModel pregledPazaraViewModel = (PregledPazaraViewModel)_currentViewModel;
-
-                            if (is1010)
-                            {
-                                PrinterManager.Instance.PrintIzlaz1010(pregledPazaraViewModel.FromDate, pregledPazaraViewModel.ToDate,
-                                    allItems20PDV,
-                                    allItems10PDV,
-                                    allItems0PDV,
-                                    allItemsNoPDV,
-                                    allItemsSirovina20PDV,
-                                    allItemsSirovina10PDV,
-                                    allItemsSirovina0PDV,
-                                    allItemsSirovinaNoPDV);
-                            }
-                            else
-                            {
-                                PrinterManager.Instance.PrintDnevniPazar(pregledPazaraViewModel.FromDate, pregledPazaraViewModel.ToDate,
-                                    allItems20PDV,
-                                    allItems10PDV,
-                                    allItems0PDV,
-                                    allItemsNoPDV,
-                                    allItemsSirovina20PDV,
-                                    allItemsSirovina10PDV,
-                                    allItemsSirovina0PDV,
-                                    allItemsSirovinaNoPDV);
-                            }
-
-                            pregledPazaraViewModel.SearchInvoicesCommand.Execute(null);
+                            int aaa = 2;
                         }
+                    });
+
+                    if (_currentViewModel is KnjizenjeViewModel)
+                    {
+                        KnjizenjeViewModel knjizenjeViewModel = (KnjizenjeViewModel)_currentViewModel;
+
+                        if (is1010)
+                        {
+                            PrinterManager.Instance.PrintIzlaz1010(knjizenjeViewModel.DbContext, knjizenjeViewModel.CurrentDate, null,
+                                allItems20PDV,
+                                allItems10PDV,
+                                allItems0PDV,
+                                allItemsNoPDV,
+                                allItemsSirovina20PDV,
+                                allItemsSirovina10PDV,
+                                allItemsSirovina0PDV,
+                                allItemsSirovinaNoPDV);
+                        }
+                        else
+                        {
+                            PrinterManager.Instance.PrintDnevniPazar(knjizenjeViewModel.DbContext, knjizenjeViewModel.CurrentDate, null,
+                                allItems20PDV,
+                                allItems10PDV,
+                                allItems0PDV,
+                                allItemsNoPDV,
+                                allItemsSirovina20PDV,
+                                allItemsSirovina10PDV,
+                                allItemsSirovina0PDV,
+                                allItemsSirovinaNoPDV);
+                        }
+
+                        knjizenjeViewModel.SearchInvoicesCommand.Execute(null);
+                    }
+                    else if (_currentViewModel is PregledPazaraViewModel)
+                    {
+                        PregledPazaraViewModel pregledPazaraViewModel = (PregledPazaraViewModel)_currentViewModel;
+
+                        if (is1010)
+                        {
+                            PrinterManager.Instance.PrintIzlaz1010(pregledPazaraViewModel.DbContext, 
+                                pregledPazaraViewModel.FromDate, pregledPazaraViewModel.ToDate,
+                                allItems20PDV,
+                                allItems10PDV,
+                                allItems0PDV,
+                                allItemsNoPDV,
+                                allItemsSirovina20PDV,
+                                allItemsSirovina10PDV,
+                                allItemsSirovina0PDV,
+                                allItemsSirovinaNoPDV);
+                        }
+                        else
+                        {
+                            PrinterManager.Instance.PrintDnevniPazar(pregledPazaraViewModel.DbContext,
+                                pregledPazaraViewModel.FromDate, pregledPazaraViewModel.ToDate,
+                                allItems20PDV,
+                                allItems10PDV,
+                                allItems0PDV,
+                                allItemsNoPDV,
+                                allItemsSirovina20PDV,
+                                allItemsSirovina10PDV,
+                                allItemsSirovina0PDV,
+                                allItemsSirovinaNoPDV);
+                        }
+
+                        pregledPazaraViewModel.SearchInvoicesCommand.Execute(null);
                     }
                 }
                 catch (Exception ex)

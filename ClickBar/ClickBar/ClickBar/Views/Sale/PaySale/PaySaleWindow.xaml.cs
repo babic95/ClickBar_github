@@ -1,5 +1,6 @@
 ﻿using ClickBar.ViewModels;
 using ClickBar.ViewModels.Sale;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,10 +22,19 @@ namespace ClickBar.Views.Sale.PaySale
     /// </summary>
     public partial class PaySaleWindow : Window
     {
-        public PaySaleWindow(SaleViewModel saleViewModel)
+        private readonly IServiceProvider _serviceProvider;
+
+        public PaySaleWindow(IServiceProvider serviceProvider, SaleViewModel saleViewModel)
         {
+            _serviceProvider = serviceProvider;
             InitializeComponent();
-            DataContext = new PaySaleViewModel(this, saleViewModel);
+
+
+            // Kreiranje instance SplitOrderViewModel-a koristeći IServiceProvider
+            var paySaleViewModel = _serviceProvider.GetRequiredService<PaySaleViewModel>();
+            paySaleViewModel.SaleViewModel = saleViewModel;
+
+            DataContext = paySaleViewModel;
 
             Focusable = true;
 

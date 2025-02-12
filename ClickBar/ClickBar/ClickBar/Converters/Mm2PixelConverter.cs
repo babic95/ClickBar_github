@@ -16,7 +16,7 @@ namespace ClickBar.Converters
 
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            double mm = System.Convert.ToDouble((decimal)value);
+            double mm = System.Convert.ToDouble((float)value);
 
             return WinUtil.Mm2Pixel(mm);
         }
@@ -36,11 +36,11 @@ namespace ClickBar.Converters
 
             return mm * factor;
         }
-        public static decimal Pixel2Mm(double pixel)
+        public static float Pixel2Mm(double pixel)
         {
             const double factor = 96 / 25.4;
 
-            return Convert.ToDecimal(pixel / factor);
+            return (float)(pixel / factor);
         }
 
         public static Size Mm2Pixel(Size mm_size)

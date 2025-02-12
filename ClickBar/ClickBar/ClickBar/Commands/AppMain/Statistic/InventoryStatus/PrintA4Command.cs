@@ -61,7 +61,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                     });
                 });
 
-                PrinterManager.Instance.PrintA4InventoryStatus(invertoryGlobals, _currentViewModel.CurrentGroup.Name, DateTime.Now);
+                PrinterManager.Instance.PrintA4InventoryStatus(_currentViewModel.DbContext, invertoryGlobals, _currentViewModel.CurrentGroup.Name, DateTime.Now);
 
                 if (_currentViewModel.PrintTypeWindow.Activate())
                 {

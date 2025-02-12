@@ -1,4 +1,5 @@
-﻿using ClickBar_Database;
+﻿using ClickBar_DatabaseSQLManager;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,16 +11,22 @@ namespace ClickBar.ViewModels.AppMain.Statistic
     public class OtpisPreviewViewModel : ViewModelBase
     {
         #region Fields
+        private IServiceProvider _serviceProvider;
         #endregion Fields
 
         #region Constructors
-        public OtpisPreviewViewModel()
+        public OtpisPreviewViewModel(IServiceProvider serviceProvider)
         {
-
+            _serviceProvider = serviceProvider;
+            DbContext = serviceProvider.GetRequiredService<SqlServerDbContext>();
         }
         #endregion Constructors
 
         #region Properties internal
+        internal SqlServerDbContext DbContext
+        {
+            get; private set;
+        }
         #endregion Properties internal
 
         #region Properties

@@ -1,6 +1,6 @@
 ﻿using ClickBar.ViewModels.AppMain.Statistic;
 using ClickBar.Views.AppMain.AuxiliaryWindows.Statistic;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,10 +28,10 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
 
         public void Execute(object parameter)
         {
-            //SqliteDbContext sqliteDbContext = new SqliteDbContext();
+            //SqlServerDbContext sqliteDbContext = new SqlServerDbContext();
 
             //var norm = sqliteDbContext.Norms.Add(new NormDB());
-            //RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+            //sqliteDbContext.SaveChanges();
             //_currentViewModel.CurrentNorm = Convert.ToInt32(norm.Property("Id").CurrentValue);
 
             AddCaclulationWindow addCaclulationWindow = new AddCaclulationWindow(_currentViewModel);

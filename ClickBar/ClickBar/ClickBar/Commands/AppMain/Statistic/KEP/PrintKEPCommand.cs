@@ -47,7 +47,8 @@ namespace ClickBar.Commands.AppMain.Statistic.KEP
                     kep.Add(itemKEP);
                 });
 
-                PrinterManager.Instance.PrintKEP(_currentViewModel.FromDate, _currentViewModel.ToDate, kep);
+                PrinterManager.Instance.PrintKEP(_currentViewModel.DbContext,
+                    _currentViewModel.FromDate, _currentViewModel.ToDate, kep);
             }
         }
     }

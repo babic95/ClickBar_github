@@ -1,7 +1,7 @@
 ﻿using ClickBar.Models.AppMain.Statistic;
 using ClickBar.ViewModels.AppMain.Statistic;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -35,26 +35,105 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
             _currentViewModel.TotalInputPrice = 0;
             _currentViewModel.TotalOutputPrice = 0;
 
-            using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+            _currentViewModel.CalculationsAll = new ObservableCollection<Models.AppMain.Statistic.Calculation>();
+
+            if (_currentViewModel.SearchFromCalculationDate != null &&
+                _currentViewModel.SearchFromCalculationDate.HasValue &&
+                _currentViewModel.SearchToCalculationDate != null &&
+                _currentViewModel.SearchToCalculationDate.HasValue)
             {
+                //calculations = sqliteDbContext.Calculations.Where(cal => cal.CalculationDate.Date >= _currentViewModel.SearchFromCalculationDate.Value.Date &&
+                //    cal.CalculationDate.Date <= _currentViewModel.SearchToCalculationDate.Value.Date);
 
-                _currentViewModel.CalculationsAll = new ObservableCollection<Models.AppMain.Statistic.Calculation>();
+                var calculations = _currentViewModel.DbContext.Calculations.Where(cal => cal.CalculationDate.Date >= _currentViewModel.SearchFromCalculationDate.Value.Date &&
+                cal.CalculationDate.Date <= _currentViewModel.SearchToCalculationDate.Value.Date)
+                .Join(_currentViewModel.DbContext.Suppliers,
+                cal => cal.SupplierId,
+                supp => supp.Id,
+                (cal, supp) => new { Cal = cal, Supp = supp })
+                .Join(_currentViewModel.DbContext.Cashiers,
+                cal => cal.Cal.CashierId,
+                cash => cash.Id,
+                (cal, cash) => new { Cal = cal, Cash = cash });
 
-                if (_currentViewModel.SearchFromCalculationDate != null &&
-                    _currentViewModel.SearchFromCalculationDate.HasValue &&
-                    _currentViewModel.SearchToCalculationDate != null &&
-                    _currentViewModel.SearchToCalculationDate.HasValue)
+                if (calculations != null &&
+                    calculations.Any())
                 {
-                    //calculations = sqliteDbContext.Calculations.Where(cal => cal.CalculationDate.Date >= _currentViewModel.SearchFromCalculationDate.Value.Date &&
-                    //    cal.CalculationDate.Date <= _currentViewModel.SearchToCalculationDate.Value.Date);
+                    calculations.ForEachAsync(cal =>
+                    {
+                        Models.AppMain.Statistic.Calculation calculation = new Models.AppMain.Statistic.Calculation()
+                        {
+                            Id = cal.Cal.Cal.Id,
+                            CalculationDate = cal.Cal.Cal.CalculationDate,
+                            InputTotalPrice = cal.Cal.Cal.InputTotalPrice,
+                            InvoiceNumber = cal.Cal.Cal.InvoiceNumber,
+                            OutputTotalPrice = cal.Cal.Cal.OutputTotalPrice,
+                            Counter = cal.Cal.Cal.Counter,
+                            Name = $"Kalkulacija_{cal.Cal.Cal.Counter}-{cal.Cal.Cal.CalculationDate.Year}",
+                            Supplier = cal.Cal.Supp == null ? null : new Supplier(cal.Cal.Supp),
+                            Cashier = cal.Cash
+                        };
 
-                    var calculations = sqliteDbContext.Calculations.Where(cal => cal.CalculationDate.Date >= _currentViewModel.SearchFromCalculationDate.Value.Date &&
-                    cal.CalculationDate.Date <= _currentViewModel.SearchToCalculationDate.Value.Date)
-                    .Join(sqliteDbContext.Suppliers,
+                        _currentViewModel.CalculationsAll.Add(calculation);
+
+                        _currentViewModel.TotalInputPrice += calculation.InputTotalPrice;
+                        _currentViewModel.TotalOutputPrice += calculation.OutputTotalPrice;
+                    });
+                }
+            }
+            else
+            {
+                if (_currentViewModel.SearchFromCalculationDate != null &&
+                _currentViewModel.SearchFromCalculationDate.HasValue)
+                {
+                    //calculations = sqliteDbContext.Calculations.Where(cal => cal.CalculationDate.Date >= _currentViewModel.SearchFromCalculationDate.Value.Date);
+
+                    var calculations = _currentViewModel.DbContext.Calculations.Where(cal => cal.CalculationDate.Date >= _currentViewModel.SearchFromCalculationDate.Value.Date)
+                    .Join(_currentViewModel.DbContext.Suppliers,
                     cal => cal.SupplierId,
                     supp => supp.Id,
                     (cal, supp) => new { Cal = cal, Supp = supp })
-                    .Join(sqliteDbContext.Cashiers,
+                    .Join(_currentViewModel.DbContext.Cashiers,
+                    cal => cal.Cal.CashierId,
+                    cash => cash.Id,
+                    (cal, cash) => new { Cal = cal, Cash = cash });
+
+                    if (calculations != null &&
+                        calculations.Any())
+                    {
+                        calculations.ForEachAsync(cal =>
+                        {
+                            Models.AppMain.Statistic.Calculation calculation = new Models.AppMain.Statistic.Calculation()
+                            {
+                                Id = cal.Cal.Cal.Id,
+                                CalculationDate = cal.Cal.Cal.CalculationDate,
+                                InputTotalPrice = cal.Cal.Cal.InputTotalPrice,
+                                InvoiceNumber = cal.Cal.Cal.InvoiceNumber,
+                                OutputTotalPrice = cal.Cal.Cal.OutputTotalPrice,
+                                Counter = cal.Cal.Cal.Counter,
+                                Name = $"Kalkulacija_{cal.Cal.Cal.Counter}-{cal.Cal.Cal.CalculationDate.Year}",
+                                Supplier = cal.Cal.Supp == null ? null : new Supplier(cal.Cal.Supp),
+                                Cashier = cal.Cash
+                            };
+
+                            _currentViewModel.CalculationsAll.Add(calculation);
+
+                            _currentViewModel.TotalInputPrice += calculation.InputTotalPrice;
+                            _currentViewModel.TotalOutputPrice += calculation.OutputTotalPrice;
+                        });
+                    }
+                }
+                else if (_currentViewModel.SearchToCalculationDate != null &&
+                _currentViewModel.SearchToCalculationDate.HasValue)
+                {
+                    //calculations = sqliteDbContext.Calculations.Where(cal => cal.CalculationDate.Date <= _currentViewModel.SearchToCalculationDate.Value.Date);
+
+                    var calculations = _currentViewModel.DbContext.Calculations.Where(cal => cal.CalculationDate.Date <= _currentViewModel.SearchToCalculationDate.Value.Date)
+                    .Join(_currentViewModel.DbContext.Suppliers,
+                    cal => cal.SupplierId,
+                    supp => supp.Id,
+                    (cal, supp) => new { Cal = cal, Supp = supp })
+                    .Join(_currentViewModel.DbContext.Cashiers,
                     cal => cal.Cal.CashierId,
                     cash => cash.Id,
                     (cal, cash) => new { Cal = cal, Cash = cash });
@@ -86,158 +165,75 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
                 }
                 else
                 {
-                    if (_currentViewModel.SearchFromCalculationDate != null &&
-                    _currentViewModel.SearchFromCalculationDate.HasValue)
+                    //calculations = sqliteDbContext.Calculations;
+
+                    var calculations = _currentViewModel.DbContext.Calculations
+                    .Join(_currentViewModel.DbContext.Suppliers,
+                    cal => cal.SupplierId,
+                    supp => supp.Id,
+                    (cal, supp) => new { Cal = cal, Supp = supp })
+                    .Join(_currentViewModel.DbContext.Cashiers,
+                    cal => cal.Cal.CashierId,
+                    cash => cash.Id,
+                    (cal, cash) => new { Cal = cal, Cash = cash });
+
+                    if (calculations != null &&
+                        calculations.Any())
                     {
-                        //calculations = sqliteDbContext.Calculations.Where(cal => cal.CalculationDate.Date >= _currentViewModel.SearchFromCalculationDate.Value.Date);
-
-                        var calculations = sqliteDbContext.Calculations.Where(cal => cal.CalculationDate.Date >= _currentViewModel.SearchFromCalculationDate.Value.Date)
-                        .Join(sqliteDbContext.Suppliers,
-                        cal => cal.SupplierId,
-                        supp => supp.Id,
-                        (cal, supp) => new { Cal = cal, Supp = supp })
-                        .Join(sqliteDbContext.Cashiers,
-                        cal => cal.Cal.CashierId,
-                        cash => cash.Id,
-                        (cal, cash) => new { Cal = cal, Cash = cash });
-
-                        if (calculations != null &&
-                            calculations.Any())
+                        calculations.ForEachAsync(cal =>
                         {
-                            calculations.ForEachAsync(cal =>
+                            Models.AppMain.Statistic.Calculation calculation = new Models.AppMain.Statistic.Calculation()
                             {
-                                Models.AppMain.Statistic.Calculation calculation = new Models.AppMain.Statistic.Calculation()
-                                {
-                                    Id = cal.Cal.Cal.Id,
-                                    CalculationDate = cal.Cal.Cal.CalculationDate,
-                                    InputTotalPrice = cal.Cal.Cal.InputTotalPrice,
-                                    InvoiceNumber = cal.Cal.Cal.InvoiceNumber,
-                                    OutputTotalPrice = cal.Cal.Cal.OutputTotalPrice,
-                                    Counter = cal.Cal.Cal.Counter,
-                                    Name = $"Kalkulacija_{cal.Cal.Cal.Counter}-{cal.Cal.Cal.CalculationDate.Year}",
-                                    Supplier = cal.Cal.Supp == null ? null : new Supplier(cal.Cal.Supp),
-                                    Cashier = cal.Cash
-                                };
+                                Id = cal.Cal.Cal.Id,
+                                CalculationDate = cal.Cal.Cal.CalculationDate,
+                                InputTotalPrice = cal.Cal.Cal.InputTotalPrice,
+                                InvoiceNumber = cal.Cal.Cal.InvoiceNumber,
+                                OutputTotalPrice = cal.Cal.Cal.OutputTotalPrice,
+                                Counter = cal.Cal.Cal.Counter,
+                                Name = $"Kalkulacija_{cal.Cal.Cal.Counter}-{cal.Cal.Cal.CalculationDate.Year}",
+                                Supplier = cal.Cal.Supp == null ? null : new Supplier(cal.Cal.Supp),
+                                Cashier = cal.Cash
+                            };
 
-                                _currentViewModel.CalculationsAll.Add(calculation);
+                            _currentViewModel.CalculationsAll.Add(calculation);
 
-                                _currentViewModel.TotalInputPrice += calculation.InputTotalPrice;
-                                _currentViewModel.TotalOutputPrice += calculation.OutputTotalPrice;
-                            });
-                        }
-                    }
-                    else if (_currentViewModel.SearchToCalculationDate != null &&
-                    _currentViewModel.SearchToCalculationDate.HasValue)
-                    {
-                        //calculations = sqliteDbContext.Calculations.Where(cal => cal.CalculationDate.Date <= _currentViewModel.SearchToCalculationDate.Value.Date);
-
-                        var calculations = sqliteDbContext.Calculations.Where(cal => cal.CalculationDate.Date <= _currentViewModel.SearchToCalculationDate.Value.Date)
-                        .Join(sqliteDbContext.Suppliers,
-                        cal => cal.SupplierId,
-                        supp => supp.Id,
-                        (cal, supp) => new { Cal = cal, Supp = supp })
-                        .Join(sqliteDbContext.Cashiers,
-                        cal => cal.Cal.CashierId,
-                        cash => cash.Id,
-                        (cal, cash) => new { Cal = cal, Cash = cash });
-
-                        if (calculations != null &&
-                            calculations.Any())
-                        {
-                            calculations.ForEachAsync(cal =>
-                            {
-                                Models.AppMain.Statistic.Calculation calculation = new Models.AppMain.Statistic.Calculation()
-                                {
-                                    Id = cal.Cal.Cal.Id,
-                                    CalculationDate = cal.Cal.Cal.CalculationDate,
-                                    InputTotalPrice = cal.Cal.Cal.InputTotalPrice,
-                                    InvoiceNumber = cal.Cal.Cal.InvoiceNumber,
-                                    OutputTotalPrice = cal.Cal.Cal.OutputTotalPrice,
-                                    Counter = cal.Cal.Cal.Counter,
-                                    Name = $"Kalkulacija_{cal.Cal.Cal.Counter}-{cal.Cal.Cal.CalculationDate.Year}",
-                                    Supplier = cal.Cal.Supp == null ? null : new Supplier(cal.Cal.Supp),
-                                    Cashier = cal.Cash
-                                };
-
-                                _currentViewModel.CalculationsAll.Add(calculation);
-
-                                _currentViewModel.TotalInputPrice += calculation.InputTotalPrice;
-                                _currentViewModel.TotalOutputPrice += calculation.OutputTotalPrice;
-                            });
-                        }
-                    }
-                    else
-                    {
-                        //calculations = sqliteDbContext.Calculations;
-
-                        var calculations = sqliteDbContext.Calculations
-                        .Join(sqliteDbContext.Suppliers,
-                        cal => cal.SupplierId,
-                        supp => supp.Id,
-                        (cal, supp) => new { Cal = cal, Supp = supp })
-                        .Join(sqliteDbContext.Cashiers,
-                        cal => cal.Cal.CashierId,
-                        cash => cash.Id,
-                        (cal, cash) => new { Cal = cal, Cash = cash });
-
-                        if (calculations != null &&
-                            calculations.Any())
-                        {
-                            calculations.ForEachAsync(cal =>
-                            {
-                                Models.AppMain.Statistic.Calculation calculation = new Models.AppMain.Statistic.Calculation()
-                                {
-                                    Id = cal.Cal.Cal.Id,
-                                    CalculationDate = cal.Cal.Cal.CalculationDate,
-                                    InputTotalPrice = cal.Cal.Cal.InputTotalPrice,
-                                    InvoiceNumber = cal.Cal.Cal.InvoiceNumber,
-                                    OutputTotalPrice = cal.Cal.Cal.OutputTotalPrice,
-                                    Counter = cal.Cal.Cal.Counter,
-                                    Name = $"Kalkulacija_{cal.Cal.Cal.Counter}-{cal.Cal.Cal.CalculationDate.Year}",
-                                    Supplier = cal.Cal.Supp == null ? null : new Supplier(cal.Cal.Supp),
-                                    Cashier = cal.Cash
-                                };
-
-                                _currentViewModel.CalculationsAll.Add(calculation);
-
-                                _currentViewModel.TotalInputPrice += calculation.InputTotalPrice;
-                                _currentViewModel.TotalOutputPrice += calculation.OutputTotalPrice;
-                            });
-                        }
+                            _currentViewModel.TotalInputPrice += calculation.InputTotalPrice;
+                            _currentViewModel.TotalOutputPrice += calculation.OutputTotalPrice;
+                        });
                     }
                 }
+            }
 
-                if (!string.IsNullOrEmpty(_currentViewModel.SearchInvoiceNumber))
-                {
-                    SearhInvoiceNumber();
-                }
-                else
+            if (!string.IsNullOrEmpty(_currentViewModel.SearchInvoiceNumber))
+            {
+                SearhInvoiceNumber();
+            }
+            else
+            {
+                _currentViewModel.Calculations = new ObservableCollection<Models.AppMain.Statistic.Calculation>(_currentViewModel.CalculationsAll.OrderBy(cal => cal.CalculationDate));
+            }
+            if (_currentViewModel.SearchSupplier != null && !string.IsNullOrEmpty(_currentViewModel.SearchSupplier.Name))
+            {
+                SearhSupplier();
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(_currentViewModel.SearchInvoiceNumber))
                 {
                     _currentViewModel.Calculations = new ObservableCollection<Models.AppMain.Statistic.Calculation>(_currentViewModel.CalculationsAll.OrderBy(cal => cal.CalculationDate));
                 }
-                if (_currentViewModel.SearchSupplier != null && !string.IsNullOrEmpty(_currentViewModel.SearchSupplier.Name))
+            }
+            if (_currentViewModel.SearchFromCalculationDate != null ||
+                _currentViewModel.SearchToCalculationDate != null)
+            {
+                SearhCalculationDate();
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(_currentViewModel.SearchInvoiceNumber) &&
+                    _currentViewModel.SearchSupplier == null)
                 {
-                    SearhSupplier();
-                }
-                else
-                {
-                    if (string.IsNullOrEmpty(_currentViewModel.SearchInvoiceNumber))
-                    {
-                        _currentViewModel.Calculations = new ObservableCollection<Models.AppMain.Statistic.Calculation>(_currentViewModel.CalculationsAll.OrderBy(cal => cal.CalculationDate));
-                    }
-                }
-                if (_currentViewModel.SearchFromCalculationDate != null ||
-                    _currentViewModel.SearchToCalculationDate != null)
-                {
-                    SearhCalculationDate();
-                }
-                else
-                {
-                    if (string.IsNullOrEmpty(_currentViewModel.SearchInvoiceNumber) &&
-                        _currentViewModel.SearchSupplier == null)
-                    {
-                        _currentViewModel.Calculations = new ObservableCollection<Models.AppMain.Statistic.Calculation>(_currentViewModel.CalculationsAll.OrderBy(cal => cal.CalculationDate));
-                    }
+                    _currentViewModel.Calculations = new ObservableCollection<Models.AppMain.Statistic.Calculation>(_currentViewModel.CalculationsAll.OrderBy(cal => cal.CalculationDate));
                 }
             }
         }

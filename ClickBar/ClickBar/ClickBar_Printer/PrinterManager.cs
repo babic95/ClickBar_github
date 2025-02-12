@@ -4,7 +4,8 @@ using ClickBar_Common.Models.Invoice.FileSystemWatcher;
 using ClickBar_Common.Models.Statistic;
 using ClickBar_Common.Models.Statistic.Nivelacija;
 using ClickBar_Common.Models.Statistic.Norm;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Printer.Documents;
 using ClickBar_Printer.Enums;
 using ClickBar_Printer.Models.DPU;
@@ -108,12 +109,13 @@ namespace ClickBar_Printer
                 }
             }
         }
-        public void PrintA4InventoryStatus(List<InvertoryGlobal> inventoryStatusAll,
+        public void PrintA4InventoryStatus(SqlServerDbContext sqliteDbContext,
+            List<InvertoryGlobal> inventoryStatusAll,
             string title,
             DateTime dateTime,
             SupplierGlobal? supplierGlobal = null)
         {
-            FormatA4.PrintA4InventoryStatus(inventoryStatusAll, title, dateTime, supplierGlobal);
+            FormatA4.PrintA4InventoryStatus(sqliteDbContext, inventoryStatusAll, title, dateTime, supplierGlobal);
         }
         public void PrintInventoryStatus(List<InvertoryGlobal> inventoryStatusAll, 
             string title, 
@@ -152,15 +154,15 @@ namespace ClickBar_Printer
                 }
             }
         }
-        public void PrintNorms(Dictionary<string, Dictionary<string, List<NormGlobal>>> norms)
+        public void PrintNorms(SqlServerDbContext sqliteDbContext, Dictionary<string, Dictionary<string, List<NormGlobal>>> norms)
         {
-            FormatA4.PrintNorms(norms);
+            FormatA4.PrintNorms(sqliteDbContext, norms);
         }
-        public void PrintNivelacija(NivelacijaGlobal nivelacija)
+        public void PrintNivelacija(SqlServerDbContext sqliteDbContext, NivelacijaGlobal nivelacija)
         {
-            FormatA4.PrintNivelacija(nivelacija);
+            FormatA4.PrintNivelacija(sqliteDbContext, nivelacija);
         }
-        public void PrintDnevniPazar(DateTime fromDateTime, DateTime? toDateTime,
+        public void PrintDnevniPazar(SqlServerDbContext sqliteDbContext, DateTime fromDateTime, DateTime? toDateTime,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems20PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems10PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems0PDV,
@@ -170,7 +172,7 @@ namespace ClickBar_Printer
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovina0PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovinaNoPDV)
         {
-            FormatA4.PrintDnevniPazar(fromDateTime, toDateTime,
+            FormatA4.PrintDnevniPazar(sqliteDbContext, fromDateTime, toDateTime,
                 allItems20PDV,
                 allItems10PDV,
                 allItems0PDV,
@@ -180,7 +182,7 @@ namespace ClickBar_Printer
                 allItemsSirovina0PDV,
                 allItemsSirovinaNoPDV);
         }
-        public void LagerListaNaDan(DateTime dateTime,
+        public void LagerListaNaDan(SqlServerDbContext sqliteDbContext, DateTime dateTime,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems20PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems10PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems0PDV,
@@ -190,7 +192,7 @@ namespace ClickBar_Printer
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovina0PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovinaNoPDV)
         {
-            FormatA4.LagerListaNaDan(dateTime,
+            FormatA4.LagerListaNaDan(sqliteDbContext, dateTime,
                 allItems20PDV,
                 allItems10PDV,
                 allItems0PDV,
@@ -200,7 +202,7 @@ namespace ClickBar_Printer
                 allItemsSirovina0PDV,
                 allItemsSirovinaNoPDV);
         }
-        public void PrintIzlaz1010(DateTime fromDateTime, DateTime? toDateTime,
+        public void PrintIzlaz1010(SqlServerDbContext sqliteDbContext, DateTime fromDateTime, DateTime? toDateTime,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems20PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems10PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems0PDV,
@@ -210,7 +212,7 @@ namespace ClickBar_Printer
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovina0PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovinaNoPDV)
         {
-            FormatA4.PrintIzlaz1010(fromDateTime, toDateTime,
+            FormatA4.PrintIzlaz1010(sqliteDbContext, fromDateTime, toDateTime,
                 allItems20PDV,
                 allItems10PDV,
                 allItems0PDV,
@@ -220,7 +222,7 @@ namespace ClickBar_Printer
                 allItemsSirovina0PDV,
                 allItemsSirovinaNoPDV);
         }
-        public void PrintSank(DateTime fromDateTime, DateTime? toDateTime,
+        public void PrintSank(SqlServerDbContext sqliteDbContext, DateTime fromDateTime, DateTime? toDateTime,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems20PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems10PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems0PDV,
@@ -231,7 +233,7 @@ namespace ClickBar_Printer
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovinaNoPDV,
             bool enableSirovine)
         {
-            FormatA4.PrintSank(fromDateTime, toDateTime,
+            FormatA4.PrintSank(sqliteDbContext, fromDateTime, toDateTime,
                 allItems20PDV,
                 allItems10PDV,
                 allItems0PDV,
@@ -242,7 +244,7 @@ namespace ClickBar_Printer
                 allItemsSirovinaNoPDV,
                 enableSirovine);
         }
-        public void PrintKuhinja(DateTime fromDateTime, DateTime? toDateTime,
+        public void PrintKuhinja(SqlServerDbContext sqliteDbContext, DateTime fromDateTime, DateTime? toDateTime,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems20PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems10PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems0PDV,
@@ -253,7 +255,7 @@ namespace ClickBar_Printer
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovinaNoPDV,
             bool enableSirovine)
         {
-            FormatA4.PrintKuhinja(fromDateTime, toDateTime,
+            FormatA4.PrintKuhinja(sqliteDbContext, fromDateTime, toDateTime,
                 allItems20PDV,
                 allItems10PDV,
                 allItems0PDV,
@@ -264,13 +266,13 @@ namespace ClickBar_Printer
                 allItemsSirovinaNoPDV,
                 enableSirovine);
         }
-        public void PrintKEP(DateTime fromDate, DateTime toDate, List<ItemKEP> kep)
+        public void PrintKEP(SqlServerDbContext sqliteDbContext, DateTime fromDate, DateTime toDate, List<ItemKEP> kep)
         {
-            FormatA4.PrintKEP(fromDate, toDate, kep);
+            FormatA4.PrintKEP(sqliteDbContext, fromDate, toDate, kep);
         }
-        public void Print1010(DateTime fromDate, DateTime toDate, List<ItemKEP> kep)
+        public void Print1010(SqlServerDbContext sqliteDbContext, DateTime fromDate, DateTime toDate, List<ItemKEP> kep)
         {
-            FormatA4.Print1010(fromDate, toDate, kep);
+            FormatA4.Print1010(sqliteDbContext, fromDate, toDate, kep);
         }
         #endregion Public methods
 

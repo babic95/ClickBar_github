@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows;
 using ClickBar_Logging;
-using ClickBar_Database;
-using ClickBar_Database.Models;
+using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Common.Models.Order.Drlja;
 using ClickBar_Settings;
 using Newtonsoft.Json;
@@ -39,131 +39,72 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder.ChangePaymentPlace
                 {
                     if (paymentPlaceId > 0)
                     {
-                        using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
-                        {
-                            var newUnprocessedOrdersDB = sqliteDbContext.UnprocessedOrders.FirstOrDefault(u => u.PaymentPlaceId == paymentPlaceId);
-                            var oldUnprocessedOrdersDB = sqliteDbContext.UnprocessedOrders.FirstOrDefault(u => u.PaymentPlaceId == _viewModel.SplitOrderViewModel.PaySaleViewModel.SaleViewModel.TableId);
+                        var newUnprocessedOrdersDB = _viewModel.DbContext.UnprocessedOrders.FirstOrDefault(u => u.PaymentPlaceId == paymentPlaceId);
+                        var oldUnprocessedOrdersDB = _viewModel.DbContext.UnprocessedOrders.FirstOrDefault(u => u.PaymentPlaceId == _viewModel.SplitOrderViewModel.PaySaleViewModel.SaleViewModel.TableId);
 
-                            if (oldUnprocessedOrdersDB != null)
+                        if (oldUnprocessedOrdersDB != null)
+                        {
+                            MovePorudzbinaClickBarDrlja? movePorudzbinaClickBarDrlja = null;
+
+                            if (!string.IsNullOrEmpty(SettingsManager.Instance.GetPathToDrljaKuhinjaDB()))
                             {
-                                MovePorudzbinaClickBarDrlja movePorudzbinaClickBarDrlja = new MovePorudzbinaClickBarDrlja()
+                                movePorudzbinaClickBarDrlja = new MovePorudzbinaClickBarDrlja()
                                 {
                                     OldUnprocessedOrderId = oldUnprocessedOrdersDB.Id,
                                     Items = new List<PorudzbinaItemDrlja>(),
                                 };
+                            }
 
-                                if (newUnprocessedOrdersDB != null)
+                            if (newUnprocessedOrdersDB != null)
+                            {
+                                if (movePorudzbinaClickBarDrlja != null)
                                 {
                                     movePorudzbinaClickBarDrlja.NewUnprocessedOrderId = newUnprocessedOrdersDB.Id;
                                     movePorudzbinaClickBarDrlja.NewSto = newUnprocessedOrdersDB.PaymentPlaceId;
+                                }
 
-                                    foreach (var item in _viewModel.SplitOrderViewModel.ItemsInvoiceForPay)
+                                foreach (var item in _viewModel.SplitOrderViewModel.ItemsInvoiceForPay)
+                                {
+                                    var itemInUnprocessedOrder = _viewModel.DbContext.ItemsInUnprocessedOrder.FirstOrDefault(i => i.ItemId == item.Item.Id &&
+                                    i.UnprocessedOrderId == newUnprocessedOrdersDB.Id);
+
+                                    if (itemInUnprocessedOrder != null)
                                     {
-                                        var itemInUnprocessedOrder = sqliteDbContext.ItemsInUnprocessedOrder.FirstOrDefault(i => i.ItemId == item.Item.Id &&
-                                        i.UnprocessedOrderId == newUnprocessedOrdersDB.Id);
-
-                                        if (itemInUnprocessedOrder != null)
-                                        {
-                                            itemInUnprocessedOrder.Quantity += item.Quantity;
-                                            sqliteDbContext.ItemsInUnprocessedOrder.Update(itemInUnprocessedOrder);
-                                        }
-                                        else
-                                        {
-                                            itemInUnprocessedOrder = new ItemInUnprocessedOrderDB
-                                            {
-                                                ItemId = item.Item.Id,
-                                                Quantity = item.Quantity,
-                                                UnprocessedOrderId = newUnprocessedOrdersDB.Id
-                                            };
-                                            sqliteDbContext.ItemsInUnprocessedOrder.Add(itemInUnprocessedOrder);
-                                        }
-
-                                        var itemInOldUnprocessedOrder = sqliteDbContext.ItemsInUnprocessedOrder.FirstOrDefault(i => i.ItemId == item.Item.Id &&
-                                        i.UnprocessedOrderId == oldUnprocessedOrdersDB.Id);
-
-                                        if (itemInOldUnprocessedOrder != null)
-                                        {
-                                            if (itemInOldUnprocessedOrder.Quantity == item.Quantity)
-                                            {
-                                                sqliteDbContext.ItemsInUnprocessedOrder.Remove(itemInOldUnprocessedOrder);
-                                            }
-                                            else
-                                            {
-                                                itemInOldUnprocessedOrder.Quantity -= item.Quantity;
-                                                sqliteDbContext.ItemsInUnprocessedOrder.Update(itemInOldUnprocessedOrder);
-                                            }
-                                        }
-
-                                        newUnprocessedOrdersDB.TotalAmount += item.TotalAmout;
-                                        oldUnprocessedOrdersDB.TotalAmount -= item.TotalAmout;
-
-                                        movePorudzbinaClickBarDrlja.Items.Add(new PorudzbinaItemDrlja()
-                                        {
-                                            Kolicina = item.Quantity,
-                                            MPC = item.Item.SellingUnitPrice,
-                                            ItemIdString = item.Item.Id,
-                                            Naziv = item.Item.Name,
-                                            RBS = 0,
-                                            BrojNarudzbe = 0,
-                                            Jm = item.Item.Jm
-                                        });
-                                    }
-                                    sqliteDbContext.UnprocessedOrders.Update(newUnprocessedOrdersDB);
-                                    if (oldUnprocessedOrdersDB.TotalAmount == 0)
-                                    {
-                                        sqliteDbContext.UnprocessedOrders.Remove(oldUnprocessedOrdersDB);
+                                        itemInUnprocessedOrder.Quantity += item.Quantity;
+                                        _viewModel.DbContext.ItemsInUnprocessedOrder.Update(itemInUnprocessedOrder);
                                     }
                                     else
                                     {
-                                        sqliteDbContext.UnprocessedOrders.Update(oldUnprocessedOrdersDB);
-                                    }
-                                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-                                }
-                                else
-                                {
-                                    UnprocessedOrderDB unprocessedOrderDB = new UnprocessedOrderDB()
-                                    {
-                                        Id = Guid.NewGuid().ToString(),
-                                        CashierId = oldUnprocessedOrdersDB.CashierId,
-                                        PaymentPlaceId = paymentPlaceId,
-                                        TotalAmount = 0,
-                                    };
-                                    sqliteDbContext.UnprocessedOrders.Add(unprocessedOrderDB);
-                                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
-
-                                    movePorudzbinaClickBarDrlja.NewUnprocessedOrderId = unprocessedOrderDB.Id;
-                                    movePorudzbinaClickBarDrlja.NewSto = paymentPlaceId;
-
-                                    foreach (var item in _viewModel.SplitOrderViewModel.ItemsInvoiceForPay)
-                                    {
-                                        var itemInUnprocessedOrder = new ItemInUnprocessedOrderDB
+                                        itemInUnprocessedOrder = new ItemInUnprocessedOrderDB
                                         {
                                             ItemId = item.Item.Id,
                                             Quantity = item.Quantity,
-                                            UnprocessedOrderId = unprocessedOrderDB.Id
+                                            UnprocessedOrderId = newUnprocessedOrdersDB.Id
                                         };
-                                        sqliteDbContext.ItemsInUnprocessedOrder.Add(itemInUnprocessedOrder);
+                                        _viewModel.DbContext.ItemsInUnprocessedOrder.Add(itemInUnprocessedOrder);
+                                    }
 
+                                    var itemInOldUnprocessedOrder = _viewModel.DbContext.ItemsInUnprocessedOrder.FirstOrDefault(i => i.ItemId == item.Item.Id &&
+                                    i.UnprocessedOrderId == oldUnprocessedOrdersDB.Id);
 
-                                        var itemInOldUnprocessedOrder = sqliteDbContext.ItemsInUnprocessedOrder.FirstOrDefault(i => i.ItemId == item.Item.Id &&
-                                        i.UnprocessedOrderId == oldUnprocessedOrdersDB.Id);
-
-                                        if (itemInOldUnprocessedOrder != null)
+                                    if (itemInOldUnprocessedOrder != null)
+                                    {
+                                        if (itemInOldUnprocessedOrder.Quantity == item.Quantity)
                                         {
-                                            if (itemInOldUnprocessedOrder.Quantity == item.Quantity)
-                                            {
-                                                sqliteDbContext.ItemsInUnprocessedOrder.Remove(itemInOldUnprocessedOrder);
-                                            }
-                                            else
-                                            {
-                                                itemInOldUnprocessedOrder.Quantity -= item.Quantity;
-                                                sqliteDbContext.ItemsInUnprocessedOrder.Update(itemInOldUnprocessedOrder);
-                                            }
+                                            _viewModel.DbContext.ItemsInUnprocessedOrder.Remove(itemInOldUnprocessedOrder);
                                         }
+                                        else
+                                        {
+                                            itemInOldUnprocessedOrder.Quantity -= item.Quantity;
+                                            _viewModel.DbContext.ItemsInUnprocessedOrder.Update(itemInOldUnprocessedOrder);
+                                        }
+                                    }
 
-                                        unprocessedOrderDB.TotalAmount += item.TotalAmout;
-                                        oldUnprocessedOrdersDB.TotalAmount -= item.TotalAmout;
+                                    newUnprocessedOrdersDB.TotalAmount += item.TotalAmout;
+                                    oldUnprocessedOrdersDB.TotalAmount -= item.TotalAmout;
 
+                                    if (movePorudzbinaClickBarDrlja != null)
+                                    {
                                         movePorudzbinaClickBarDrlja.Items.Add(new PorudzbinaItemDrlja()
                                         {
                                             Kolicina = item.Quantity,
@@ -175,19 +116,95 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder.ChangePaymentPlace
                                             Jm = item.Item.Jm
                                         });
                                     }
-                                    sqliteDbContext.UnprocessedOrders.Update(unprocessedOrderDB);
+                                }
+                                _viewModel.DbContext.UnprocessedOrders.Update(newUnprocessedOrdersDB);
+                                if (oldUnprocessedOrdersDB.TotalAmount == 0)
+                                {
+                                    _viewModel.DbContext.UnprocessedOrders.Remove(oldUnprocessedOrdersDB);
+                                }
+                                else
+                                {
+                                    _viewModel.DbContext.UnprocessedOrders.Update(oldUnprocessedOrdersDB);
+                                }
+                                _viewModel.DbContext.SaveChanges();
+                            }
+                            else
+                            {
+                                UnprocessedOrderDB unprocessedOrderDB = new UnprocessedOrderDB()
+                                {
+                                    Id = Guid.NewGuid().ToString(),
+                                    CashierId = oldUnprocessedOrdersDB.CashierId,
+                                    PaymentPlaceId = paymentPlaceId,
+                                    TotalAmount = 0,
+                                };
+                                _viewModel.DbContext.UnprocessedOrders.Add(unprocessedOrderDB);
+                                _viewModel.DbContext.SaveChanges();
 
-                                    if (oldUnprocessedOrdersDB.TotalAmount == 0)
-                                    {
-                                        sqliteDbContext.UnprocessedOrders.Remove(oldUnprocessedOrdersDB);
-                                    }
-                                    else
-                                    {
-                                        sqliteDbContext.UnprocessedOrders.Update(oldUnprocessedOrdersDB);
-                                    }
-                                    RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                                if (movePorudzbinaClickBarDrlja != null)
+                                {
+                                    movePorudzbinaClickBarDrlja.NewUnprocessedOrderId = unprocessedOrderDB.Id;
+                                    movePorudzbinaClickBarDrlja.NewSto = paymentPlaceId;
                                 }
 
+                                foreach (var item in _viewModel.SplitOrderViewModel.ItemsInvoiceForPay)
+                                {
+                                    var itemInUnprocessedOrder = new ItemInUnprocessedOrderDB
+                                    {
+                                        ItemId = item.Item.Id,
+                                        Quantity = item.Quantity,
+                                        UnprocessedOrderId = unprocessedOrderDB.Id
+                                    };
+                                    _viewModel.DbContext.ItemsInUnprocessedOrder.Add(itemInUnprocessedOrder);
+
+
+                                    var itemInOldUnprocessedOrder = _viewModel.DbContext.ItemsInUnprocessedOrder.FirstOrDefault(i => i.ItemId == item.Item.Id &&
+                                    i.UnprocessedOrderId == oldUnprocessedOrdersDB.Id);
+
+                                    if (itemInOldUnprocessedOrder != null)
+                                    {
+                                        if (itemInOldUnprocessedOrder.Quantity == item.Quantity)
+                                        {
+                                            _viewModel.DbContext.ItemsInUnprocessedOrder.Remove(itemInOldUnprocessedOrder);
+                                        }
+                                        else
+                                        {
+                                            itemInOldUnprocessedOrder.Quantity -= item.Quantity;
+                                            _viewModel.DbContext.ItemsInUnprocessedOrder.Update(itemInOldUnprocessedOrder);
+                                        }
+                                    }
+
+                                    unprocessedOrderDB.TotalAmount += item.TotalAmout;
+                                    oldUnprocessedOrdersDB.TotalAmount -= item.TotalAmout;
+
+                                    if (movePorudzbinaClickBarDrlja != null)
+                                    {
+                                        movePorudzbinaClickBarDrlja.Items.Add(new PorudzbinaItemDrlja()
+                                        {
+                                            Kolicina = item.Quantity,
+                                            MPC = item.Item.SellingUnitPrice,
+                                            ItemIdString = item.Item.Id,
+                                            Naziv = item.Item.Name,
+                                            RBS = 0,
+                                            BrojNarudzbe = 0,
+                                            Jm = item.Item.Jm
+                                        });
+                                    }
+                                }
+                                _viewModel.DbContext.UnprocessedOrders.Update(unprocessedOrderDB);
+
+                                if (oldUnprocessedOrdersDB.TotalAmount == 0)
+                                {
+                                    _viewModel.DbContext.UnprocessedOrders.Remove(oldUnprocessedOrdersDB);
+                                }
+                                else
+                                {
+                                    _viewModel.DbContext.UnprocessedOrders.Update(oldUnprocessedOrdersDB);
+                                }
+                                _viewModel.DbContext.SaveChanges();
+                            }
+
+                            if (movePorudzbinaClickBarDrlja != null)
+                            {
                                 var result = await PostChangePaymentPlaceAsync(movePorudzbinaClickBarDrlja);
 
                                 if (result != 200)
@@ -199,12 +216,12 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder.ChangePaymentPlace
 
                                     Log.Error($"ClickOnPaymentPlaceChangePaymentPlaceCommand -> greška prilikom prebacivanja porudzbine na drugi sto: Code={result}");
                                 }
-
-                                _viewModel.SplitOrderViewModel.ChangePaymentPlaceWindow.Close();
-                                _viewModel.SplitOrderViewModel.PaySaleViewModel.SplitOrderWindow.Close();
-                                _viewModel.SplitOrderViewModel.PaySaleViewModel.Window.Close();
-                                _viewModel.SplitOrderViewModel.PaySaleViewModel.SaleViewModel.Reset();
                             }
+
+                            _viewModel.SplitOrderViewModel.ChangePaymentPlaceWindow.Close();
+                            _viewModel.SplitOrderViewModel.PaySaleViewModel.SplitOrderWindow.Close();
+                            _viewModel.SplitOrderViewModel.PaySaleViewModel.Window.Close();
+                            _viewModel.SplitOrderViewModel.PaySaleViewModel.SaleViewModel.Reset();
                         }
                     }
                 }

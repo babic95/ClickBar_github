@@ -1,6 +1,6 @@
 ﻿using ClickBar.Models.AppMain.Statistic;
 using ClickBar.ViewModels.AppMain.Statistic;
-using ClickBar_Database;
+using ClickBar_DatabaseSQLManager;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -38,31 +38,27 @@ namespace ClickBar.Commands.AppMain.Statistic.Parner
             {
                 try
                 {
-                    using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
+                    var partner = _currentViewModel.DbContext.Partners.Find(Convert.ToInt32(parameter));
+
+                    if (partner != null)
                     {
+                        _currentViewModel.DbContext.Partners.Remove(partner);
+                        _currentViewModel.DbContext.SaveChanges();
 
-                        var partner = sqliteDbContext.Partners.Find(Convert.ToInt32(parameter));
-
-                        if (partner != null)
+                        _currentViewModel.PartnersAll = new List<Partner>();
+                        _currentViewModel.DbContext.Partners.ToList().ForEach(x =>
                         {
-                            sqliteDbContext.Partners.Remove(partner);
-                            RetryHelper.ExecuteWithRetry(() => { sqliteDbContext.SaveChanges(); });
+                            _currentViewModel.PartnersAll.Add(new Partner(x));
+                        });
 
-                            _currentViewModel.PartnersAll = new List<Partner>();
-                            sqliteDbContext.Partners.ToList().ForEach(x =>
-                            {
-                                _currentViewModel.PartnersAll.Add(new Partner(x));
-                            });
+                        _currentViewModel.Partners = new ObservableCollection<Partner>(_currentViewModel.PartnersAll);
+                        _currentViewModel.CurrentPartner = new Partner();
 
-                            _currentViewModel.Partners = new ObservableCollection<Partner>(_currentViewModel.PartnersAll);
-                            _currentViewModel.CurrentPartner = new Partner();
-
-                            MessageBox.Show("Uspešno ste obrisali firmu partnera!", "Uspešno brisanje", MessageBoxButton.OK, MessageBoxImage.Information);
-                        }
-                        else
-                        {
-                            MessageBox.Show("Ne postoji firma partner!", "Ne postoji", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        }
+                        MessageBox.Show("Uspešno ste obrisali firmu partnera!", "Uspešno brisanje", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Ne postoji firma partner!", "Ne postoji", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                 }
                 catch
