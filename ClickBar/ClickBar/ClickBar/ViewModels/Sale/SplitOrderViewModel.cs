@@ -30,6 +30,7 @@ namespace ClickBar.ViewModels.Sale
         private string _quantity;
         private bool _firstChangeQuantity;
         private readonly IServiceProvider _serviceProvider;
+        private readonly Lazy<PayCommand<SplitOrderViewModel>> _payCommand;
         #endregion Fields
 
         #region Constructors
@@ -42,7 +43,8 @@ namespace ClickBar.ViewModels.Sale
             ItemsInvoice = PaySaleViewModel.ItemsInvoice;
             TotalAmount = PaySaleViewModel.TotalAmount;
             ItemsInvoiceForPay = new ObservableCollection<ItemInvoice>();
-            PayCommand = _serviceProvider.GetRequiredService<PayCommand<SplitOrderViewModel>>();
+            _payCommand = new Lazy<PayCommand<SplitOrderViewModel>>(() => new PayCommand<SplitOrderViewModel>(this));
+            //PayCommand = _serviceProvider.GetRequiredService<PayCommand<SplitOrderViewModel>>();
             ChangePaymentPlaceCommand = _serviceProvider.GetRequiredService<ChangePaymentPlaceCommand>();
 
             Quantity = "1";
@@ -134,7 +136,7 @@ namespace ClickBar.ViewModels.Sale
 
         #region Commands
         public ICommand CancelCommand => new CancelCommand(this);
-        public ICommand PayCommand { get; }
+        public ICommand PayCommand => _payCommand.Value;
         public ICommand StornoKuhinjaCommand => new StornoKuhinjaCommand(this);
         public ICommand ChangePaymentPlaceCommand { get; }
         public ICommand MoveToOrderCommand => new MoveToOrderCommand(this);

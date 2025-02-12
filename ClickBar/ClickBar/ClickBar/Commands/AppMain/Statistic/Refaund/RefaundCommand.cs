@@ -199,9 +199,9 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
                         }
 
                         var payRefaundViewModel = _serviceProvider.GetRequiredService<PayRefaundViewModel>();
-                        payRefaundViewModel.Initialize(refaundViewModel.DbContext, _serviceProvider.GetRequiredService<PayRefaundWindow>(), refaundViewModel);
-
                         PayRefaundWindow payRefaundWindow = new PayRefaundWindow(payRefaundViewModel);
+                        payRefaundViewModel.Initialize(refaundViewModel.DbContext, payRefaundWindow, refaundViewModel);
+
                         payRefaundWindow.Show();
                     }
                     else

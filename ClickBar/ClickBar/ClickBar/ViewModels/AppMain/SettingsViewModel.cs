@@ -35,7 +35,6 @@ namespace ClickBar.ViewModels.AppMain
             _serviceProvider = serviceProvider;
             DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             _loggedCashier = serviceProvider.GetRequiredService<CashierDB>();
-            _mainViewModel = serviceProvider.GetRequiredService<AppMainViewModel>();
 
             AllPrinters = new ObservableCollection<string>();
             foreach (string printer in PrinterSettings.InstalledPrinters)
@@ -57,6 +56,11 @@ namespace ClickBar.ViewModels.AppMain
         #endregion Internal Properties
 
         #region Properties
+        public AppMainViewModel MainViewModel
+        {
+            get => _mainViewModel;
+            set => _mainViewModel = value;
+        }
         public Settings Settings
         {
             get { return _settings; }

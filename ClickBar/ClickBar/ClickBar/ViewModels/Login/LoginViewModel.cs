@@ -42,7 +42,9 @@ namespace ClickBar.ViewModels.Login
             Name = "CleanCodeSirmium"
         };
 
-        public LoginViewModel(IServiceProvider serviceProvider, IDbContextFactory<SqlServerDbContext> dbContextFactory, IDbContextFactory<SqliteDrljaDbContext> drljaDbContextFactory)
+        public LoginViewModel(IServiceProvider serviceProvider,
+            IDbContextFactory<SqlServerDbContext> dbContextFactory,
+            IDbContextFactory<SqliteDrljaDbContext> drljaDbContextFactory)
         {
             _serviceProvider = serviceProvider;
             DbContext = dbContextFactory.CreateDbContext();

@@ -22,19 +22,11 @@ namespace ClickBar.Views.Sale.PaySale
     /// </summary>
     public partial class PaySaleWindow : Window
     {
-        private readonly IServiceProvider _serviceProvider;
-
-        public PaySaleWindow(IServiceProvider serviceProvider, SaleViewModel saleViewModel)
+        public PaySaleWindow(SaleViewModel saleViewModel)
         {
-            _serviceProvider = serviceProvider;
             InitializeComponent();
 
-
-            // Kreiranje instance SplitOrderViewModel-a koristeći IServiceProvider
-            var paySaleViewModel = _serviceProvider.GetRequiredService<PaySaleViewModel>();
-            paySaleViewModel.SaleViewModel = saleViewModel;
-
-            DataContext = paySaleViewModel;
+            DataContext = saleViewModel;
 
             Focusable = true;
 

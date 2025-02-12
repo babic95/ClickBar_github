@@ -52,7 +52,6 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         private const int ERROR_LOCK_VIOLATION = 33;
 
         private DateTime _timer;
-        private AppMainViewModel _mainViewModel;
 
         //private FocusRefaundEnumeration _focus;
         private ObservableCollection<Invoice> _searchInvoices;
@@ -77,8 +76,6 @@ namespace ClickBar.ViewModels.AppMain.Statistic
 
             DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             LoggedCashier = serviceProvider.GetRequiredService<CashierDB>();
-            _mainViewModel = serviceProvider.GetRequiredService<AppMainViewModel>();
-            RefaundCommand = serviceProvider.GetRequiredService<RefaundCommand>();
 
             Initialize();
         }
@@ -398,9 +395,8 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #region Commands
         //public ICommand ClickOnNumberButtonCommand => new ClickOnNumberButtonCommand(this);
         //public ICommand ChangeFocusCommand => new ChangeFocusCommand(this);
-        public ICommand UpdateCurrentViewModelCommand => new UpdateCurrentViewModelCommand(_mainViewModel);
         public ICommand CancelCurrentRefaundInvoiceCommand => new CancelCurrentRefaundInvoiceCommand(this);
-        public ICommand RefaundCommand { get; }
+        public ICommand RefaundCommand => new RefaundCommand(_serviceProvider, this);
         public ICommand EfakturaCommand => new EfakturaCommand(this);
         public ICommand ShowInvoiceCommand => new ShowInvoiceCommand(this);
         //public ICommand RefundPerItemCommand => new RefundPerItemCommand(this);
@@ -890,7 +886,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             DbContext.SaveChanges();
 
             int itemInvoiceId = 0;
-            invoiceRequset.Items.ToList().ForEach(item =>
+            invoiceRequset.Items.ToList().ForEach(async item =>
             {
                 ItemDB? itemDB = DbContext.Items.Find(item.Id);
                 if (itemDB != null)
@@ -902,7 +898,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                         if (norms != null &&
                         norms.Any())
                         {
-                            norms.ForEachAsync(norm =>
+                            await norms.ForEachAsync(norm =>
                             {
                                 var normItem = DbContext.Items.Find(norm.IdItem);
 
@@ -986,7 +982,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         {
             List<ItemDB> itemsForCondition = new List<ItemDB>();
 
-            invoice.ItemInvoices.ToList().ForEach(item =>
+            invoice.ItemInvoices.ToList().ForEach(async item =>
             {
                 var it = DbContext.Items.Find(item.ItemCode);
                 if (it != null &&
@@ -997,7 +993,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                     if (itemInNorm != null &&
                     itemInNorm.Any())
                     {
-                        itemInNorm.ForEachAsync(norm =>
+                        await itemInNorm.ForEachAsync(norm =>
                         {
                             var itm = DbContext.Items.Find(norm.IdItem);
 

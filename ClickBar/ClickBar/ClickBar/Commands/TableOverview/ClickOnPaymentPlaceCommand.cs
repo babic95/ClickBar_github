@@ -132,7 +132,7 @@ namespace ClickBar.Commands.TableOverview
                     MessageBoxImage.Error);
             }
         }
-        private void ChargeOrder(Order order)
+        private async void ChargeOrder(Order order)
         {
             try
             {
@@ -153,7 +153,7 @@ namespace ClickBar.Commands.TableOverview
                         if (nrudzbine != null &&
                             nrudzbine.Any())
                         {
-                            nrudzbine.ForEachAsync(n =>
+                            await nrudzbine.ForEachAsync(n =>
                             {
                                 n.TR_FAZA = 3;
                                 _viewModel.DrljaDbContext.Narudzbine.Update(n);

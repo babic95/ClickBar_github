@@ -30,7 +30,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
             return true;
         }
 
-        public void Execute(object parameter)
+        public async void Execute(object parameter)
         {
             try
             {
@@ -89,7 +89,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                     _currentViewModel.AllGroupItems = new ObservableCollection<GroupItems>();
                     _currentViewModel.AllGroups = new ObservableCollection<GroupItems>() { new GroupItems(-1, -1, "Sve grupe") };
 
-                    _currentViewModel.DbContext.ItemGroups.ForEachAsync(gropu =>
+                    await _currentViewModel.DbContext.ItemGroups.ForEachAsync(gropu =>
                     {
                         _currentViewModel.AllGroupItems.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
                         _currentViewModel.AllGroups.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));

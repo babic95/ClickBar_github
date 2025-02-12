@@ -43,7 +43,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                 DbContext.Supergroups.ForEachAsync(supergroup =>
                 {
                     AllSupergroups.Add(new Supergroup(supergroup.Id, supergroup.Name));
-                });
+                }).Wait();
 
                 CurrentSupergroupSearch = AllSupergroups.FirstOrDefault();
             }

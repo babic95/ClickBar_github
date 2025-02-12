@@ -151,7 +151,7 @@ namespace ClickBar.Commands.AppMain.Statistic
             addEditSupplierViewModel.CurrentSupplier = new Supplier();
         }
     
-        private void AddEditItem(string? id = null)
+        private async void AddEditItem(string? id = null)
         {
             InventoryStatusViewModel inventoryStatusViewModel = (InventoryStatusViewModel)_currentViewModel;
 
@@ -264,7 +264,7 @@ namespace ClickBar.Commands.AppMain.Statistic
                             if (inventoryStatusViewModel.DbContext.Items != null &&
                             inventoryStatusViewModel.DbContext.Items.Any())
                             {
-                                inventoryStatusViewModel.DbContext.Items.Where(i => i.IdNorm != null)
+                                await inventoryStatusViewModel.DbContext.Items.Where(i => i.IdNorm != null)
                                     .ForEachAsync(itemDB =>
                                     {
                                         var itemInNorm = inventoryStatusViewModel.DbContext.ItemsInNorm.Where(i => i.IdNorm == itemDB.IdNorm);
@@ -281,7 +281,7 @@ namespace ClickBar.Commands.AppMain.Statistic
 
                             inventoryStatusViewModel.InventoryStatusAll = new List<Invertory>();
 
-                            inventoryStatusViewModel.DbContext.Items.ForEachAsync(x =>
+                            await inventoryStatusViewModel.DbContext.Items.ForEachAsync(x =>
                             {
                                 Item item = new Item(x);
 
@@ -425,7 +425,7 @@ namespace ClickBar.Commands.AppMain.Statistic
                         if (inventoryStatusViewModel.DbContext.Items != null &&
                             inventoryStatusViewModel.DbContext.Items.Any())
                         {
-                            inventoryStatusViewModel.DbContext.Items.Where(i => i.IdNorm != null)
+                            await inventoryStatusViewModel.DbContext.Items.Where(i => i.IdNorm != null)
                                 .ForEachAsync(itemDB =>
                                 {
                                     var itemInNorm = inventoryStatusViewModel.DbContext.ItemsInNorm.Where(i => i.IdNorm == itemDB.IdNorm);
@@ -441,7 +441,7 @@ namespace ClickBar.Commands.AppMain.Statistic
                         }
 
                         inventoryStatusViewModel.InventoryStatusAll = new List<Invertory>();
-                        inventoryStatusViewModel.DbContext.Items.ToList().ForEach(x =>
+                        await inventoryStatusViewModel.DbContext.Items.ForEachAsync(x =>
                         {
                             Item item = new Item(x);
 

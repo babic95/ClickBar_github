@@ -38,7 +38,7 @@ namespace ClickBar.Commands.AppMain.Statistic.LagerLista
             return true;
         }
 
-        public void Execute(object parameter)
+        public async void Execute(object parameter)
         {
             try
             {
@@ -58,7 +58,7 @@ namespace ClickBar.Commands.AppMain.Statistic.LagerLista
                     pocetnoStanjeDB = pocetnaStanja.OrderByDescending(p => p.PopisDate).FirstOrDefault();
                 }
 
-                _currentViewModel.DbContext.Supergroups.ForEachAsync(s =>
+                await _currentViewModel.DbContext.Supergroups.ForEachAsync(s =>
                 {
                     var ss = s.Name.ToLower();
 

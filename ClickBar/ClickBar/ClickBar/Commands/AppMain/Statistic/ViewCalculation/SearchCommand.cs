@@ -30,7 +30,7 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
             return true;
         }
 
-        public void Execute(object parameter)
+        public async void Execute(object parameter)
         {
             _currentViewModel.TotalInputPrice = 0;
             _currentViewModel.TotalOutputPrice = 0;
@@ -59,7 +59,7 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
                 if (calculations != null &&
                     calculations.Any())
                 {
-                    calculations.ForEachAsync(cal =>
+                    await calculations.ForEachAsync(cal =>
                     {
                         Models.AppMain.Statistic.Calculation calculation = new Models.AppMain.Statistic.Calculation()
                         {
@@ -101,7 +101,7 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
                     if (calculations != null &&
                         calculations.Any())
                     {
-                        calculations.ForEachAsync(cal =>
+                        await calculations.ForEachAsync(cal =>
                         {
                             Models.AppMain.Statistic.Calculation calculation = new Models.AppMain.Statistic.Calculation()
                             {
@@ -141,7 +141,7 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
                     if (calculations != null &&
                         calculations.Any())
                     {
-                        calculations.ForEachAsync(cal =>
+                        await calculations.ForEachAsync(cal =>
                         {
                             Models.AppMain.Statistic.Calculation calculation = new Models.AppMain.Statistic.Calculation()
                             {
@@ -180,7 +180,7 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
                     if (calculations != null &&
                         calculations.Any())
                     {
-                        calculations.ForEachAsync(cal =>
+                        await calculations.ForEachAsync(cal =>
                         {
                             Models.AppMain.Statistic.Calculation calculation = new Models.AppMain.Statistic.Calculation()
                             {

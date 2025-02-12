@@ -1,4 +1,5 @@
-﻿using ClickBar.ViewModels;
+﻿using ClickBar.State.Navigators;
+using ClickBar.ViewModels;
 using System.Windows;
 
 namespace ClickBar
@@ -10,10 +11,10 @@ namespace ClickBar
     {
         private MainViewModel _mainViewModel;
 
-        public MainWindow(MainViewModel mainViewModel)
+        public MainWindow(INavigator mainViewModel)
         {
             InitializeComponent();
-            _mainViewModel = mainViewModel;
+            _mainViewModel = mainViewModel as MainViewModel;
             _mainViewModel.Window = this; // Set the Window property here
             DataContext = _mainViewModel;
         }

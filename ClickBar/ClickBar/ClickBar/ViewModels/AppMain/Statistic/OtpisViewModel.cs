@@ -53,7 +53,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             {
                 Invertory item = new Invertory(new Item(itemDB), -1, itemDB.TotalQuantity, 0, 0, false);
                 _allItems.Add(item);
-            });
+            }).Wait();
 
             Items = new ObservableCollection<Invertory>(_allItems);
 

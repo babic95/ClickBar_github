@@ -22,7 +22,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
         }
 
         [HttpGet("allArtikli")]
-        public IActionResult AllArtikli()
+        public async Task<IActionResult> AllArtikli()
         {
             List<Nadgrupa> nadgrupe = new List<Nadgrupa>();
 
@@ -37,7 +37,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
             if (artikliDB != null &&
                 artikliDB.Any())
             {
-                artikliDB.ForEachAsync(artikalDB =>
+                await artikliDB.ForEachAsync(async artikalDB =>
                 {
                     if (artikalDB.Group.Group.Name.ToLower() != "sirovina" &&
                        artikalDB.Group.Group.Name.ToLower() != "sirovine" &&
@@ -72,7 +72,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
                         if (zelje != null &&
                         zelje.Any())
                         {
-                            zelje.ForEachAsync(z =>
+                            await zelje.ForEachAsync(z =>
                             {
                                 Zelja zelja = new Zelja(z);
 

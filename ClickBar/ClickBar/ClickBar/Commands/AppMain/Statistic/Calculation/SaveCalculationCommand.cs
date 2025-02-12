@@ -703,7 +703,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
             if (proknjizeniPazariDB != null &&
                 proknjizeniPazariDB.Any())
             {
-                await proknjizeniPazariDB.ForEachAsync(kp =>
+                await proknjizeniPazariDB.ForEachAsync(async kp =>
                 {
                     var kep = _dbContext.Kep.Where(kep => kep.KepDate.Date == kp.IssueDateTime.Date &&
                     kep.Type >= (int)KepStateEnumeration.Dnevni_Pazar_Prodaja_Gotovina && kep.Type <= (int)KepStateEnumeration.Dnevni_Pazar_Refundacija_Virman);
@@ -711,7 +711,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                     if (kep != null &&
                     kep.Any())
                     {
-                        kep.ForEachAsync(k =>
+                        await kep.ForEachAsync(async k =>
                         {
                             PaymentTypeEnumeration? paymentType = null;
 
@@ -758,7 +758,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                                 {
                                     k.Razduzenje = 0;
                                     k.Zaduzenje = 0;
-                                    invoices.ForEachAsync(invoice =>
+                                    await invoices.ForEachAsync(async invoice =>
                                     {
                                         var itemsInInvoice = _dbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoice.Id &&
                                         (itemInvoice.IsSirovina == null || itemInvoice.IsSirovina == 0));
@@ -766,7 +766,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                                         if (itemsInInvoice != null &&
                                         itemsInInvoice.Any())
                                         {
-                                            itemsInInvoice.ForEachAsync(item =>
+                                            await itemsInInvoice.ForEachAsync(item =>
                                             {
                                                 var itemDB = _dbContext.Items.Find(item.ItemCode);
 
@@ -904,7 +904,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
             {
                 proknjizeniPazari = proknjizeniPazari.OrderBy(paz => paz.KnjizenjeInvoice.Invoice.SdcDateTime);
 
-                await proknjizeniPazari.ForEachAsync(prPazar =>
+                await proknjizeniPazari.ForEachAsync(async prPazar =>
                 {
                     if (kalkulacije != null &&
                         kalkulacije.Any())
@@ -917,7 +917,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                         {
                             kalkulacijeForDate = kalkulacijeForDate.OrderBy(kal => kal.Cal.CalculationDate);
 
-                            kalkulacijeForDate.ForEachAsync(kal =>
+                            await kalkulacijeForDate.ForEachAsync(kal =>
                             {
                                 if (!kalkulacijeOdradjene.Any() ||
                                 !kalkulacijeOdradjene.Contains(kal.Cal.Id))
@@ -960,7 +960,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                         {
                             neproknjizeniPazariForDate = neproknjizeniPazariForDate.OrderBy(paz => paz.Inv.SdcDateTime);
 
-                            neproknjizeniPazariForDate.ForEachAsync(paz =>
+                            await neproknjizeniPazariForDate.ForEachAsync(paz =>
                             {
                                 if (!neproknjizeni.Any() ||
                                 !neproknjizeni.Contains(paz.Inv.Id))
@@ -1003,7 +1003,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                 {
                     neproknjizeniPazari = neproknjizeniPazari.OrderBy(paz => paz.Inv.SdcDateTime);
 
-                    await neproknjizeniPazari.ForEachAsync(pazar =>
+                    await neproknjizeniPazari.ForEachAsync(async pazar =>
                     {
                         if (kalkulacije != null &&
                             kalkulacije.Any())
@@ -1016,7 +1016,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                             {
                                 kalkulacijeForDate = kalkulacijeForDate.OrderBy(kal => kal.Cal.CalculationDate);
 
-                                kalkulacijeForDate.ForEachAsync(kal =>
+                                await kalkulacijeForDate.ForEachAsync(kal =>
                                 {
                                     if (!kalkulacijeOdradjene.Any() ||
                                     !kalkulacijeOdradjene.Contains(kal.Cal.Id))
@@ -1161,7 +1161,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
             if (proknjizeniPazari != null &&
                 proknjizeniPazari.Any())
             {
-                await proknjizeniPazari.ForEachAsync(prPazar =>
+                await proknjizeniPazari.ForEachAsync(async prPazar =>
                 {
                     var neproknjizeniPazariForDate = neproknjizeniPazari.Where(paz => paz.Inv.SdcDateTime.HasValue &&
                     prPazar.KnjizenjeInvoice.Invoice.SdcDateTime.HasValue &&
@@ -1170,7 +1170,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                     if (neproknjizeniPazariForDate != null &&
                     neproknjizeniPazariForDate.Any())
                     {
-                        neproknjizeniPazariForDate.ForEachAsync(paz =>
+                        await neproknjizeniPazariForDate.ForEachAsync(paz =>
                         {
                             if (!neproknjizeni.Any() ||
                             !neproknjizeni.Contains(paz.Inv.Id))
@@ -1199,7 +1199,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                         if (kalkulacijeForDate != null &&
                         kalkulacijeForDate.Any())
                         {
-                            kalkulacijeForDate.ForEachAsync(kal =>
+                            await kalkulacijeForDate.ForEachAsync(kal =>
                             {
                                 if (!kalkulacijeOdradjene.Any() ||
                                 !kalkulacijeOdradjene.Contains(kal.Cal.Id))
@@ -1236,7 +1236,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
             if (neproknjizeniPazari != null &&
                 neproknjizeniPazari.Any())
             {
-                await neproknjizeniPazari.ForEachAsync(pazar =>
+                await neproknjizeniPazari.ForEachAsync(async pazar =>
                 {
                     if (pazar.InvItem.Quantity.HasValue)
                     {
@@ -1252,7 +1252,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                         if (kalkulacijeForDate != null &&
                             kalkulacijeForDate.Any())
                         {
-                            kalkulacijeForDate.ForEachAsync(kal =>
+                            await kalkulacijeForDate.ForEachAsync(kal =>
                             {
                                 if (!kalkulacijeOdradjene.Any() ||
                                     !kalkulacijeOdradjene.Contains(kal.Cal.Id))
@@ -1344,7 +1344,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
             {
                 proknjizeniPazari = proknjizeniPazari.OrderBy(paz => paz.KnjizenjeInvoice.Invoice.SdcDateTime);
 
-                await proknjizeniPazari.ForEachAsync(prPazar =>
+                await proknjizeniPazari.ForEachAsync(async prPazar =>
                 {
                     if (kalkulacije != null &&
                         kalkulacije.Any())
@@ -1357,7 +1357,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                         {
                             kalkulacijeForDate = kalkulacijeForDate.OrderBy(kal => kal.Cal.CalculationDate);
 
-                            kalkulacijeForDate.ForEachAsync(kal =>
+                            await kalkulacijeForDate.ForEachAsync(kal =>
                             {
                                 if (!kalkulacijeOdradjene.Any() ||
                                 !kalkulacijeOdradjene.Contains(kal.Cal.Id))
@@ -1399,7 +1399,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                         {
                             neproknjizeniPazariForDate = neproknjizeniPazariForDate.OrderBy(paz => paz.Inv.SdcDateTime);
 
-                            neproknjizeniPazariForDate.ForEachAsync(paz =>
+                            await neproknjizeniPazariForDate.ForEachAsync(paz =>
                             {
                                 if (!neproknjizeni.Any() ||
                                 !neproknjizeni.Contains(paz.Inv.Id))
@@ -1447,7 +1447,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
             {
                 neproknjizeniPazari = neproknjizeniPazari.OrderBy(paz => paz.Inv.SdcDateTime);
 
-                await neproknjizeniPazari.ForEachAsync(pazar =>
+                await neproknjizeniPazari.ForEachAsync(async pazar =>
                 {
                     if (kalkulacije != null &&
                         kalkulacije.Any())
@@ -1460,7 +1460,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                         {
                             kalkulacijeForDate = kalkulacijeForDate.OrderBy(kal => kal.Cal.CalculationDate);
 
-                            kalkulacijeForDate.ForEachAsync(kal =>
+                            await kalkulacijeForDate.ForEachAsync(kal =>
                             {
                                 if (!kalkulacijeOdradjene.Any() ||
                                 !kalkulacijeOdradjene.Contains(kal.Cal.Id))

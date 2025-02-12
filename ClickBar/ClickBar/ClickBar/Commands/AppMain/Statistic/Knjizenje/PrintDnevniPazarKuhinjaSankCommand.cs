@@ -45,7 +45,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
             return true;
         }
 
-        public void Execute(object parameter)
+        public async void Execute(object parameter)
         {
             var result = MessageBox.Show("Da li želite da štampate i SIROVINE?",
                 "Štampanje sirovina",
@@ -77,7 +77,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
             }
             else if (p == "S")
             {
-                _dbContext.Supergroups.ForEachAsync(s =>
+                await _dbContext.Supergroups.ForEachAsync(s =>
                 {
                     var ss = s.Name.ToLower();
 

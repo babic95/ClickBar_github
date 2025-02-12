@@ -51,7 +51,6 @@ namespace ClickBar.ViewModels.AppMain
             _serviceProvider = serviceProvider;
             DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             _loggedCashier = serviceProvider.GetRequiredService<CashierDB>();
-            _mainViewModel = serviceProvider.GetRequiredService<AppMainViewModel>();
             //CheckedInventoryStatus();
         }
         #endregion Constructors
@@ -63,6 +62,11 @@ namespace ClickBar.ViewModels.AppMain
         }
         #endregion Internal Properties
         #region Properties
+        public AppMainViewModel MainViewModel
+        {
+            get => _mainViewModel;
+            set => _mainViewModel = value;
+        }
         public ViewModelBase CurrentViewModel
         {
             get { return _currentViewModel; }

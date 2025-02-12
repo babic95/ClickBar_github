@@ -39,6 +39,7 @@ namespace ClickBar.ViewModels.Sale
     {
         #region Fields
         private IServiceProvider _serviceProvider;
+        private readonly Lazy<PayCommand<PaySaleViewModel>> _payCommand;
 
         private FocusEnumeration _focus;
 
@@ -83,7 +84,8 @@ namespace ClickBar.ViewModels.Sale
             var saleViewModel = serviceProvider.GetRequiredService<SaleViewModel>();
 
             DrljaDbContext = drljaDbContext;
-            PayCommand = _serviceProvider.GetRequiredService<PayCommand<PaySaleViewModel>>();
+            _payCommand = new Lazy<PayCommand<PaySaleViewModel>>(() => new PayCommand<PaySaleViewModel>(this));
+            //PayCommand = _serviceProvider.GetRequiredService<PayCommand<PaySaleViewModel>>();
             SplitOrderCommand = _serviceProvider.GetRequiredService<SplitOrderCommand>();
 #if CRNO
             VisibilityBlack = Visibility.Hidden;
@@ -115,7 +117,7 @@ namespace ClickBar.ViewModels.Sale
             DbContext.Partners.ForEachAsync(partner =>
             {
                 Partners.Add(new Partner(partner));
-            });
+            }).Wait();
             CurrentPartner = new Partner();
 
         }
@@ -702,7 +704,7 @@ namespace ClickBar.ViewModels.Sale
         #region Commands
         public ICommand CancelCommand => new CancelCommand(this);
         public ICommand ClickOnNumberButtonCommand => new ClickOnNumberButtonCommand(this);
-        public ICommand PayCommand { get; }
+        public ICommand PayCommand => _payCommand.Value;
         public ICommand SplitOrderCommand { get; }
         public ICommand ChangeFocusCommand => new ChangeFocusCommand(this);
         #endregion Commands

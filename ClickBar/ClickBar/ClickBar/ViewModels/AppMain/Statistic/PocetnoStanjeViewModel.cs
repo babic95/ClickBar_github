@@ -110,7 +110,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                                     items.Add(pocetnoStanjeItem);
                                 }
                             }
-                        });
+                        }).Wait();
 
                         if (CurrentPocetnoStanje == null)
                         {
@@ -126,26 +126,33 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                     {
                         List<PocetnoStanjeItem> items = new List<PocetnoStanjeItem>();
 
-                        DbContext.Items.Where(i => i.IdNorm == null).ForEachAsync(itemDB =>
+                        foreach(var itemDB in DbContext.Items.Where(i => i.IdNorm == null))
                         {
-                            Item item = new Item(itemDB);
-                            var group = DbContext.ItemGroups.Find(itemDB.IdItemGroup);
-
-                            if (group != null)
+                            try
                             {
-                                bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
-                                Invertory invertory = new Invertory(item,
-                                    itemDB.IdItemGroup,
-                                    itemDB.TotalQuantity,
-                                    itemDB.InputUnitPrice != null && itemDB.InputUnitPrice.HasValue ? itemDB.InputUnitPrice.Value : 0,
-                                    itemDB.AlarmQuantity,
-                                    isSirovina);
+                                Item item = new Item(itemDB);
+                                var group = DbContext.ItemGroups.Find(itemDB.IdItemGroup);
 
-                                PocetnoStanjeItem pocetnoStanjeItem = new PocetnoStanjeItem(invertory);
+                                if (group != null)
+                                {
+                                    bool isSirovina = group.Name.ToLower().Contains("sirovina") || group.Name.ToLower().Contains("sirovine") ? true : false;
+                                    Invertory invertory = new Invertory(item,
+                                        itemDB.IdItemGroup,
+                                        itemDB.TotalQuantity,
+                                        itemDB.InputUnitPrice != null && itemDB.InputUnitPrice.HasValue ? itemDB.InputUnitPrice.Value : 0,
+                                        itemDB.AlarmQuantity,
+                                        isSirovina);
 
-                                items.Add(pocetnoStanjeItem);
+                                    PocetnoStanjeItem pocetnoStanjeItem = new PocetnoStanjeItem(invertory);
+
+                                    items.Add(pocetnoStanjeItem);
+                                }
                             }
-                        });
+                            catch(Exception ex)
+                            {
+                                Console.WriteLine(ex.Message);
+                            }
+                        }
 
                         CurrentPocetnoStanje = new PocetnoStanje(items);
                         FilteredItems = CollectionViewSource.GetDefaultView(CurrentPocetnoStanje.Items);

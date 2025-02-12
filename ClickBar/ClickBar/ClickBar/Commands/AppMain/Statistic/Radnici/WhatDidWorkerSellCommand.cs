@@ -31,7 +31,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Radnici
             return true;
         }
 
-        public void Execute(object parameter)
+        public async void Execute(object parameter)
         {
             try
             {
@@ -54,7 +54,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Radnici
                         _currentViewModel.WhatDidWorkerSells = new ObservableCollection<WhatDidWorkerSell>();
                         _currentViewModel.Total = 0;
 
-                        items.ForEachAsync(item =>
+                        await items.ForEachAsync(item =>
                         {
                             var itemDB = _currentViewModel.DbContext.Items.Find(item.Item.ItemCode);
                             if (itemDB != null &&

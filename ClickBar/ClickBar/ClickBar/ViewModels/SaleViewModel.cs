@@ -29,6 +29,7 @@ namespace ClickBar.ViewModels
         #region Fields
         private IServiceProvider _serviceProvider;
         private readonly Lazy<UpdateCurrentAppStateViewModelCommand> _updateCurrentAppStateViewModelCommand;
+        private readonly Lazy<PayCommand<SaleViewModel>> _payCommand;
 
         private AppMainViewModel _mainViewModel;
         private string _cashierNema;
@@ -67,7 +68,9 @@ namespace ClickBar.ViewModels
         #endregion Fields
 
         #region Constructors
-        public SaleViewModel(IServiceProvider serviceProvider, IDbContextFactory<SqlServerDbContext> dbContextFactory, IDbContextFactory<SqliteDrljaDbContext> drljaDbContextFactory)
+        public SaleViewModel(IServiceProvider serviceProvider,
+            IDbContextFactory<SqlServerDbContext> dbContextFactory,
+            IDbContextFactory<SqliteDrljaDbContext> drljaDbContextFactory)
         {
             _serviceProvider = serviceProvider;
             DbContext = dbContextFactory.CreateDbContext();
@@ -76,7 +79,8 @@ namespace ClickBar.ViewModels
             LoggedCashier = serviceProvider.GetRequiredService<CashierDB>();
             //TableOverviewCommand = serviceProvider.GetRequiredService<TableOverviewCommand>();
             //HookOrderOnTableCommand = serviceProvider.GetRequiredService<HookOrderOnTableCommand>();
-            PayCommand = _serviceProvider.GetRequiredService<PayCommand<SaleViewModel>>();
+            //PayCommand = _serviceProvider.GetRequiredService<PayCommand<SaleViewModel>>();
+            _payCommand = new Lazy<PayCommand<SaleViewModel>>(() => new PayCommand<SaleViewModel>(this));
 
             var comPort = SettingsManager.Instance.GetComPort();
 
@@ -131,7 +135,7 @@ namespace ClickBar.ViewModels
 
             RunTimer();
 
-            TableOverviewViewModel = new TableOverviewViewModel(_serviceProvider, dbContextFactory, drljaDbContextFactory);
+            TableOverviewViewModel = new TableOverviewViewModel(_serviceProvider, dbContextFactory, drljaDbContextFactory, this);
 
             if (SettingsManager.Instance.EnableTableOverview())
             {
@@ -379,11 +383,11 @@ namespace ClickBar.ViewModels
         public ICommand SelectGroupCommand => new SelectGroupCommand(this);
         public ICommand SelectItemCommand => new SelectItemCommand(this);
         public ICommand ResetAllCommand => new ResetAllCommand(this);
-        public ICommand PayCommand { get; }
+        public ICommand PayCommand => _payCommand.Value;
         public ICommand HookOrderOnTableCommand => new HookOrderOnTableCommand(this, _serviceProvider);
         //public ICommand HookOrderOnTableCommand { get; }
         //public ICommand TableOverviewCommand { get; }
-        public ICommand TableOverviewCommand => new TableOverviewCommand(this, _serviceProvider);
+        public ICommand TableOverviewCommand => new TableOverviewCommand(this);
         public ICommand ReduceQuantityCommand => new ReduceQuantityCommand(this);
         public ICommand PrintReportCommand => new PrintReportCommand(this);
         public ICommand RemoveOrderCommand => new RemoveOrderCommand(this);
@@ -417,7 +421,7 @@ namespace ClickBar.ViewModels
 
             var dbContextFactory = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
             var drljaDbContextFactory = _serviceProvider.GetRequiredService<IDbContextFactory<SqliteDrljaDbContext>>();
-            TableOverviewViewModel = new TableOverviewViewModel(_serviceProvider, dbContextFactory, drljaDbContextFactory);
+            TableOverviewViewModel = new TableOverviewViewModel(_serviceProvider, dbContextFactory, drljaDbContextFactory, this);
         }
 
         internal void SendToDisplay(string nameItem, string? priceItem = null)

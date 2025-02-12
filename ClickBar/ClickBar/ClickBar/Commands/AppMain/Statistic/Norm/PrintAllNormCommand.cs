@@ -30,7 +30,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
             return true;
         }
 
-        public void Execute(object parameter)
+        public async void Execute(object parameter)
         {
             //var allNorms = sqliteDbContext.Norms.Join(sqliteDbContext.Items, 
             //    norm => norm.Id,
@@ -52,7 +52,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
             {
                 Dictionary<string, Dictionary<string, List<NormGlobal>>> norms = new Dictionary<string, Dictionary<string, List<NormGlobal>>>();
 
-                allNorms.ForEachAsync(norm =>
+                await allNorms.ForEachAsync(async norm =>
                 {
                     var groupNorm = _currentViewModel.DbContext.ItemGroups.Find(norm.IdItemGroup);
 
@@ -74,7 +74,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                             if (normItems != null &&
                             normItems.Any())
                             {
-                                normItems.ForEachAsync(itemInNorm =>
+                                await normItems.ForEachAsync(itemInNorm =>
                                 {
                                     var itemDB = _currentViewModel.DbContext.Items.Find(itemInNorm.IdItem);
 

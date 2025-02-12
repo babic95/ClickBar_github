@@ -21,13 +21,13 @@ namespace ClickBar_Porudzbine.Server.Controllers
         }
 
         [HttpGet("allUsers")]
-        public IActionResult AllUsers()
+        public async Task<IActionResult> AllUsers()
         {
             if (sqliteDbContext.Cashiers != null &&
                 sqliteDbContext.Cashiers.Any())
             {
                 List<User> users = new List<User>();
-                sqliteDbContext.Cashiers.Where(c => c.Type == 0)
+                await sqliteDbContext.Cashiers.Where(c => c.Type == 0)
                     .ForEachAsync(radnik =>
                 {
                     User user = new User(radnik);

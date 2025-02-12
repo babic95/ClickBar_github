@@ -59,11 +59,14 @@ namespace ClickBar.ViewModels
         #endregion Fields
 
         #region Constructors
-        public TableOverviewViewModel(IServiceProvider serviceProvider, IDbContextFactory<SqlServerDbContext> dbContextFactory, IDbContextFactory<SqliteDrljaDbContext> drljaDbContextFactory)
+        public TableOverviewViewModel(IServiceProvider serviceProvider, 
+            IDbContextFactory<SqlServerDbContext> dbContextFactory, 
+            IDbContextFactory<SqliteDrljaDbContext> drljaDbContextFactory,
+            SaleViewModel saleViewModel)
         {
             DbContext = dbContextFactory.CreateDbContext();
             DrljaDbContext = drljaDbContextFactory.CreateDbContext();
-            SaleViewModel = serviceProvider.GetRequiredService<SaleViewModel>();
+            SaleViewModel = saleViewModel;
             Order = SaleViewModel.CurrentOrder;
 
             Rooms = new ObservableCollection<PartHall>();
@@ -329,7 +332,7 @@ namespace ClickBar.ViewModels
         #endregion Public methods
 
         #region Internal Methods
-        internal void SetKuhinjaNarudzbine()
+        internal async void SetKuhinjaNarudzbine()
         {
             Narudzbe = new ObservableCollection<Narudzbe>();
             var allNarudzbe = DrljaDbContext.StavkeNarudzbine.AsNoTracking()
@@ -361,7 +364,7 @@ namespace ClickBar.ViewModels
                     TotalNarudzbeDostava2 = 0;
                     TotalNarudzbe = 0;
 
-                    allStavkeToDay.ForEachAsync(s =>
+                    await allStavkeToDay.ForEachAsync(s =>
                     {
                         try
                         {
@@ -635,41 +638,48 @@ namespace ClickBar.ViewModels
 
         private void CheckDatabase(object sender, ElapsedEventArgs e)
         {
-            var noveNarudzbe = DrljaDbContext.Narudzbine.AsNoTracking()
-                .Where(n => n.TR_FAZA == 2 && n.TR_VREMENARUDZBE.Date == DateTime.Now.Date);
-
-            if (noveNarudzbe != null && noveNarudzbe.Any())
+            try
             {
-                Application.Current.Dispatcher.Invoke(() =>
+                var noveNarudzbe = DrljaDbContext.Narudzbine.AsNoTracking()
+                    .Where(n => n.TR_FAZA == 2 && n.TR_VREMENARUDZBE.Date == DateTime.Now.Date);
+
+                if (noveNarudzbe != null && noveNarudzbe.Any())
                 {
-                    noveNarudzbe.ForEachAsync(n =>
+                    Application.Current.Dispatcher.Invoke(async () =>
                     {
-                        if (n.TR_STO.StartsWith("S"))
+                        await noveNarudzbe.ForEachAsync(n =>
                         {
-                            string numberPart = n.TR_STO.Substring(1);
-
-                            if (int.TryParse(numberPart, out int stoId))
+                            if (n.TR_STO.StartsWith("S"))
                             {
-                                var sto = AllNormalPaymentPlaces.FirstOrDefault(p => p.Id == stoId)
-                                    ?? AllRoundPaymentPlaces.FirstOrDefault(p => p.Id == stoId);
+                                string numberPart = n.TR_STO.Substring(1);
 
-                                if (sto != null && sto.Background != Brushes.Blue)
+                                if (int.TryParse(numberPart, out int stoId))
                                 {
-                                    sto.Background = Brushes.Blue;
-                                    SystemSounds.Asterisk.Play();
+                                    var sto = AllNormalPaymentPlaces.FirstOrDefault(p => p.Id == stoId)
+                                        ?? AllRoundPaymentPlaces.FirstOrDefault(p => p.Id == stoId);
+
+                                    if (sto != null && sto.Background != Brushes.Blue)
+                                    {
+                                        sto.Background = Brushes.Blue;
+                                        SystemSounds.Asterisk.Play();
+                                    }
+                                }
+                                else
+                                {
+                                    Log.Error("Greska prilikom konvertovanja stringa u broj za broj stola.");
                                 }
                             }
                             else
                             {
-                                Log.Error("Greska prilikom konvertovanja stringa u broj za broj stola.");
+                                Log.Error("String ne počinje sa 'S' za broj stola iz Drljine baze.");
                             }
-                        }
-                        else
-                        {
-                            Log.Error("String ne počinje sa 'S' za broj stola iz Drljine baze.");
-                        }
+                        });
                     });
-                });
+                }
+            }
+            catch(Exception ex)
+            {
+
             }
         }
         #endregion Private methods

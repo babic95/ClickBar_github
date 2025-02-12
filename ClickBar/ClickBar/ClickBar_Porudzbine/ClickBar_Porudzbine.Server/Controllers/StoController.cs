@@ -24,7 +24,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
         }
 
         [HttpGet("allStolovi")]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             try
             {
@@ -34,13 +34,13 @@ namespace ClickBar_Porudzbine.Server.Controllers
                     sqliteDbContext.PartHalls.Any())
                 {
                     List<DeoSale> deloviSale = new List<DeoSale>();
-                    sqliteDbContext.PartHalls.ForEachAsync(deoSaleDB =>
+                    await sqliteDbContext.PartHalls.ForEachAsync(async deoSaleDB =>
                     {
                         DeoSale deoSale = new DeoSale(deoSaleDB);
 
                         if (deoSale.Stolovi != null)
                         {
-                            sqliteDbContext.PaymentPlaces.Where(s => s.PartHallId == deoSaleDB.Id)
+                            await sqliteDbContext.PaymentPlaces.Where(s => s.PartHallId == deoSaleDB.Id)
                             .ForEachAsync(stoDB =>
                             {
                                 Sto sto = new Sto(stoDB);
@@ -80,7 +80,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
             }
         }
         [HttpGet("allStoloviAdmin")]
-        public IActionResult AllStoloviAdmin()
+        public async Task<IActionResult> AllStoloviAdmin()
         {
             try
             {
@@ -88,11 +88,11 @@ namespace ClickBar_Porudzbine.Server.Controllers
                     sqliteDbContext.PartHalls.Any())
                 {
                     List<DeoSale> deloviSale = new List<DeoSale>();
-                    sqliteDbContext.PartHalls.ForEachAsync(deoSaleDB =>
+                    await sqliteDbContext.PartHalls.ForEachAsync(async deoSaleDB =>
                     {
                         DeoSale deoSale = new DeoSale(deoSaleDB);
 
-                        sqliteDbContext.PaymentPlaces.Where(s => s.PartHallId == deoSaleDB.Id)
+                        await sqliteDbContext.PaymentPlaces.Where(s => s.PartHallId == deoSaleDB.Id)
                         .ForEachAsync(stoDB =>
                         {
                             Sto sto = new Sto(stoDB);
@@ -236,7 +236,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
         }
 
         [HttpPost("pay")]
-        public IActionResult Pay(Sto sto)
+        public async Task<IActionResult> Pay(Sto sto)
         {
             try
             {
@@ -248,7 +248,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
                 if (porudzbineDB != null &&
                     porudzbineDB.Any())
                 {
-                    porudzbineDB.ForEachAsync(porDB =>
+                    await porudzbineDB.ForEachAsync(porDB =>
                     {
                         porDB.TR_FAZA = 4;
                         sqliteDrljaDbContext.Narudzbine.Update(porDB);
@@ -267,7 +267,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
         }
 
         [HttpPost("moveOrder")]
-        public IActionResult MoveOrder(MovePorudzbine movePorudzbine)
+        public async IActionResult MoveOrder(MovePorudzbine movePorudzbine)
         {
             try
             {
@@ -289,7 +289,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
                             if (itemsFromSto != null &&
                                 itemsFromSto.Any())
                             {
-                                itemsFromSto.ForEachAsync(item =>
+                                await itemsFromSto.ForEachAsync(item =>
                                 {
                                     var itemInToSto = itemsToSto.FirstOrDefault(i => i.ItemId == item.ItemId);
                                     if (itemInToSto != null)
@@ -325,7 +325,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
         }
 
         [HttpPost("moveWorker")]
-        public IActionResult MoveWorker(MoveKonobar moveKonobar)
+        public async Task<IActionResult> MoveWorker(MoveKonobar moveKonobar)
         {
             try
             {
@@ -335,7 +335,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
                 if (porudzbineFromDB != null &&
                     porudzbineFromDB.Any())
                 {
-                    porudzbineFromDB.ForEachAsync(porDB =>
+                    await porudzbineFromDB.ForEachAsync(porDB =>
                     {
                         porDB.TR_RADNIK = moveKonobar.ToKonobarId;
                         sqliteDrljaDbContext.Narudzbine.Update(porDB);
@@ -354,7 +354,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
         }
 
         [HttpGet("stoPorudzbine")]
-        public IActionResult StoPorudzbine()
+        public async Task<IActionResult> StoPorudzbine()
         {
             try
             {
@@ -364,13 +364,13 @@ namespace ClickBar_Porudzbine.Server.Controllers
                 sqliteDbContext.PartHalls.Any())
                 {
                     List<DeoSalePorudzbina> deloviSale = new List<DeoSalePorudzbina>();
-                    sqliteDbContext.PartHalls.ForEachAsync(deoSaleDB =>
+                    await sqliteDbContext.PartHalls.ForEachAsync(async deoSaleDB =>
                     {
                         DeoSalePorudzbina deoSale = new DeoSalePorudzbina(deoSaleDB);
 
                         if (deoSale.Stolovi != null)
                         {
-                            sqliteDbContext.PaymentPlaces.Where(s => s.PartHallId == deoSaleDB.Id)
+                            await sqliteDbContext.PaymentPlaces.Where(s => s.PartHallId == deoSaleDB.Id)
                             .ForEachAsync(stoDB =>
                             {
                                 Sto sto = new Sto(stoDB);

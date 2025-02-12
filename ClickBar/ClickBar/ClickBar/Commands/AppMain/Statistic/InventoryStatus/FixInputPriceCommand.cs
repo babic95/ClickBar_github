@@ -338,7 +338,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
             if (proknjizeniPazari != null &&
                 proknjizeniPazari.Any())
             {
-                await proknjizeniPazari.ForEachAsync(prPazar =>
+                await proknjizeniPazari.ForEachAsync(async prPazar =>
                 {
                     var neproknjizeniPazariForDate = neproknjizeniPazari.Where(paz => paz.Inv.SdcDateTime.HasValue &&
                     prPazar.KnjizenjeInvoice.Invoice.SdcDateTime.HasValue &&
@@ -347,7 +347,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                     if (neproknjizeniPazariForDate != null &&
                     neproknjizeniPazariForDate.Any())
                     {
-                        neproknjizeniPazariForDate.ForEachAsync(paz =>
+                        await neproknjizeniPazariForDate.ForEachAsync(paz =>
                         {
                             if (!neproknjizeni.Any() ||
                             !neproknjizeni.Contains(paz.Inv.Id))
@@ -376,7 +376,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         if (kalkulacijeForDate != null &&
                         kalkulacijeForDate.Any())
                         {
-                            kalkulacijeForDate.ForEachAsync(kal =>
+                            await kalkulacijeForDate.ForEachAsync(kal =>
                             {
                                 if (!kalkulacijeOdradjene.Any() ||
                                 !kalkulacijeOdradjene.Contains(kal.Cal.Id))
@@ -414,7 +414,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
             if (neproknjizeniPazari != null &&
                 neproknjizeniPazari.Any())
             {
-                await neproknjizeniPazari.ForEachAsync(pazar =>
+                await neproknjizeniPazari.ForEachAsync(async pazar =>
                 {
                     if (pazar.InvItem.Quantity.HasValue)
                     {
@@ -430,7 +430,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         if (kalkulacijeForDate != null &&
                             kalkulacijeForDate.Any())
                         {
-                            kalkulacijeForDate.ForEachAsync(kal =>
+                            await kalkulacijeForDate.ForEachAsync(kal =>
                             {
                                 if (!kalkulacijeOdradjene.Any() ||
                                     !kalkulacijeOdradjene.Contains(kal.Cal.Id))
@@ -521,7 +521,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
             {
                 proknjizeniPazari = proknjizeniPazari.OrderBy(paz => paz.KnjizenjeInvoice.Invoice.SdcDateTime);
 
-                await proknjizeniPazari.ForEachAsync(prPazar =>
+                await proknjizeniPazari.ForEachAsync(async prPazar =>
                 {
                     if (kalkulacije != null &&
                         kalkulacije.Any())
@@ -534,7 +534,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         {
                             kalkulacijeForDate = kalkulacijeForDate.OrderBy(kal => kal.Cal.CalculationDate);
 
-                            kalkulacijeForDate.ForEachAsync(kal =>
+                            await kalkulacijeForDate.ForEachAsync(kal =>
                             {
                                 if (!kalkulacijeOdradjene.Any() ||
                                 !kalkulacijeOdradjene.Contains(kal.Cal.Id))
@@ -572,7 +572,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         {
                             neproknjizeniPazariForDate = neproknjizeniPazariForDate.OrderBy(paz => paz.Inv.SdcDateTime);
 
-                            neproknjizeniPazariForDate.ForEachAsync(paz =>
+                            await neproknjizeniPazariForDate.ForEachAsync(paz =>
                             {
                                 if (!neproknjizeni.Any() ||
                                 !neproknjizeni.Contains(paz.Inv.Id))
@@ -618,7 +618,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
             {
                 neproknjizeniPazari = neproknjizeniPazari.OrderBy(paz => paz.Inv.SdcDateTime);
 
-                await neproknjizeniPazari.ForEachAsync(pazar =>
+                await neproknjizeniPazari.ForEachAsync(async pazar =>
                 {
                     if (kalkulacije != null &&
                         kalkulacije.Any())
@@ -631,7 +631,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         {
                             kalkulacijeForDate = kalkulacijeForDate.OrderBy(kal => kal.Cal.CalculationDate);
 
-                            kalkulacijeForDate.ForEachAsync(kal =>
+                            await kalkulacijeForDate.ForEachAsync(kal =>
                             {
                                 if (!kalkulacijeOdradjene.Any() ||
                                 !kalkulacijeOdradjene.Contains(kal.Cal.Id))
@@ -745,7 +745,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
             {
                 proknjizeniPazari = proknjizeniPazari.OrderBy(paz => paz.KnjizenjeInvoice.Invoice.SdcDateTime);
 
-                await proknjizeniPazari.ForEachAsync(prPazar =>
+                await proknjizeniPazari.ForEachAsync(async prPazar =>
                 {
                     if (kalkulacije != null &&
                         kalkulacije.Any())
@@ -758,7 +758,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         {
                             kalkulacijeForDate = kalkulacijeForDate.OrderBy(kal => kal.Cal.CalculationDate);
 
-                            kalkulacijeForDate.ForEachAsync(kal =>
+                            await kalkulacijeForDate.ForEachAsync(kal =>
                             {
                                 if (!kalkulacijeOdradjene.Any() ||
                                 !kalkulacijeOdradjene.Contains(kal.Cal.Id))
@@ -801,7 +801,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         {
                             neproknjizeniPazariForDate = neproknjizeniPazariForDate.OrderBy(paz => paz.Inv.SdcDateTime);
 
-                            neproknjizeniPazariForDate.ForEachAsync(paz =>
+                            await neproknjizeniPazariForDate.ForEachAsync(paz =>
                             {
                                 if (!neproknjizeni.Any() ||
                                 !neproknjizeni.Contains(paz.Inv.Id))
@@ -844,7 +844,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                 {
                     neproknjizeniPazari = neproknjizeniPazari.OrderBy(paz => paz.Inv.SdcDateTime);
 
-                    await neproknjizeniPazari.ForEachAsync(pazar =>
+                    await neproknjizeniPazari.ForEachAsync(async pazar =>
                     {
                         if (kalkulacije != null &&
                             kalkulacije.Any())
@@ -857,7 +857,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                             {
                                 kalkulacijeForDate = kalkulacijeForDate.OrderBy(kal => kal.Cal.CalculationDate);
 
-                                kalkulacijeForDate.ForEachAsync(kal =>
+                                await kalkulacijeForDate.ForEachAsync(kal =>
                                 {
                                     if (!kalkulacijeOdradjene.Any() ||
                                     !kalkulacijeOdradjene.Contains(kal.Cal.Id))

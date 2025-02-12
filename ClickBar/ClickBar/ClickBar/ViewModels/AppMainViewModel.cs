@@ -57,6 +57,7 @@ namespace ClickBar.ViewModels
             Initialization();
 
             _settingsViewModel = serviceProvider.GetRequiredService<SettingsViewModel>();
+            _settingsViewModel.MainViewModel = this;
 
             if (_loggedCashier.Type == CashierTypeEnumeration.Admin)
             {
@@ -179,7 +180,10 @@ namespace ClickBar.ViewModels
         }
         public void CheckedStatistics()
         {
-            CurrentViewModel = new StatisticsViewModel(_serviceProvider);
+            CurrentViewModel = new StatisticsViewModel(_serviceProvider) 
+            {
+                MainViewModel = this
+            };
             IsCheckedReport = false;
             IsCheckedAdmin = false;
             IsCheckedStatistics = true;

@@ -33,7 +33,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
             return true;
         }
 
-        public void Execute(object parameter)
+        public async void Execute(object parameter)
         {
             try
             {
@@ -69,7 +69,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                 if (invoices != null &&
                     invoices.Any())
                 {
-                    invoices.ForEachAsync(invoice =>
+                    await invoices.ForEachAsync(async invoice =>
                     {
                         List<ItemInNormForChange> itemInNormForChanges = new List<ItemInNormForChange>();
 
@@ -117,7 +117,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                             if (itemsInInvoiceNotSirovina != null &&
                                 itemsInInvoiceNotSirovina.Any())
                             {
-                                itemsInInvoiceNotSirovina.ForEachAsync(itemInvoice =>
+                                await itemsInInvoiceNotSirovina.ForEachAsync(itemInvoice =>
                                 {
                                     var itemDB = _currentViewModel.DbContext.Items.Find(itemInvoice.ItemCode);
 
@@ -224,7 +224,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                         if (itemsInInvoice != null &&
                         itemsInInvoice.Any())
                         {
-                            itemsInInvoice.ForEachAsync(itemInvoice =>
+                            await itemsInInvoice.ForEachAsync(itemInvoice =>
                             {
                                 var itemDB = _currentViewModel.DbContext.Items.Find(itemInvoice.ItemCode);
 

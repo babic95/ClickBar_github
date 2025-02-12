@@ -69,7 +69,7 @@ namespace ClickBar.Commands.AppMain.Statistic.PocetnoStanje
                         }
                     }
 
-                    _currentViewModel.CurrentPocetnoStanje.Items.ToList().ForEach(item =>
+                    _currentViewModel.CurrentPocetnoStanje.Items.ToList().ForEach(async item =>
                     {
                         var itemDB = _currentViewModel.DbContext.Items.Find(item.Item.Item.Id);
 
@@ -119,7 +119,7 @@ namespace ClickBar.Commands.AppMain.Statistic.PocetnoStanje
                                 {
                                     if (itemDB.IdNorm == null)
                                     {
-                                        itemInInvoices.ForEachAsync(i =>
+                                        await itemInInvoices.ForEachAsync(i =>
                                         {
                                             if (i.ItemsInvoice.Quantity != null)
                                             {
@@ -167,7 +167,7 @@ namespace ClickBar.Commands.AppMain.Statistic.PocetnoStanje
                                     {
                                         if (itemDB.IdNorm == null)
                                         {
-                                            itemInInvoices.ForEachAsync(i =>
+                                            await itemInInvoices.ForEachAsync(i =>
                                             {
                                                 if (i.ItemsInvoice.Quantity != null)
                                                 {

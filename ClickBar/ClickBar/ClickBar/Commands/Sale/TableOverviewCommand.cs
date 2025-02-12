@@ -1,5 +1,9 @@
 ﻿using ClickBar.Enums;
 using ClickBar.ViewModels;
+using ClickBar_Database_Drlja;
+using ClickBar_DatabaseSQLManager;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Windows.Input;
@@ -11,12 +15,10 @@ namespace ClickBar.Commands.Sale
         public event EventHandler CanExecuteChanged;
 
         private readonly SaleViewModel _viewModel;
-        private readonly IServiceProvider _serviceProvider;
 
-        public TableOverviewCommand(SaleViewModel viewModel, IServiceProvider serviceProvider)
+        public TableOverviewCommand(SaleViewModel viewModel)
         {
             _viewModel = viewModel;
-            _serviceProvider = serviceProvider;
         }
 
         public bool CanExecute(object? parameter)
@@ -26,8 +28,6 @@ namespace ClickBar.Commands.Sale
 
         public void Execute(object parameter)
         {
-            _viewModel.TableOverviewViewModel = _serviceProvider.GetRequiredService<TableOverviewViewModel>();
-
             AppStateParameter appStateParameter = new AppStateParameter(
                 _viewModel.DbContext,
                 _viewModel.DrljaDbContext,

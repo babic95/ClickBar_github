@@ -44,7 +44,7 @@ namespace ClickBar.Models.AppMain.Statistic
                     var nivelacijaItem = new NivelacijaItem(sqliteDbContext, nivelacijaItemDB);
 
                     NivelacijaItems.Add(nivelacijaItem);
-                });
+                }).Wait();
             }
         }
 

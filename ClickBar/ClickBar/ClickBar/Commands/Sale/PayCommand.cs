@@ -42,7 +42,6 @@ namespace ClickBar.Commands.Sale
     {
         public event EventHandler CanExecuteChanged;
 
-        private readonly IServiceProvider _serviceProvider;
         private TViewModel _viewModel;
 
         private const int ERROR_SHARING_VIOLATION = 32;
@@ -51,9 +50,8 @@ namespace ClickBar.Commands.Sale
         private DateTime _timer;
         private List<Payment> _payment;
 
-        public PayCommand(IServiceProvider serviceProvider, TViewModel viewModel)
+        public PayCommand(TViewModel viewModel)
         {
-            _serviceProvider = serviceProvider;
             _viewModel = viewModel;
         }
 
@@ -87,7 +85,7 @@ namespace ClickBar.Commands.Sale
                         });
                     }
 
-                    PaySaleWindow paySaleWindow = _serviceProvider.GetRequiredService<PaySaleWindow>();
+                    PaySaleWindow paySaleWindow = new PaySaleWindow(saleViewModel);// _serviceProvider.GetRequiredService<PaySaleWindow>();
                     paySaleWindow.ShowDialog();
 
                     saleViewModel.Reset();
@@ -659,7 +657,7 @@ namespace ClickBar.Commands.Sale
             paySaleViewModel.DbContext.SaveChanges();
 
             int itemInvoiceId = 0;
-            paySaleViewModel.ItemsInvoice.ToList().ForEach(item =>
+            paySaleViewModel.ItemsInvoice.ToList().ForEach(async item =>
             {
                 ItemDB? itemDB = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == item.Item.Id);
                 if (itemDB != null)
@@ -671,7 +669,7 @@ namespace ClickBar.Commands.Sale
                         if (norms != null &&
                             norms.Any())
                         {
-                            norms.ForEachAsync(norm =>
+                            await norms.ForEachAsync(async norm =>
                             {
                                 var normItem = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm.IdItem);
                                 if (normItem != null)
@@ -683,7 +681,7 @@ namespace ClickBar.Commands.Sale
                                         if (norms2 != null &&
                                             norms2.Any())
                                         {
-                                            norms2.ForEachAsync(norm2 =>
+                                            await norms2.ForEachAsync(async norm2 =>
                                             {
                                                 var normItem2 = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm2.IdItem);
 
@@ -695,7 +693,7 @@ namespace ClickBar.Commands.Sale
                                                         if (norms3 != null &&
                                                             norms3.Any())
                                                         {
-                                                            norms3.ForEachAsync(norm3 =>
+                                                            await norms3.ForEachAsync(norm3 =>
                                                             {
                                                                 var normItem3 = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm3.IdItem);
                                                                 if (normItem3 != null)
@@ -839,7 +837,7 @@ namespace ClickBar.Commands.Sale
                 if (itemsInInvoice != null &&
                     itemsInInvoice.Any())
                 {
-                    itemsInInvoice.ToList().ForEach(item =>
+                    itemsInInvoice.ToList().ForEach(async item =>
                     {
                         var it = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == item.ItemCode);
                         if (it != null &&
@@ -850,7 +848,7 @@ namespace ClickBar.Commands.Sale
                             if (itemInNorm != null &&
                             itemInNorm.Any())
                             {
-                                itemInNorm.ForEachAsync(norm =>
+                                await itemInNorm.ForEachAsync(norm =>
                                 {
                                     var itm = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm.IdItem);
 

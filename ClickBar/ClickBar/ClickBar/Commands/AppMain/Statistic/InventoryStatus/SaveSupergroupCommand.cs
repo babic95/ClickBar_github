@@ -30,7 +30,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
             return true;
         }
 
-        public void Execute(object parameter)
+        public async void Execute(object parameter)
         {
             try
             {
@@ -79,7 +79,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
 
                     _currentViewModel.AllSupergroups = new ObservableCollection<Supergroup>();
 
-                    _currentViewModel.DbContext.Supergroups.ForEachAsync(supergroup =>
+                    await _currentViewModel.DbContext.Supergroups.ForEachAsync(supergroup =>
                     {
                         _currentViewModel.AllSupergroups.Add(new Supergroup(supergroup.Id, supergroup.Name));
                     });

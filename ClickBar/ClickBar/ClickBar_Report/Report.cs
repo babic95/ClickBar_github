@@ -73,7 +73,7 @@ namespace ClickBar_Report
                     {
                         _invoices.Remove(invoice);
                     }
-                });
+                }).Wait();
             }
             SetReport();
         }

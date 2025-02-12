@@ -118,7 +118,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                     CalculationsAll.Add(calculation);
                     TotalInputPrice += calculation.InputTotalPrice;
                     TotalOutputPrice += calculation.OutputTotalPrice;
-                });
+                }).Wait();
             }
             Calculations = new ObservableCollection<Calculation>(CalculationsAll.OrderBy(cal => cal.CalculationDate));
         }

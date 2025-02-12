@@ -150,14 +150,14 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #endregion Internal methods
 
         #region Private methods
-        private void Initialize()
+        private async void Initialize()
         {
             AllGroups = new ObservableCollection<GroupItems>() { new GroupItems(-1, -1, "Sve grupe") };
 
             if (DbContext.ItemGroups != null &&
                 DbContext.ItemGroups.Any())
             {
-                DbContext.ItemGroups.ToList().ForEach(gropu =>
+                await DbContext.ItemGroups.ForEachAsync(gropu =>
                 {
                     AllGroups.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
                 });
@@ -165,7 +165,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
 
             SelectedDate = DateTime.Now;
         }
-        private void ChangeDate()
+        private async void ChangeDate()
         {
             TotalUlazLagerLista = 0;
             TotalLagerLista = 0;
@@ -204,7 +204,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             if (DbContext.Items != null &&
                 DbContext.Items.Any())
             {
-                DbContext.Items.ForEachAsync(x =>
+                await DbContext.Items.Where(i => i.IdNorm == null).ForEachAsync(async x =>
                 {
                     decimal totalQuantityPocetnoStanje = 0;
 
@@ -236,7 +236,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                                 if (itemsInCal != null &&
                                 itemsInCal.Any())
                                 {
-                                    itemsInCal.ForEachAsync(i =>
+                                    await itemsInCal.ForEachAsync(i =>
                                     {
                                         quantity -= i.CalculationItem.Quantity;
                                     });
@@ -251,7 +251,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                                 if (itemsInPazar != null &&
                                 itemsInPazar.Any())
                                 {
-                                    itemsInPazar.ForEachAsync(i =>
+                                    await itemsInPazar.ForEachAsync(i =>
                                     {
                                         if (i.InvoiceItem.Quantity != null)
                                         {

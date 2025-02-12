@@ -778,7 +778,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
         }
 
         [HttpPost("checkIsFinish")]
-        public IActionResult CheckIsFinish(User user)
+        public async Task<IActionResult> CheckIsFinish(User user)
         {
             try
             {
@@ -790,7 +790,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
                 if (porudzbineDB != null &&
                     porudzbineDB.Any())
                 {
-                    porudzbineDB.ForEachAsync(n =>
+                    await porudzbineDB.ForEachAsync(async n =>
                     {
                         var itemsDB = sqliteDrljaDbContext.StavkeNarudzbine.Where(i => i.TR_BROJNARUDZBE == n.TR_BROJNARUDZBE);
 
@@ -805,7 +805,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
                                 Items = new List<PorudzbinaItem>()
                             };
 
-                            itemsDB.ForEachAsync(itemDB =>
+                            await itemsDB.ForEachAsync(itemDB =>
                             {
                                 PorudzbinaItem porudzbinaItem = new PorudzbinaItem()
                                 {
