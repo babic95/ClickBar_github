@@ -58,7 +58,7 @@ namespace ClickBar.Commands.AppMain.Statistic.LagerLista
                     pocetnoStanjeDB = pocetnaStanja.OrderByDescending(p => p.PopisDate).FirstOrDefault();
                 }
 
-                await _currentViewModel.DbContext.Supergroups.ForEachAsync(s =>
+                foreach(var s in _currentViewModel.DbContext.Supergroups)
                 {
                     var ss = s.Name.ToLower();
 
@@ -74,7 +74,7 @@ namespace ClickBar.Commands.AppMain.Statistic.LagerLista
                     {
                         supergroupKuhinjaDB = s;
                     }
-                });
+                }
                 if (supergroupKuhinjaDB != null)
                 {
                     podaciKuhinja = GetKuhinja(supergroupKuhinjaDB,
@@ -162,7 +162,7 @@ namespace ClickBar.Commands.AppMain.Statistic.LagerLista
                 });
             }
 
-            await _currentViewModel.DbContext.Items.ForEachAsync(itemDB =>
+            foreach(var itemDB in _currentViewModel.DbContext.Items)
             {
                 PocetnoStanjeItemDB? pocetnoStanjeItemDB = pocetnoStanjeDB != null ? _currentViewModel.DbContext.PocetnaStanjaItems.FirstOrDefault(pi =>
                 pi.IdPocetnoStanje == pocetnoStanjeDB.Id && pi.IdItem == itemDB.Id) : null;
@@ -183,9 +183,7 @@ namespace ClickBar.Commands.AppMain.Statistic.LagerLista
                     Ukupno = 0,
                     ZaliheNaKrajuDana = 0,
                 };
-
-
-            });
+            }
             return kuhinja;
         }
         private async Task<List<DPU_Print>> GetSank(SupergroupDB supergroupDB,

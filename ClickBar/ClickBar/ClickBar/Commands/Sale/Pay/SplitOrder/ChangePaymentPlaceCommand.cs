@@ -35,6 +35,7 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder
             try
             {
                 ChangePaymentPlaceViewModel changePaymentPlaceViewModel = _serviceProvider.GetRequiredService<ChangePaymentPlaceViewModel>();
+                changePaymentPlaceViewModel.SplitOrderViewModel = _viewModel;
                 _viewModel.ChangePaymentPlaceWindow = new ChangePaymentPlaceWindow(changePaymentPlaceViewModel);
                 _viewModel.ChangePaymentPlaceWindow.ShowDialog();
 
@@ -42,9 +43,7 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder
 
                 _viewModel.PaySaleViewModel.SaleViewModel.Reset();
 
-                AppStateParameter appStateParameter = new AppStateParameter(_viewModel.DbContext,
-                    _viewModel.DrljaDbContext,
-                    AppStateEnumerable.TableOverview,
+                AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
                     _viewModel.PaySaleViewModel.SaleViewModel.LoggedCashier,
                     _viewModel.PaySaleViewModel.SaleViewModel);
                 _viewModel.PaySaleViewModel.SaleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);

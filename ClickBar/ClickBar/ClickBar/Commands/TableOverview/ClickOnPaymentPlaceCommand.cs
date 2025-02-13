@@ -153,11 +153,11 @@ namespace ClickBar.Commands.TableOverview
                         if (nrudzbine != null &&
                             nrudzbine.Any())
                         {
-                            await nrudzbine.ForEachAsync(n =>
+                            foreach(var n in nrudzbine)
                             {
                                 n.TR_FAZA = 3;
                                 _viewModel.DrljaDbContext.Narudzbine.Update(n);
-                            });
+                            }
 
                             RetryHelperDrlja.ExecuteWithRetry(() => { _viewModel.DrljaDbContext.SaveChanges(); });
                         }

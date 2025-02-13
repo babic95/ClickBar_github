@@ -264,24 +264,23 @@ namespace ClickBar.Commands.AppMain.Statistic
                             if (inventoryStatusViewModel.DbContext.Items != null &&
                             inventoryStatusViewModel.DbContext.Items.Any())
                             {
-                                await inventoryStatusViewModel.DbContext.Items.Where(i => i.IdNorm != null)
-                                    .ForEachAsync(itemDB =>
-                                    {
-                                        var itemInNorm = inventoryStatusViewModel.DbContext.ItemsInNorm.Where(i => i.IdNorm == itemDB.IdNorm);
+                                foreach (var itemDB1 in inventoryStatusViewModel.DbContext.Items.Where(i => i.IdNorm != null))
+                                {
+                                    var itemInNorm = inventoryStatusViewModel.DbContext.ItemsInNorm.Where(i => i.IdNorm == itemDB1.IdNorm);
 
-                                        if (itemInNorm == null ||
-                                        !itemInNorm.Any())
-                                        {
-                                            itemDB.IdNorm = null;
-                                            inventoryStatusViewModel.DbContext.Items.Update(itemDB);
-                                        }
-                                    });
+                                    if (itemInNorm == null ||
+                                    !itemInNorm.Any())
+                                    {
+                                        itemDB1.IdNorm = null;
+                                        inventoryStatusViewModel.DbContext.Items.Update(itemDB1);
+                                    }
+                                }
                                 inventoryStatusViewModel.DbContext.SaveChanges();
                             }
 
                             inventoryStatusViewModel.InventoryStatusAll = new List<Invertory>();
 
-                            await inventoryStatusViewModel.DbContext.Items.ForEachAsync(x =>
+                            foreach(var x in inventoryStatusViewModel.DbContext.Items)
                             {
                                 Item item = new Item(x);
 
@@ -302,7 +301,7 @@ namespace ClickBar.Commands.AppMain.Statistic
 
                                     return;
                                 }
-                            });
+                            }
                             if (inventoryStatusViewModel.CurrentGroup.Id == -1)
                             {
                                 inventoryStatusViewModel.InventoryStatus = new ObservableCollection<Invertory>(inventoryStatusViewModel.InventoryStatusAll);
@@ -425,23 +424,22 @@ namespace ClickBar.Commands.AppMain.Statistic
                         if (inventoryStatusViewModel.DbContext.Items != null &&
                             inventoryStatusViewModel.DbContext.Items.Any())
                         {
-                            await inventoryStatusViewModel.DbContext.Items.Where(i => i.IdNorm != null)
-                                .ForEachAsync(itemDB =>
-                                {
-                                    var itemInNorm = inventoryStatusViewModel.DbContext.ItemsInNorm.Where(i => i.IdNorm == itemDB.IdNorm);
+                            foreach (var itemDB1 in inventoryStatusViewModel.DbContext.Items.Where(i => i.IdNorm != null))
+                            {
+                                var itemInNorm = inventoryStatusViewModel.DbContext.ItemsInNorm.Where(i => i.IdNorm == itemDB1.IdNorm);
 
-                                    if (itemInNorm == null ||
-                                    !itemInNorm.Any())
-                                    {
-                                        itemDB.IdNorm = null;
-                                        inventoryStatusViewModel.DbContext.Items.Update(itemDB);
-                                    }
-                                });
+                                if (itemInNorm == null ||
+                                !itemInNorm.Any())
+                                {
+                                    itemDB1.IdNorm = null;
+                                    inventoryStatusViewModel.DbContext.Items.Update(itemDB1);
+                                }
+                            }
                             inventoryStatusViewModel.DbContext.SaveChanges();
                         }
 
                         inventoryStatusViewModel.InventoryStatusAll = new List<Invertory>();
-                        await inventoryStatusViewModel.DbContext.Items.ForEachAsync(x =>
+                        foreach(var x in inventoryStatusViewModel.DbContext.Items)
                         {
                             Item item = new Item(x);
 
@@ -461,7 +459,7 @@ namespace ClickBar.Commands.AppMain.Statistic
 
                                 return;
                             }
-                        });
+                        }
                         if (inventoryStatusViewModel.CurrentGroup.Id == -1)
                         {
                             inventoryStatusViewModel.InventoryStatus = new ObservableCollection<Invertory>(inventoryStatusViewModel.InventoryStatusAll);

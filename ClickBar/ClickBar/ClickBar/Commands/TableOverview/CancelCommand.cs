@@ -27,9 +27,7 @@ namespace ClickBar.Commands.TableOverview
 
         public void Execute(object parameter)
         {
-            AppStateParameter appStateParameter = new AppStateParameter(_currentView.DbContext,
-                _currentView.DrljaDbContext,
-                AppStateEnumerable.Sale, 
+            AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.Sale, 
                 _currentView.SaleViewModel.LoggedCashier,
                 _currentView.SaleViewModel);
             _currentView.SaleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);

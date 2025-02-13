@@ -14,20 +14,15 @@ namespace ClickBar.Commands
 {
     public class AppStateParameter
     {
-        public AppStateParameter(SqlServerDbContext dbContext,
-            SqliteDrljaDbContext drljaDbContext,
+        public AppStateParameter(
             AppStateEnumerable state, 
             CashierDB loggedCashier,
             ViewModelBase viewModel = null)
         {
-            DbContext = dbContext;
-            DrljaDbContext = drljaDbContext;
             State = state;
             LoggedCashier = loggedCashier;
             ViewModel = viewModel;
         }
-        public SqlServerDbContext DbContext { get; private set; }
-        public SqliteDrljaDbContext DrljaDbContext { get; private set; }
         public AppStateEnumerable State { get; private set; }
         public CashierDB LoggedCashier { get; private set; }
         public ViewModelBase ViewModel { get; private set; }

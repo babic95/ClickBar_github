@@ -54,7 +54,7 @@ namespace ClickBar
                     options.UseSqlite(drljaConnectionString), ServiceLifetime.Scoped);
             }
 
-            services.AddSingleton<DatabaseInitializer>(); // Registracija DatabaseInitializer kao Singleton
+            services.AddScoped<DatabaseInitializer>(); // Promenjeno u Scoped
 
             // Registracija INavigator sa MainViewModel
             services.AddSingleton<INavigator, MainViewModel>();
@@ -92,7 +92,7 @@ namespace ClickBar
                 var dbContextFactory = provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
                 var drljaDbContextFactory = provider.GetRequiredService<IDbContextFactory<SqliteDrljaDbContext>>();
                 return new AppMainViewModel(provider, dbContextFactory, drljaDbContextFactory);
-            }); 
+            });
             //services.AddTransient<TableOverviewViewModel>();
             services.AddTransient<SplitOrderViewModel>();
             services.AddTransient<PaySaleViewModel>();
@@ -124,7 +124,7 @@ namespace ClickBar
 
             // Registracija prozora
             services.AddSingleton<MainWindow>();
-            services.AddTransient<SplitOrderWindow>();
+            //services.AddTransient<SplitOrderWindow>();
             //services.AddTransient<PaySaleWindow>();
 
             // Registracija komandi

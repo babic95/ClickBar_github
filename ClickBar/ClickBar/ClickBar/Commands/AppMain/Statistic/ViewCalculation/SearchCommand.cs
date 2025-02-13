@@ -59,7 +59,7 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
                 if (calculations != null &&
                     calculations.Any())
                 {
-                    await calculations.ForEachAsync(cal =>
+                    foreach(var cal in calculations)
                     {
                         Models.AppMain.Statistic.Calculation calculation = new Models.AppMain.Statistic.Calculation()
                         {
@@ -78,7 +78,7 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
 
                         _currentViewModel.TotalInputPrice += calculation.InputTotalPrice;
                         _currentViewModel.TotalOutputPrice += calculation.OutputTotalPrice;
-                    });
+                    }
                 }
             }
             else
@@ -101,7 +101,7 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
                     if (calculations != null &&
                         calculations.Any())
                     {
-                        await calculations.ForEachAsync(cal =>
+                        foreach(var cal in calculations)
                         {
                             Models.AppMain.Statistic.Calculation calculation = new Models.AppMain.Statistic.Calculation()
                             {
@@ -120,7 +120,7 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
 
                             _currentViewModel.TotalInputPrice += calculation.InputTotalPrice;
                             _currentViewModel.TotalOutputPrice += calculation.OutputTotalPrice;
-                        });
+                        }
                     }
                 }
                 else if (_currentViewModel.SearchToCalculationDate != null &&
@@ -141,7 +141,7 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
                     if (calculations != null &&
                         calculations.Any())
                     {
-                        await calculations.ForEachAsync(cal =>
+                        foreach(var cal in calculations)
                         {
                             Models.AppMain.Statistic.Calculation calculation = new Models.AppMain.Statistic.Calculation()
                             {
@@ -160,7 +160,7 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
 
                             _currentViewModel.TotalInputPrice += calculation.InputTotalPrice;
                             _currentViewModel.TotalOutputPrice += calculation.OutputTotalPrice;
-                        });
+                        }
                     }
                 }
                 else
@@ -180,7 +180,7 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
                     if (calculations != null &&
                         calculations.Any())
                     {
-                        await calculations.ForEachAsync(cal =>
+                        foreach(var cal in calculations)
                         {
                             Models.AppMain.Statistic.Calculation calculation = new Models.AppMain.Statistic.Calculation()
                             {
@@ -199,7 +199,7 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
 
                             _currentViewModel.TotalInputPrice += calculation.InputTotalPrice;
                             _currentViewModel.TotalOutputPrice += calculation.OutputTotalPrice;
-                        });
+                        }
                     }
                 }
             }

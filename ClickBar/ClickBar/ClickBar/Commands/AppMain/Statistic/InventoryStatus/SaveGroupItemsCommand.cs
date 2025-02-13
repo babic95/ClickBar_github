@@ -89,11 +89,11 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                     _currentViewModel.AllGroupItems = new ObservableCollection<GroupItems>();
                     _currentViewModel.AllGroups = new ObservableCollection<GroupItems>() { new GroupItems(-1, -1, "Sve grupe") };
 
-                    await _currentViewModel.DbContext.ItemGroups.ForEachAsync(gropu =>
+                    foreach(var gropu in _currentViewModel.DbContext.ItemGroups)
                     {
                         _currentViewModel.AllGroupItems.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
                         _currentViewModel.AllGroups.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
-                    });
+                    }
 
                     _currentViewModel.CurrentGroupItems = _currentViewModel.AllGroupItems.FirstOrDefault();
                     _currentViewModel.CurrentGroup = _currentViewModel.AllGroups.FirstOrDefault();

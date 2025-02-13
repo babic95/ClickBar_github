@@ -3,28 +3,156 @@
   "WorkspaceRootPath": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\viewmodels\\login\\loginviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\viewmodels\\login\\loginviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\clickbar.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\clickbar.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{377DC7FF-F025-4E96-B4D7-40CB572DAF2A}|ClickBar_Porudzbine\\ClickBar_Porudzbine.Server\\ClickBar_Porudzbine.Server.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar_porudzbine\\clickbar_porudzbine.server\\controllers\\stocontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{377DC7FF-F025-4E96-B4D7-40CB572DAF2A}|ClickBar_Porudzbine\\ClickBar_Porudzbine.Server\\ClickBar_Porudzbine.Server.csproj|solutionrelative:clickbar_porudzbine\\clickbar_porudzbine.server\\controllers\\stocontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\databaseinitializer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\databaseinitializer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A8D67B3E-8514-4677-9527-7FCAAFA4E54A}|ClickBar_DatabaseSQLManager\\ClickBar_DatabaseSQLManager.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar_databasesqlmanager\\sqlserverdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A8D67B3E-8514-4677-9527-7FCAAFA4E54A}|ClickBar_DatabaseSQLManager\\ClickBar_DatabaseSQLManager.csproj|solutionrelative:clickbar_databasesqlmanager\\sqlserverdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2D293963-7D20-404E-9275-139F5A194C5A}|ClickBar_Settings\\ClickBar_Settings.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar_settings\\settingsmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2D293963-7D20-404E-9275-139F5A194C5A}|ClickBar_Settings\\ClickBar_Settings.csproj|solutionrelative:clickbar_settings\\settingsmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\appmain\\statistic\\lagerlista\\printlagerlistacommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\appmain\\statistic\\lagerlista\\printlagerlistacommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\viewmodels\\tableoverviewviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\viewmodels\\tableoverviewviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\viewmodels\\sale\\paysaleviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\viewmodels\\sale\\paysaleviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\viewmodels\\appmain\\statistic\\refaundviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\viewmodels\\appmain\\statistic\\refaundviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\viewmodels\\appmain\\statistic\\pocetnostanjeviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\viewmodels\\appmain\\statistic\\pocetnostanjeviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\viewmodels\\appmain\\statistic\\otpisviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\viewmodels\\appmain\\statistic\\otpisviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\models\\appmain\\statistic\\nivelacija\\nivelacija.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\models\\appmain\\statistic\\nivelacija\\nivelacija.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\tableoverview\\clickonpaymentplacecommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\tableoverview\\clickonpaymentplacecommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\sale\\paycommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\sale\\paycommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\appmain\\statistic\\viewcalculation\\searchcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\appmain\\statistic\\viewcalculation\\searchcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\appmain\\statistic\\savecommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\appmain\\statistic\\savecommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\appmain\\statistic\\refaund\\efakturacommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\appmain\\statistic\\refaund\\efakturacommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\appmain\\statistic\\radnici\\whatdidworkersellcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\appmain\\statistic\\radnici\\whatdidworkersellcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\appmain\\statistic\\pocetnostanje\\createpocetnostanjecommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\appmain\\statistic\\pocetnostanje\\createpocetnostanjecommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\appmain\\statistic\\knjizenje\\printdnevnipazarkuhinjasankcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\appmain\\statistic\\knjizenje\\printdnevnipazarkuhinjasankcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\appmain\\statistic\\inventorystatus\\savesupergroupcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\appmain\\statistic\\inventorystatus\\savesupergroupcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\appmain\\statistic\\inventorystatus\\savegroupitemscommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\appmain\\statistic\\inventorystatus\\savegroupitemscommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\appmain\\statistic\\inventorystatus\\fixinputpricecommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\appmain\\statistic\\inventorystatus\\fixinputpricecommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\appmain\\statistic\\calculation\\savecalculationcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\appmain\\statistic\\calculation\\savecalculationcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\viewmodels\\appmain\\statistic\\lagerlistaviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\viewmodels\\appmain\\statistic\\lagerlistaviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\appmain\\statistic\\norm\\printallnormcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\appmain\\statistic\\norm\\printallnormcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\appmain\\statistic\\norm\\fixnormcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\appmain\\statistic\\norm\\fixnormcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\sale\\pay\\splitorder\\changepaymentplacecommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\sale\\pay\\splitorder\\changepaymentplacecommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\viewmodels\\sale\\changepaymentplaceviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\viewmodels\\sale\\changepaymentplaceviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\sale\\pay\\splitorder\\changepaymentplace\\clickonpaymentplacechangepaymentplacecommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\sale\\pay\\splitorder\\changepaymentplace\\clickonpaymentplacechangepaymentplacecommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\viewmodels\\sale\\splitorderviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\viewmodels\\sale\\splitorderviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\sale\\pay\\cancelcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\sale\\pay\\cancelcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\viewmodels\\saleviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\viewmodels\\saleviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\viewmodels\\appmainviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\viewmodels\\appmainviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\appstateparameter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\appstateparameter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\login\\logoutcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\login\\logoutcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\sale\\pay\\splitordercommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\sale\\pay\\splitordercommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\commands\\login\\clickonloginbuttoncommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\commands\\login\\clickonloginbuttoncommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\views\\sale\\paysale\\splitorderwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\views\\sale\\paysale\\splitorderwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\app.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|c:\\git_private\\clickbar_github\\clickbar\\clickbar\\clickbar\\views\\sale\\paysale\\paysalewindow.xaml.cs||{8B382828-6202-11D1-8870-0000F87579D2}|",
+      "RelativeMoniker": "D:0:0:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}|ClickBar\\ClickBar.csproj|solutionrelative:clickbar\\views\\sale\\paysale\\paysalewindow.xaml.cs||{8B382828-6202-11D1-8870-0000F87579D2}|"
     }
   ],
   "DocumentGroupContainers": [
@@ -34,85 +162,468 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 4,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "SaleViewModel.cs",
-              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\SaleViewModel.cs",
-              "RelativeDocumentMoniker": "ClickBar\\ViewModels\\SaleViewModel.cs",
-              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\SaleViewModel.cs",
-              "RelativeToolTip": "ClickBar\\ViewModels\\SaleViewModel.cs",
-              "ViewState": "AgIAAJQAAAAAAAAAAAAcwHwBAABRAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-12T21:21:51.372Z",
+              "DocumentIndex": 0,
+              "Title": "ClickBar",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ClickBar.csproj",
+              "RelativeDocumentMoniker": "ClickBar\\ClickBar.csproj",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ClickBar.csproj",
+              "RelativeToolTip": "ClickBar\\ClickBar.csproj",
+              "ViewState": "AgIAAGkAAAAAAAAAAAAAAHUAAAAPAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-02-13T17:44:17.732Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 2,
-              "Title": "AppMainViewModel.cs",
-              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\AppMainViewModel.cs",
-              "RelativeDocumentMoniker": "ClickBar\\ViewModels\\AppMainViewModel.cs",
-              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\AppMainViewModel.cs",
-              "RelativeToolTip": "ClickBar\\ViewModels\\AppMainViewModel.cs",
-              "ViewState": "AgIAAJUAAAAAAAAAAAAcwKUAAAAYAAAAAAAAAA==",
+              "Title": "StoController.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar_Porudzbine\\ClickBar_Porudzbine.Server\\Controllers\\StoController.cs",
+              "RelativeDocumentMoniker": "ClickBar_Porudzbine\\ClickBar_Porudzbine.Server\\Controllers\\StoController.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar_Porudzbine\\ClickBar_Porudzbine.Server\\Controllers\\StoController.cs",
+              "RelativeToolTip": "ClickBar_Porudzbine\\ClickBar_Porudzbine.Server\\Controllers\\StoController.cs",
+              "ViewState": "AgIAAPoAAAAAAAAAAAAcwAwBAAAfAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-12T21:21:43.557Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "LogoutCommand.cs",
-              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\Login\\LogoutCommand.cs",
-              "RelativeDocumentMoniker": "ClickBar\\Commands\\Login\\LogoutCommand.cs",
-              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\Login\\LogoutCommand.cs",
-              "RelativeToolTip": "ClickBar\\Commands\\Login\\LogoutCommand.cs",
-              "ViewState": "AgIAACMAAAAAAAAAAAAswDMAAAAmAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-12T21:20:01.158Z",
+              "WhenOpened": "2025-02-13T17:42:37.859Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 4,
-              "Title": "ClickOnLoginButtonCommand.cs",
-              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\Login\\ClickOnLoginButtonCommand.cs",
-              "RelativeDocumentMoniker": "ClickBar\\Commands\\Login\\ClickOnLoginButtonCommand.cs",
-              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\Login\\ClickOnLoginButtonCommand.cs",
-              "RelativeToolTip": "ClickBar\\Commands\\Login\\ClickOnLoginButtonCommand.cs",
-              "ViewState": "AgIAAEkAAAAAAAAAAAAlwFAAAAAQAAAAAAAAAA==",
+              "Title": "SqlServerDbContext.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar_DatabaseSQLManager\\SqlServerDbContext.cs",
+              "RelativeDocumentMoniker": "ClickBar_DatabaseSQLManager\\SqlServerDbContext.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar_DatabaseSQLManager\\SqlServerDbContext.cs",
+              "RelativeToolTip": "ClickBar_DatabaseSQLManager\\SqlServerDbContext.cs",
+              "ViewState": "AgIAANQGAAAAAAAAAAAkwPgGAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-12T21:17:03.492Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "LoginViewModel.cs",
-              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\Login\\LoginViewModel.cs",
-              "RelativeDocumentMoniker": "ClickBar\\ViewModels\\Login\\LoginViewModel.cs",
-              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\Login\\LoginViewModel.cs",
-              "RelativeToolTip": "ClickBar\\ViewModels\\Login\\LoginViewModel.cs",
-              "ViewState": "AgIAAF8AAAAAAAAAAAAowHQAAAAvAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-12T21:16:58.69Z",
+              "WhenOpened": "2025-02-13T17:36:50.522Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 5,
+              "Title": "SettingsManager.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar_Settings\\SettingsManager.cs",
+              "RelativeDocumentMoniker": "ClickBar_Settings\\SettingsManager.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar_Settings\\SettingsManager.cs",
+              "RelativeToolTip": "ClickBar_Settings\\SettingsManager.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T10:05:17.057Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "OtpisViewModel.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\AppMain\\Statistic\\OtpisViewModel.cs",
+              "RelativeDocumentMoniker": "ClickBar\\ViewModels\\AppMain\\Statistic\\OtpisViewModel.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\AppMain\\Statistic\\OtpisViewModel.cs",
+              "RelativeToolTip": "ClickBar\\ViewModels\\AppMain\\Statistic\\OtpisViewModel.cs",
+              "ViewState": "AgIAABUAAAAAAAAAAAAIwDYAAAAkAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:23:46.157Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "PrintLagerListaCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\LagerLista\\PrintLagerListaCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\AppMain\\Statistic\\LagerLista\\PrintLagerListaCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\LagerLista\\PrintLagerListaCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\AppMain\\Statistic\\LagerLista\\PrintLagerListaCommand.cs",
+              "ViewState": "AgIAAIsAAAAAAAAAAAAcwJcAAAAwAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:16:16.248Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "TableOverviewViewModel.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\TableOverviewViewModel.cs",
+              "RelativeDocumentMoniker": "ClickBar\\ViewModels\\TableOverviewViewModel.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\TableOverviewViewModel.cs",
+              "RelativeToolTip": "ClickBar\\ViewModels\\TableOverviewViewModel.cs",
+              "ViewState": "AgIAAH8CAAAAAAAAAAAcwIkCAAAfAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:26:00.347Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "PocetnoStanjeViewModel.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\AppMain\\Statistic\\PocetnoStanjeViewModel.cs",
+              "RelativeDocumentMoniker": "ClickBar\\ViewModels\\AppMain\\Statistic\\PocetnoStanjeViewModel.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\AppMain\\Statistic\\PocetnoStanjeViewModel.cs",
+              "RelativeToolTip": "ClickBar\\ViewModels\\AppMain\\Statistic\\PocetnoStanjeViewModel.cs",
+              "ViewState": "AgIAAFMAAAAAAAAAAAAmwF0AAAAdAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:24:02.779Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
               "Title": "App.xaml.cs",
               "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\App.xaml.cs",
               "RelativeDocumentMoniker": "ClickBar\\App.xaml.cs",
               "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\App.xaml.cs",
               "RelativeToolTip": "ClickBar\\App.xaml.cs",
-              "ViewState": "AgIAAGwAAAAAAAAAAAAowIUAAAA3AAAAAAAAAA==",
+              "ViewState": "AgIAABUAAAAAAAAAAAAowCYAAAAnAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-02-12T21:13:14.596Z",
               "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "DatabaseInitializer.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\DatabaseInitializer.cs",
+              "RelativeDocumentMoniker": "ClickBar\\DatabaseInitializer.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\DatabaseInitializer.cs",
+              "RelativeToolTip": "ClickBar\\DatabaseInitializer.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T17:39:56.819Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "RefaundViewModel.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\AppMain\\Statistic\\RefaundViewModel.cs",
+              "RelativeDocumentMoniker": "ClickBar\\ViewModels\\AppMain\\Statistic\\RefaundViewModel.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\AppMain\\Statistic\\RefaundViewModel.cs",
+              "RelativeToolTip": "ClickBar\\ViewModels\\AppMain\\Statistic\\RefaundViewModel.cs",
+              "ViewState": "AgIAAAwEAAAAAAAAAAAcwCEEAAAZAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:24:28.677Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "Nivelacija.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Models\\AppMain\\Statistic\\Nivelacija\\Nivelacija.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Models\\AppMain\\Statistic\\Nivelacija\\Nivelacija.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Models\\AppMain\\Statistic\\Nivelacija\\Nivelacija.cs",
+              "RelativeToolTip": "ClickBar\\Models\\AppMain\\Statistic\\Nivelacija\\Nivelacija.cs",
+              "ViewState": "AgIAABsAAAAAAAAAAAAmwDAAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:22:40.783Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "PaySaleViewModel.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\Sale\\PaySaleViewModel.cs",
+              "RelativeDocumentMoniker": "ClickBar\\ViewModels\\Sale\\PaySaleViewModel.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\Sale\\PaySaleViewModel.cs",
+              "RelativeToolTip": "ClickBar\\ViewModels\\Sale\\PaySaleViewModel.cs",
+              "ViewState": "AgIAAGIAAAAAAAAAAAAcwHoAAAArAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T06:30:09.202Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "ClickOnPaymentPlaceCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\TableOverview\\ClickOnPaymentPlaceCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\TableOverview\\ClickOnPaymentPlaceCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\TableOverview\\ClickOnPaymentPlaceCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\TableOverview\\ClickOnPaymentPlaceCommand.cs",
+              "ViewState": "AgIAAIgAAAAAAAAAAAAcwJ8AAAAdAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:22:14.984Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "SearchCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\ViewCalculation\\SearchCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\AppMain\\Statistic\\ViewCalculation\\SearchCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\ViewCalculation\\SearchCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\AppMain\\Statistic\\ViewCalculation\\SearchCommand.cs",
+              "ViewState": "AgIAAK8AAAAAAAAAAAAcwL4AAAA4AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:20:46.92Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "SaveCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\SaveCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\AppMain\\Statistic\\SaveCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\SaveCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\AppMain\\Statistic\\SaveCommand.cs",
+              "ViewState": "AgIAALYBAAAAAAAAAAAcwM0BAAAZAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:19:01.226Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "EfakturaCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\Refaund\\EfakturaCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\AppMain\\Statistic\\Refaund\\EfakturaCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\Refaund\\EfakturaCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\AppMain\\Statistic\\Refaund\\EfakturaCommand.cs",
+              "ViewState": "AgIAABMCAAAAAAAAAAAcwCYCAAA5AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:17:58.225Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "WhatDidWorkerSellCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\Radnici\\WhatDidWorkerSellCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\AppMain\\Statistic\\Radnici\\WhatDidWorkerSellCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\Radnici\\WhatDidWorkerSellCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\AppMain\\Statistic\\Radnici\\WhatDidWorkerSellCommand.cs",
+              "ViewState": "AgIAACsAAAAAAAAAAAAcwD8AAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:17:37.769Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "CreatePocetnoStanjeCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\PocetnoStanje\\CreatePocetnoStanjeCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\AppMain\\Statistic\\PocetnoStanje\\CreatePocetnoStanjeCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\PocetnoStanje\\CreatePocetnoStanjeCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\AppMain\\Statistic\\PocetnoStanje\\CreatePocetnoStanjeCommand.cs",
+              "ViewState": "AgIAAJYAAAAAAAAAAAAcwKwAAAAxAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:17:04.32Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "PayCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\Sale\\PayCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\Sale\\PayCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\Sale\\PayCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\Sale\\PayCommand.cs",
+              "ViewState": "AgIAAAkCAAAAAAAAAAAcwCgCAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T06:28:55.7Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "PrintDnevniPazarKuhinjaSankCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\Knjizenje\\PrintDnevniPazarKuhinjaSankCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\AppMain\\Statistic\\Knjizenje\\PrintDnevniPazarKuhinjaSankCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\Knjizenje\\PrintDnevniPazarKuhinjaSankCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\AppMain\\Statistic\\Knjizenje\\PrintDnevniPazarKuhinjaSankCommand.cs",
+              "ViewState": "AgIAADwAAAAAAAAAAAAcwF0AAAAlAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:16:00.897Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "SaveSupergroupCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\InventoryStatus\\SaveSupergroupCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\AppMain\\Statistic\\InventoryStatus\\SaveSupergroupCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\InventoryStatus\\SaveSupergroupCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\AppMain\\Statistic\\InventoryStatus\\SaveSupergroupCommand.cs",
+              "ViewState": "AgIAAD4AAAAAAAAAAAAcwFMAAABnAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:15:33.38Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 22,
+              "Title": "SaveGroupItemsCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\InventoryStatus\\SaveGroupItemsCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\AppMain\\Statistic\\InventoryStatus\\SaveGroupItemsCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\InventoryStatus\\SaveGroupItemsCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\AppMain\\Statistic\\InventoryStatus\\SaveGroupItemsCommand.cs",
+              "ViewState": "AgIAAEgAAAAAAAAAAAAcwGYAAAAwAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:15:13.833Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 25,
+              "Title": "LagerListaViewModel.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\AppMain\\Statistic\\LagerListaViewModel.cs",
+              "RelativeDocumentMoniker": "ClickBar\\ViewModels\\AppMain\\Statistic\\LagerListaViewModel.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\AppMain\\Statistic\\LagerListaViewModel.cs",
+              "RelativeToolTip": "ClickBar\\ViewModels\\AppMain\\Statistic\\LagerListaViewModel.cs",
+              "ViewState": "AgIAABMAAAAAAAAAAAAUwI8AAAAbAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:10:27.372Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 26,
+              "Title": "PrintAllNormCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\Norm\\PrintAllNormCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\AppMain\\Statistic\\Norm\\PrintAllNormCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\Norm\\PrintAllNormCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\AppMain\\Statistic\\Norm\\PrintAllNormCommand.cs",
+              "ViewState": "AgIAAFMAAAAAAAAAAAAcwG8AAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:09:49.353Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 27,
+              "Title": "FixNormCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\Norm\\FixNormCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\AppMain\\Statistic\\Norm\\FixNormCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\Norm\\FixNormCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\AppMain\\Statistic\\Norm\\FixNormCommand.cs",
+              "ViewState": "AgIAAO4BAAAAAAAAAAAuwAgCAAAQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:07:43.908Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 23,
+              "Title": "FixInputPriceCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\InventoryStatus\\FixInputPriceCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\AppMain\\Statistic\\InventoryStatus\\FixInputPriceCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\InventoryStatus\\FixInputPriceCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\AppMain\\Statistic\\InventoryStatus\\FixInputPriceCommand.cs",
+              "ViewState": "AgIAAKMCAAAAAAAAAAAcwLkCAAA+AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T08:01:22.657Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 24,
+              "Title": "SaveCalculationCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\Calculation\\SaveCalculationCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\AppMain\\Statistic\\Calculation\\SaveCalculationCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppMain\\Statistic\\Calculation\\SaveCalculationCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\AppMain\\Statistic\\Calculation\\SaveCalculationCommand.cs",
+              "ViewState": "AgIAACUEAAAAAAAAAAAcwDwEAAAdAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T07:52:03.8Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 28,
+              "Title": "ChangePaymentPlaceCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\Sale\\Pay\\SplitOrder\\ChangePaymentPlaceCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\Sale\\Pay\\SplitOrder\\ChangePaymentPlaceCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\Sale\\Pay\\SplitOrder\\ChangePaymentPlaceCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\Sale\\Pay\\SplitOrder\\ChangePaymentPlaceCommand.cs",
+              "ViewState": "AgIAABEAAAAAAAAAAAAcwB8AAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T07:47:14.316Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 29,
+              "Title": "ChangePaymentPlaceViewModel.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\Sale\\ChangePaymentPlaceViewModel.cs",
+              "RelativeDocumentMoniker": "ClickBar\\ViewModels\\Sale\\ChangePaymentPlaceViewModel.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\Sale\\ChangePaymentPlaceViewModel.cs",
+              "RelativeToolTip": "ClickBar\\ViewModels\\Sale\\ChangePaymentPlaceViewModel.cs",
+              "ViewState": "AgIAAA4AAAAAAAAAAAAvwCwAAAA4AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T07:46:15.962Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 30,
+              "Title": "ClickOnPaymentPlaceChangePaymentPlaceCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\Sale\\Pay\\SplitOrder\\ChangePaymentPlace\\ClickOnPaymentPlaceChangePaymentPlaceCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\Sale\\Pay\\SplitOrder\\ChangePaymentPlace\\ClickOnPaymentPlaceChangePaymentPlaceCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\Sale\\Pay\\SplitOrder\\ChangePaymentPlace\\ClickOnPaymentPlaceChangePaymentPlaceCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\Sale\\Pay\\SplitOrder\\ChangePaymentPlace\\ClickOnPaymentPlaceChangePaymentPlaceCommand.cs",
+              "ViewState": "AgIAAAQAAAAAAAAAAAAnwBYAAAAfAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T07:45:08.955Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 32,
+              "Title": "CancelCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\Sale\\Pay\\CancelCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\Sale\\Pay\\CancelCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\Sale\\Pay\\CancelCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\Sale\\Pay\\CancelCommand.cs",
+              "ViewState": "AgIAABIAAAAAAAAAAAAgwB4AAABRAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T07:28:40.697Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 35,
+              "Title": "SplitOrderCommand.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\Sale\\Pay\\SplitOrderCommand.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\Sale\\Pay\\SplitOrderCommand.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\Sale\\Pay\\SplitOrderCommand.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\Sale\\Pay\\SplitOrderCommand.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAqwA8AAAAPAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T07:01:16.958Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 31,
+              "Title": "SplitOrderViewModel.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\Sale\\SplitOrderViewModel.cs",
+              "RelativeDocumentMoniker": "ClickBar\\ViewModels\\Sale\\SplitOrderViewModel.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\Sale\\SplitOrderViewModel.cs",
+              "RelativeToolTip": "ClickBar\\ViewModels\\Sale\\SplitOrderViewModel.cs",
+              "ViewState": "AgIAAHEAAAAAAAAAAAAnwIMAAAAWAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T06:42:52.047Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 33,
+              "Title": "SaleViewModel.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\SaleViewModel.cs",
+              "RelativeDocumentMoniker": "ClickBar\\ViewModels\\SaleViewModel.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\ViewModels\\SaleViewModel.cs",
+              "RelativeToolTip": "ClickBar\\ViewModels\\SaleViewModel.cs",
+              "ViewState": "AgIAAJUAAAAAAAAAAAAQwK0AAAAvAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-12T21:21:51.372Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 34,
+              "Title": "AppStateParameter.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppStateParameter.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Commands\\AppStateParameter.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Commands\\AppStateParameter.cs",
+              "RelativeToolTip": "ClickBar\\Commands\\AppStateParameter.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAIBZwBUAAAAaAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T07:21:43.65Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 37,
+              "Title": "PaySaleWindow.xaml.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Views\\Sale\\PaySale\\PaySaleWindow.xaml.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Views\\Sale\\PaySale\\PaySaleWindow.xaml.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Views\\Sale\\PaySale\\PaySaleWindow.xaml.cs",
+              "RelativeToolTip": "ClickBar\\Views\\Sale\\PaySale\\PaySaleWindow.xaml.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAIBZwBwAAAArAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T06:44:36.753Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 36,
+              "Title": "SplitOrderWindow.xaml.cs",
+              "DocumentMoniker": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Views\\Sale\\PaySale\\SplitOrderWindow.xaml.cs",
+              "RelativeDocumentMoniker": "ClickBar\\Views\\Sale\\PaySale\\SplitOrderWindow.xaml.cs",
+              "ToolTip": "C:\\Git_Private\\ClickBar_github\\ClickBar\\ClickBar\\ClickBar\\Views\\Sale\\PaySale\\SplitOrderWindow.xaml.cs",
+              "RelativeToolTip": "ClickBar\\Views\\Sale\\PaySale\\SplitOrderWindow.xaml.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAzAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-13T06:56:55.853Z"
             }
           ]
         }

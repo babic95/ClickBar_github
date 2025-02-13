@@ -40,9 +40,9 @@ namespace ClickBar.ViewModels.Sale
             _serviceProvider = serviceProvider;
 
             DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
-            var splitOrderViewModel = serviceProvider.GetRequiredService<SplitOrderViewModel>();
+            //var splitOrderViewModel = serviceProvider.GetRequiredService<SplitOrderViewModel>();
 
-            SplitOrderViewModel = splitOrderViewModel;
+            //SplitOrderViewModel = splitOrderViewModel;
 
             Rooms = new ObservableCollection<PartHall>();
             AllNormalPaymentPlaces = new ObservableCollection<PaymentPlace>();

@@ -76,17 +76,16 @@ namespace ClickBar.ViewModels.Sale
         #endregion Fields
 
         #region Constructors
-        public PaySaleViewModel(IServiceProvider serviceProvider)
+        public PaySaleViewModel(IServiceProvider serviceProvider, SaleViewModel saleViewModel)
         {
             _serviceProvider = serviceProvider;
-            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
+            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
             var drljaDbContext = serviceProvider.GetRequiredService<SqliteDrljaDbContext>();
-            var saleViewModel = serviceProvider.GetRequiredService<SaleViewModel>();
 
             DrljaDbContext = drljaDbContext;
-            _payCommand = new Lazy<PayCommand<PaySaleViewModel>>(() => new PayCommand<PaySaleViewModel>(this));
+            _payCommand = new Lazy<PayCommand<PaySaleViewModel>>(() => new PayCommand<PaySaleViewModel>(serviceProvider, this));
             //PayCommand = _serviceProvider.GetRequiredService<PayCommand<PaySaleViewModel>>();
-            SplitOrderCommand = _serviceProvider.GetRequiredService<SplitOrderCommand>();
+            //SplitOrderCommand = _serviceProvider.GetRequiredService<SplitOrderCommand>();
 #if CRNO
             VisibilityBlack = Visibility.Hidden;
 #else
@@ -113,11 +112,14 @@ namespace ClickBar.ViewModels.Sale
             }
             CurrentBuyerIdElement = BuyerIdElements.FirstOrDefault();
 
-            Partners = new ObservableCollection<Partner>();
-            DbContext.Partners.ForEachAsync(partner =>
+            using (var dbContext = DbContext.CreateDbContext())
             {
-                Partners.Add(new Partner(partner));
-            }).Wait();
+                Partners = new ObservableCollection<Partner>();
+                foreach(var partner in dbContext.Partners)
+                {
+                    Partners.Add(new Partner(partner));
+                }
+            }
             CurrentPartner = new Partner();
 
         }
@@ -688,7 +690,7 @@ namespace ClickBar.ViewModels.Sale
         #endregion Properties
 
         #region Internal Properties
-        internal SqlServerDbContext DbContext
+        internal IDbContextFactory<SqlServerDbContext> DbContext
         {
             get; private set;
         }
@@ -698,14 +700,13 @@ namespace ClickBar.ViewModels.Sale
         }
         internal List<Payment> Payment { get; set; }
         internal SaleViewModel SaleViewModel { get; set; }
-        internal Window Window { get; set; }
         #endregion Internal Properties
 
         #region Commands
         public ICommand CancelCommand => new CancelCommand(this);
         public ICommand ClickOnNumberButtonCommand => new ClickOnNumberButtonCommand(this);
         public ICommand PayCommand => _payCommand.Value;
-        public ICommand SplitOrderCommand { get; }
+        public ICommand SplitOrderCommand => new SplitOrderCommand(this, _serviceProvider);
         public ICommand ChangeFocusCommand => new ChangeFocusCommand(this);
         #endregion Commands
 

@@ -157,10 +157,10 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             if (DbContext.ItemGroups != null &&
                 DbContext.ItemGroups.Any())
             {
-                await DbContext.ItemGroups.ForEachAsync(gropu =>
+                foreach(var gropu in DbContext.ItemGroups)
                 {
                     AllGroups.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
-                });
+                }
             }
 
             SelectedDate = DateTime.Now;
@@ -204,7 +204,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             if (DbContext.Items != null &&
                 DbContext.Items.Any())
             {
-                await DbContext.Items.Where(i => i.IdNorm == null).ForEachAsync(async x =>
+                foreach(var x in DbContext.Items.Where(i => i.IdNorm == null))
                 {
                     decimal totalQuantityPocetnoStanje = 0;
 
@@ -236,10 +236,10 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                                 if (itemsInCal != null &&
                                 itemsInCal.Any())
                                 {
-                                    await itemsInCal.ForEachAsync(i =>
+                                    foreach(var i in itemsInCal)
                                     {
                                         quantity -= i.CalculationItem.Quantity;
-                                    });
+                                    }
                                 }
                             }
 
@@ -251,13 +251,13 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                                 if (itemsInPazar != null &&
                                 itemsInPazar.Any())
                                 {
-                                    await itemsInPazar.ForEachAsync(i =>
+                                    foreach(var i in itemsInPazar)
                                     {
                                         if (i.InvoiceItem.Quantity != null)
                                         {
                                             quantity += i.InvoiceItem.Quantity.Value;
                                         }
-                                    });
+                                    }
                                 }
                             }
                         }
@@ -274,7 +274,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                             TotalUlazLagerLista += Decimal.Round(it.Item.InputUnitPrice.Value * it.Quantity, 2);
                         }
                     }
-                });
+                }
             }
 
             CurrentGroup = AllGroups.FirstOrDefault();

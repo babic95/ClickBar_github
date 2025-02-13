@@ -57,7 +57,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         .Select(item => item.Item);
                 }
 
-                await items.ForEachAsync(itemDB =>
+                foreach(var itemDB in items)
                 {
                     if (itemDB.Id == "000024")
                     {
@@ -88,7 +88,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         itemDB,
                         quantityPocetnoStanje,
                         inputPricePocetnoStanje);
-                });
+                }
 
                 MessageBox.Show("Uspešno sređivanje prosečnih ulaznih cena!",
                     "Uspešno",
@@ -338,7 +338,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
             if (proknjizeniPazari != null &&
                 proknjizeniPazari.Any())
             {
-                await proknjizeniPazari.ForEachAsync(async prPazar =>
+                foreach(var prPazar in proknjizeniPazari)
                 {
                     var neproknjizeniPazariForDate = neproknjizeniPazari.Where(paz => paz.Inv.SdcDateTime.HasValue &&
                     prPazar.KnjizenjeInvoice.Invoice.SdcDateTime.HasValue &&
@@ -347,7 +347,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                     if (neproknjizeniPazariForDate != null &&
                     neproknjizeniPazariForDate.Any())
                     {
-                        await neproknjizeniPazariForDate.ForEachAsync(paz =>
+                        foreach(var paz in neproknjizeniPazariForDate)
                         {
                             if (!neproknjizeni.Any() ||
                             !neproknjizeni.Contains(paz.Inv.Id))
@@ -359,7 +359,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                                     neproknjizeni.Add(paz.Inv.Id);
                                 }
                             }
-                        });
+                        }
                     }
 
                     if (prPazar.InvItem.Quantity.HasValue)
@@ -376,7 +376,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         if (kalkulacijeForDate != null &&
                         kalkulacijeForDate.Any())
                         {
-                            await kalkulacijeForDate.ForEachAsync(kal =>
+                            foreach(var kal in kalkulacijeForDate)
                             {
                                 if (!kalkulacijeOdradjene.Any() ||
                                 !kalkulacijeOdradjene.Contains(kal.Cal.Id))
@@ -390,31 +390,31 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                                         decimal quantityTrenutno = Math.Abs(itemDB.TotalQuantity) + qunatityPazari - qunatityKalkulacija;
                                         decimal quantityUkupno = Math.Abs(itemDB.TotalQuantity) + qunatityPazari - qunatityKalkulacija - kal.CalItem.Quantity;
 
-                                        decimal delilac = (quantityTrenutno * unitPrice) - kal.CalItem.InputPrice * kal.CalItem.Quantity;
+                                        decimal delilac1 = (quantityTrenutno * unitPrice) - kal.CalItem.InputPrice * kal.CalItem.Quantity;
 
-                                        if (delilac == 0 ||
+                                        if (delilac1 == 0 ||
                                         quantityUkupno == 0)
                                         {
                                             unitPrice = 0;
                                         }
                                         else
                                         {
-                                            unitPrice = Decimal.Round(delilac / quantityUkupno, 2);
+                                            unitPrice = Decimal.Round(delilac1 / quantityUkupno, 2);
                                         }
                                     }
                                     qunatityKalkulacija += kal.CalItem.Quantity;
 
                                     kalkulacijeOdradjene.Add(kal.Cal.Id);
                                 }
-                            });
+                            }
                         }
                     }
-                });
+                }
             }
             if (neproknjizeniPazari != null &&
                 neproknjizeniPazari.Any())
             {
-                await neproknjizeniPazari.ForEachAsync(async pazar =>
+                foreach(var pazar in neproknjizeniPazari)
                 {
                     if (pazar.InvItem.Quantity.HasValue)
                     {
@@ -430,7 +430,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         if (kalkulacijeForDate != null &&
                             kalkulacijeForDate.Any())
                         {
-                            await kalkulacijeForDate.ForEachAsync(kal =>
+                            foreach(var kal in kalkulacijeForDate)
                             {
                                 if (!kalkulacijeOdradjene.Any() ||
                                     !kalkulacijeOdradjene.Contains(kal.Cal.Id))
@@ -444,15 +444,15 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                                     }
                                     else
                                     {
-                                        decimal delilac = (quantityTrenutno * unitPrice) - kal.CalItem.InputPrice * kal.CalItem.Quantity;
+                                        decimal delilac1 = (quantityTrenutno * unitPrice) - kal.CalItem.InputPrice * kal.CalItem.Quantity;
 
-                                        if (delilac == 0 || quantityPreKalkulacije == 0)
+                                        if (delilac1 == 0 || quantityPreKalkulacije == 0)
                                         {
                                             unitPrice = 0;
                                         }
                                         else
                                         {
-                                            unitPrice = Decimal.Round(delilac / quantityPreKalkulacije, 2);
+                                            unitPrice = Decimal.Round(delilac1 / quantityPreKalkulacije, 2);
                                         }
 
                                         //unitPrice = Decimal.Round(((quantityTrenutno * unitPrice) - kal.CalItem.InputPrice * kal.CalItem.Quantity) / quantityPreKalkulacije, 2);
@@ -462,15 +462,15 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
 
                                     kalkulacijeOdradjene.Add(kal.Cal.Id);
                                 }
-                            });
+                            }
                         }
                     }
-                });
+                }
             }
             if (kalkulacije != null &&
                 kalkulacije.Any())
             {
-                await kalkulacije.ForEachAsync(kal =>
+                foreach(var kal in kalkulacije)
                 {
                     if (!kalkulacijeOdradjene.Any() ||
                         !kalkulacijeOdradjene.Contains(kal.Cal.Id))
@@ -481,21 +481,21 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         }
                         else
                         {
-                            decimal delilac = (Math.Abs(itemDB.TotalQuantity) + qunatityPazari) * unitPrice - kal.CalItem.InputPrice * kal.CalItem.Quantity;
-                            decimal deljenik = Math.Abs(itemDB.TotalQuantity) + qunatityPazari - kal.CalItem.Quantity - qunatityKalkulacija;
+                            decimal delilac1 = (Math.Abs(itemDB.TotalQuantity) + qunatityPazari) * unitPrice - kal.CalItem.InputPrice * kal.CalItem.Quantity;
+                            decimal deljenik1 = Math.Abs(itemDB.TotalQuantity) + qunatityPazari - kal.CalItem.Quantity - qunatityKalkulacija;
 
-                            if (delilac == 0 || deljenik == 0)
+                            if (delilac1 == 0 || deljenik1 == 0)
                             {
                                 unitPrice = 0;
                             }
                             else
                             {
-                                unitPrice = Decimal.Round(delilac / deljenik, 2);
+                                unitPrice = Decimal.Round(delilac1 / deljenik1, 2);
                             }
                         }
                         qunatityKalkulacija += kal.CalItem.Quantity;
                     }
-                });
+                }
             }
 
             decimal quantityTotal = itemDB.TotalQuantity + popisQuantity + qunatityPazari - qunatityKalkulacija;
@@ -521,7 +521,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
             {
                 proknjizeniPazari = proknjizeniPazari.OrderBy(paz => paz.KnjizenjeInvoice.Invoice.SdcDateTime);
 
-                await proknjizeniPazari.ForEachAsync(async prPazar =>
+                foreach(var prPazar in proknjizeniPazari)
                 {
                     if (kalkulacije != null &&
                         kalkulacije.Any())
@@ -534,21 +534,21 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         {
                             kalkulacijeForDate = kalkulacijeForDate.OrderBy(kal => kal.Cal.CalculationDate);
 
-                            await kalkulacijeForDate.ForEachAsync(kal =>
+                            foreach(var kal in kalkulacijeForDate)
                             {
                                 if (!kalkulacijeOdradjene.Any() ||
                                 !kalkulacijeOdradjene.Contains(kal.Cal.Id))
                                 {
-                                    decimal delilac = Math.Abs(quantityTotal) * itemDB.InputUnitPrice.Value + kal.CalItem.Quantity * kal.CalItem.InputPrice;
-                                    decimal deljenik = Math.Abs(quantityTotal) + kal.CalItem.Quantity;
+                                    decimal delilac1 = Math.Abs(quantityTotal) * itemDB.InputUnitPrice.Value + kal.CalItem.Quantity * kal.CalItem.InputPrice;
+                                    decimal deljenik1 = Math.Abs(quantityTotal) + kal.CalItem.Quantity;
 
-                                    if (delilac == 0 || deljenik == 0)
+                                    if (delilac1 == 0 || deljenik1 == 0)
                                     {
                                         itemDB.InputUnitPrice = unitPrice = 0;
                                     }
                                     else
                                     {
-                                        itemDB.InputUnitPrice = unitPrice = Decimal.Round(delilac / deljenik, 2);
+                                        itemDB.InputUnitPrice = unitPrice = Decimal.Round(delilac1 / deljenik1, 2);
                                     }
 
                                     qunatityKalkulacija -= kal.CalItem.Quantity;
@@ -556,7 +556,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
 
                                     kalkulacijeOdradjene.Add(kal.Cal.Id);
                                 }
-                            });
+                            }
                         }
                     }
 
@@ -572,7 +572,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         {
                             neproknjizeniPazariForDate = neproknjizeniPazariForDate.OrderBy(paz => paz.Inv.SdcDateTime);
 
-                            await neproknjizeniPazariForDate.ForEachAsync(paz =>
+                            foreach(var paz in neproknjizeniPazariForDate)
                             {
                                 if (!neproknjizeni.Any() ||
                                 !neproknjizeni.Contains(paz.Inv.Id))
@@ -594,7 +594,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                                         neproknjizeni.Add(paz.Inv.Id);
                                     }
                                 }
-                            });
+                            }
                         }
                     }
 
@@ -611,14 +611,14 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         prPazar.InvItem.InputUnitPrice = itemDB.InputUnitPrice;
                         _viewModel.DbContext.ItemInvoices.Update(prPazar.InvItem);
                     }
-                });
+                }
             }
             if (neproknjizeniPazari != null &&
                 neproknjizeniPazari.Any())
             {
                 neproknjizeniPazari = neproknjizeniPazari.OrderBy(paz => paz.Inv.SdcDateTime);
 
-                await neproknjizeniPazari.ForEachAsync(async pazar =>
+                foreach(var pazar in neproknjizeniPazari)
                 {
                     if (kalkulacije != null &&
                         kalkulacije.Any())
@@ -631,21 +631,21 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         {
                             kalkulacijeForDate = kalkulacijeForDate.OrderBy(kal => kal.Cal.CalculationDate);
 
-                            await kalkulacijeForDate.ForEachAsync(kal =>
+                            foreach(var kal in kalkulacijeForDate)
                             {
                                 if (!kalkulacijeOdradjene.Any() ||
                                 !kalkulacijeOdradjene.Contains(kal.Cal.Id))
                                 {
-                                    decimal delilac = Math.Abs(quantityTotal) * unitPrice + kal.CalItem.Quantity * kal.CalItem.InputPrice;
-                                    decimal deljenik = Math.Abs(quantityTotal) + kal.CalItem.Quantity;
+                                    decimal delilac1 = Math.Abs(quantityTotal) * unitPrice + kal.CalItem.Quantity * kal.CalItem.InputPrice;
+                                    decimal deljenik1 = Math.Abs(quantityTotal) + kal.CalItem.Quantity;
 
-                                    if (delilac == 0 || deljenik == 0)
+                                    if (delilac1 == 0 || deljenik1 == 0)
                                     {
                                         itemDB.InputUnitPrice = unitPrice = 0;
                                     }
                                     else
                                     {
-                                        itemDB.InputUnitPrice = unitPrice = Decimal.Round(delilac / deljenik, 2);
+                                        itemDB.InputUnitPrice = unitPrice = Decimal.Round(delilac1 / deljenik1, 2);
                                     }
 
                                     qunatityKalkulacija -= kal.CalItem.Quantity;
@@ -653,7 +653,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
 
                                     kalkulacijeOdradjene.Add(kal.Cal.Id);
                                 }
-                            });
+                            }
                         }
                     }
                     if (pazar.InvItem.Quantity.HasValue)
@@ -670,34 +670,34 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         }
                         _viewModel.DbContext.ItemInvoices.Update(pazar.InvItem);
                     }
-                });
+                }
             }
             if (kalkulacije != null &&
                 kalkulacije.Any())
             {
                 kalkulacije = kalkulacije.OrderBy(kal => kal.Cal.CalculationDate);
 
-                await kalkulacije.ForEachAsync(kal =>
+                foreach(var kal in kalkulacije)
                 {
                     if (!kalkulacijeOdradjene.Any() ||
                     !kalkulacijeOdradjene.Contains(kal.Cal.Id))
                     {
-                        decimal delilac = Math.Abs(quantityTotal) * unitPrice + kal.CalItem.InputPrice * kal.CalItem.Quantity;
-                        decimal deljenik = Math.Abs(quantityTotal) + kal.CalItem.Quantity;
+                        decimal delilac1 = Math.Abs(quantityTotal) * unitPrice + kal.CalItem.InputPrice * kal.CalItem.Quantity;
+                        decimal deljenik1 = Math.Abs(quantityTotal) + kal.CalItem.Quantity;
 
-                        if (delilac == 0 || deljenik == 0)
+                        if (delilac1 == 0 || deljenik1 == 0)
                         {
                             itemDB.InputUnitPrice = unitPrice = 0;
                         }
                         else
                         {
-                            itemDB.InputUnitPrice = unitPrice = Decimal.Round(delilac / deljenik, 2);
+                            itemDB.InputUnitPrice = unitPrice = Decimal.Round(delilac1 / deljenik1, 2);
                         }
 
                         qunatityKalkulacija -= kal.CalItem.Quantity;
                         quantityTotal += kal.CalItem.Quantity;
                     }
-                });
+                }
 
                 _viewModel.DbContext.Items.Update(itemDB);
                 _viewModel.DbContext.SaveChanges();
@@ -745,7 +745,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
             {
                 proknjizeniPazari = proknjizeniPazari.OrderBy(paz => paz.KnjizenjeInvoice.Invoice.SdcDateTime);
 
-                await proknjizeniPazari.ForEachAsync(async prPazar =>
+                foreach(var prPazar in proknjizeniPazari)
                 {
                     if (kalkulacije != null &&
                         kalkulacije.Any())
@@ -758,7 +758,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         {
                             kalkulacijeForDate = kalkulacijeForDate.OrderBy(kal => kal.Cal.CalculationDate);
 
-                            await kalkulacijeForDate.ForEachAsync(kal =>
+                            foreach(var kal in kalkulacijeForDate)
                             {
                                 if (!kalkulacijeOdradjene.Any() ||
                                 !kalkulacijeOdradjene.Contains(kal.Cal.Id))
@@ -785,7 +785,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
 
                                     kalkulacijeOdradjene.Add(kal.Cal.Id);
                                 }
-                            });
+                            }
                         }
                     }
 
@@ -801,7 +801,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         {
                             neproknjizeniPazariForDate = neproknjizeniPazariForDate.OrderBy(paz => paz.Inv.SdcDateTime);
 
-                            await neproknjizeniPazariForDate.ForEachAsync(paz =>
+                            foreach(var paz in neproknjizeniPazariForDate)
                             {
                                 if (!neproknjizeni.Any() ||
                                 !neproknjizeni.Contains(paz.Inv.Id))
@@ -819,10 +819,8 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                                         neproknjizeni.Add(paz.Inv.Id);
                                     }
                                 }
-                            });
+                            }
                         }
-
-
                     }
 
                     if (prPazar.InvItem.Quantity.HasValue)
@@ -835,7 +833,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         prPazar.InvItem.InputUnitPrice = prosecnaCena;
                         _viewModel.DbContext.ItemInvoices.Update(prPazar.InvItem);
                     }
-                });
+                }
             }
             else
             {
@@ -844,7 +842,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                 {
                     neproknjizeniPazari = neproknjizeniPazari.OrderBy(paz => paz.Inv.SdcDateTime);
 
-                    await neproknjizeniPazari.ForEachAsync(async pazar =>
+                    foreach(var pazar in neproknjizeniPazari)
                     {
                         if (kalkulacije != null &&
                             kalkulacije.Any())
@@ -857,7 +855,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                             {
                                 kalkulacijeForDate = kalkulacijeForDate.OrderBy(kal => kal.Cal.CalculationDate);
 
-                                await kalkulacijeForDate.ForEachAsync(kal =>
+                                foreach(var kal in kalkulacijeForDate)
                                 {
                                     if (!kalkulacijeOdradjene.Any() ||
                                     !kalkulacijeOdradjene.Contains(kal.Cal.Id))
@@ -884,7 +882,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
 
                                         kalkulacijeOdradjene.Add(kal.Cal.Id);
                                     }
-                                });
+                                }
                             }
                         }
                         if (pazar.InvItem.Quantity.HasValue)
@@ -897,7 +895,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                             pazar.InvItem.InputUnitPrice = prosecnaCena;
                             _viewModel.DbContext.ItemInvoices.Update(pazar.InvItem);
                         }
-                    });
+                    }
                 }
                 else
                 {
@@ -906,7 +904,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                     {
                         kalkulacije = kalkulacije.OrderBy(kal => kal.Cal.CalculationDate);
 
-                        await kalkulacije.ForEachAsync(kal =>
+                        foreach(var kal in kalkulacije)
                         {
                             if (prosecnaCena == 0)
                             {
@@ -928,7 +926,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                             }
 
                             quantity += kal.CalItem.Quantity;
-                        });
+                        }
                     }
                 }
             }

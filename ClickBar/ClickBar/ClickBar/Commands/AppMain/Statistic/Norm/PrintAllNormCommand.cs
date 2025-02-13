@@ -52,7 +52,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
             {
                 Dictionary<string, Dictionary<string, List<NormGlobal>>> norms = new Dictionary<string, Dictionary<string, List<NormGlobal>>>();
 
-                await allNorms.ForEachAsync(async norm =>
+                foreach(var norm in allNorms)
                 {
                     var groupNorm = _currentViewModel.DbContext.ItemGroups.Find(norm.IdItemGroup);
 
@@ -74,7 +74,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                             if (normItems != null &&
                             normItems.Any())
                             {
-                                await normItems.ForEachAsync(itemInNorm =>
+                                foreach(var itemInNorm in normItems)
                                 {
                                     var itemDB = _currentViewModel.DbContext.Items.Find(itemInNorm.IdItem);
 
@@ -88,7 +88,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                                             JM = itemDB.Jm
                                         });
                                     }
-                                });
+                                }
 
                                 if (norms.ContainsKey(supergroup.Name))
                                 {
@@ -109,7 +109,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                             }
                         }
                     }
-                });
+                }
 
                 PrinterManager.Instance.PrintNorms(_currentViewModel.DbContext, norms);
             }

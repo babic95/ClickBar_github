@@ -220,7 +220,10 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder.ChangePaymentPlace
 
                             _viewModel.SplitOrderViewModel.ChangePaymentPlaceWindow.Close();
                             _viewModel.SplitOrderViewModel.PaySaleViewModel.SplitOrderWindow.Close();
-                            _viewModel.SplitOrderViewModel.PaySaleViewModel.Window.Close();
+                            if (_viewModel.SplitOrderViewModel.PaySaleViewModel.SaleViewModel.PayWindow != null)
+                            {
+                                _viewModel.SplitOrderViewModel.PaySaleViewModel.SaleViewModel.PayWindow.Close();
+                            }
                             _viewModel.SplitOrderViewModel.PaySaleViewModel.SaleViewModel.Reset();
                         }
                     }

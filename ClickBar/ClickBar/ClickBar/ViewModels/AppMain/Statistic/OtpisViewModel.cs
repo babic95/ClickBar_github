@@ -49,11 +49,11 @@ namespace ClickBar.ViewModels.AppMain.Statistic
 
             _allItems = new List<Invertory>();
 
-            DbContext.Items.ForEachAsync(itemDB =>
+            foreach(var itemDB in DbContext.Items)
             {
                 Invertory item = new Invertory(new Item(itemDB), -1, itemDB.TotalQuantity, 0, 0, false);
                 _allItems.Add(item);
-            }).Wait();
+            }
 
             Items = new ObservableCollection<Invertory>(_allItems);
 

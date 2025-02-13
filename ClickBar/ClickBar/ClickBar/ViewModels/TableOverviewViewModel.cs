@@ -364,7 +364,7 @@ namespace ClickBar.ViewModels
                     TotalNarudzbeDostava2 = 0;
                     TotalNarudzbe = 0;
 
-                    await allStavkeToDay.ForEachAsync(s =>
+                    foreach(var s in allStavkeToDay)
                     {
                         try
                         {
@@ -435,7 +435,7 @@ namespace ClickBar.ViewModels
                         {
                             Log.Error("SetKuhinjaNarudzbine -> Error processing order items: ", ex);
                         }
-                    });
+                    }
                     TotalNarudzbe = TotalNarudzbeSmena1 +
                         TotalNarudzbeSmena2 +
                         TotalNarudzbeDostava1 +
@@ -647,7 +647,7 @@ namespace ClickBar.ViewModels
                 {
                     Application.Current.Dispatcher.Invoke(async () =>
                     {
-                        await noveNarudzbe.ForEachAsync(n =>
+                        foreach(var n in noveNarudzbe)
                         {
                             if (n.TR_STO.StartsWith("S"))
                             {
@@ -673,7 +673,7 @@ namespace ClickBar.ViewModels
                             {
                                 Log.Error("String ne počinje sa 'S' za broj stola iz Drljine baze.");
                             }
-                        });
+                        }
                     });
                 }
             }

@@ -898,13 +898,13 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                         if (norms != null &&
                         norms.Any())
                         {
-                            await norms.ForEachAsync(norm =>
+                            foreach(var norm in norms)
                             {
                                 var normItem = DbContext.Items.Find(norm.IdItem);
 
                                 if (normItem != null)
                                 {
-                                    var itemInvoice = new ItemInvoiceDB()
+                                    var itemInvoice1 = new ItemInvoiceDB()
                                     {
                                         Id = itemInvoiceId++,
                                         Quantity = item.Quantity * norm.Quantity,
@@ -918,9 +918,9 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                                         IsSirovina = 1,
                                         //Item = itemDB
                                     };
-                                    DbContext.Add(itemInvoice);
+                                    DbContext.Add(itemInvoice1);
                                 }
-                            });
+                            }
                         }
                     }
 
@@ -993,7 +993,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                     if (itemInNorm != null &&
                     itemInNorm.Any())
                     {
-                        await itemInNorm.ForEachAsync(norm =>
+                        foreach(var norm in itemInNorm)
                         {
                             var itm = DbContext.Items.Find(norm.IdItem);
 
@@ -1055,7 +1055,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                                     }
                                 }
                             }
-                        });
+                        }
                     }
                     else
                     {

@@ -40,10 +40,10 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             if (DbContext.Supergroups != null &&
                 DbContext.Supergroups.Any())
             {
-                DbContext.Supergroups.ForEachAsync(supergroup =>
+                foreach(var supergroup in DbContext.Supergroups)
                 {
                     AllSupergroups.Add(new Supergroup(supergroup.Id, supergroup.Name));
-                }).Wait();
+                }
 
                 CurrentSupergroupSearch = AllSupergroups.FirstOrDefault();
             }

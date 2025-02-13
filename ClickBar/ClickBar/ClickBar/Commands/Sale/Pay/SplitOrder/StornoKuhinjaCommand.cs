@@ -117,13 +117,15 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder
                         }
                         MessageBox.Show("Uspešno!", "Uspešno", MessageBoxButton.OK, MessageBoxImage.Information);
                         _viewModel.PaySaleViewModel.SplitOrderWindow.Close();
-                        _viewModel.PaySaleViewModel.Window.Close();
+
+                        if(_viewModel.PaySaleViewModel.SaleViewModel.PayWindow != null)
+                        {
+                            _viewModel.PaySaleViewModel.SaleViewModel.PayWindow.Close();
+                        }
 
                         _viewModel.PaySaleViewModel.SaleViewModel.Reset();
 
-                        AppStateParameter appStateParameter = new AppStateParameter(_viewModel.DbContext,
-                            _viewModel.DrljaDbContext,
-                            AppStateEnumerable.TableOverview,
+                        AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
                             _viewModel.PaySaleViewModel.SaleViewModel.LoggedCashier,
                             _viewModel.PaySaleViewModel.SaleViewModel);
                         _viewModel.PaySaleViewModel.SaleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);

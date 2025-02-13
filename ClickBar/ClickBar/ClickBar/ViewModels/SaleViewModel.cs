@@ -80,7 +80,7 @@ namespace ClickBar.ViewModels
             //TableOverviewCommand = serviceProvider.GetRequiredService<TableOverviewCommand>();
             //HookOrderOnTableCommand = serviceProvider.GetRequiredService<HookOrderOnTableCommand>();
             //PayCommand = _serviceProvider.GetRequiredService<PayCommand<SaleViewModel>>();
-            _payCommand = new Lazy<PayCommand<SaleViewModel>>(() => new PayCommand<SaleViewModel>(this));
+            _payCommand = new Lazy<PayCommand<SaleViewModel>>(() => new PayCommand<SaleViewModel>(_serviceProvider, this));
 
             var comPort = SettingsManager.Instance.GetComPort();
 
@@ -171,6 +171,7 @@ namespace ClickBar.ViewModels
         internal List<ItemDB> AllItems { get; set; }
         internal CashierDB LoggedCashier { get; set; }
         internal Window WindowZelja { get; set; }
+        internal Window PayWindow { get; set; }
         #endregion Internal Properties
 
         #region Properties

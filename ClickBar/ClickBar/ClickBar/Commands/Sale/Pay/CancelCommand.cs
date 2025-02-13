@@ -29,7 +29,11 @@ namespace ClickBar.Commands.Sale.Pay
             if(_viewModel is PaySaleViewModel)
             {
                 PaySaleViewModel paySaleViewModel = (PaySaleViewModel)_viewModel;
-                paySaleViewModel.Window.Close();
+
+                if(paySaleViewModel.SaleViewModel.PayWindow != null)
+                {
+                    paySaleViewModel.SaleViewModel.PayWindow.Close();
+                }
             }
             else if(_viewModel is SplitOrderViewModel)
             {

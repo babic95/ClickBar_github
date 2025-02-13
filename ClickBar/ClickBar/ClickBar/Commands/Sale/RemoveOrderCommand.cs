@@ -186,9 +186,7 @@ namespace ClickBar.Commands.Sale
 
                         _viewModel.Reset();
 
-                        AppStateParameter appStateParameter = new AppStateParameter(_viewModel.DbContext,
-                            _viewModel.DrljaDbContext,
-                            AppStateEnumerable.TableOverview,
+                        AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
                             _viewModel.LoggedCashier,
                             _viewModel);
                         _viewModel.UpdateAppViewModelCommand.Execute(appStateParameter);

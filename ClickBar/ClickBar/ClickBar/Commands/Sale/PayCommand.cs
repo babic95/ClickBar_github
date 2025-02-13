@@ -43,6 +43,7 @@ namespace ClickBar.Commands.Sale
         public event EventHandler CanExecuteChanged;
 
         private TViewModel _viewModel;
+        private IServiceProvider _serviceProvider;
 
         private const int ERROR_SHARING_VIOLATION = 32;
         private const int ERROR_LOCK_VIOLATION = 33;
@@ -50,9 +51,10 @@ namespace ClickBar.Commands.Sale
         private DateTime _timer;
         private List<Payment> _payment;
 
-        public PayCommand(TViewModel viewModel)
+        public PayCommand(IServiceProvider serviceProvider, TViewModel viewModel)
         {
             _viewModel = viewModel;
+            _serviceProvider = serviceProvider;
         }
 
         public bool CanExecute(object? parameter)
@@ -85,8 +87,9 @@ namespace ClickBar.Commands.Sale
                         });
                     }
 
-                    PaySaleWindow paySaleWindow = new PaySaleWindow(saleViewModel);// _serviceProvider.GetRequiredService<PaySaleWindow>();
-                    paySaleWindow.ShowDialog();
+                    PaySaleViewModel paySaleViewModel = new PaySaleViewModel(_serviceProvider, saleViewModel);
+                    saleViewModel.PayWindow = new PaySaleWindow(paySaleViewModel);// _serviceProvider.GetRequiredService<PaySaleWindow>();
+                    saleViewModel.PayWindow.ShowDialog();
 
                     saleViewModel.Reset();
                 }
@@ -160,31 +163,34 @@ namespace ClickBar.Commands.Sale
                         }
                     }
 
-                    var partnerDB = paySaleViewModel.DbContext.Partners.AsNoTracking().FirstOrDefault(partner => partner.Pib == paySaleViewModel.BuyerId);
-                    if (partnerDB == null)
+                    using (var dbContext = paySaleViewModel.DbContext.CreateDbContext())
                     {
-                        if (string.IsNullOrEmpty(paySaleViewModel.BuyerName))
+                        var partnerDB = dbContext.Partners.AsNoTracking().FirstOrDefault(partner => partner.Pib == paySaleViewModel.BuyerId);
+                        if (partnerDB == null)
                         {
-                            var result = MessageBox.Show("Ako želite da zavedete kupca u bazu, morate da unesete i naziv firme?",
-                                "Unos nove firme?",
-                                MessageBoxButton.YesNo,
-                                MessageBoxImage.Question);
+                            if (string.IsNullOrEmpty(paySaleViewModel.BuyerName))
+                            {
+                                var result = MessageBox.Show("Ako želite da zavedete kupca u bazu, morate da unesete i naziv firme?",
+                                    "Unos nove firme?",
+                                    MessageBoxButton.YesNo,
+                                    MessageBoxImage.Question);
 
-                            if (result == MessageBoxResult.Yes)
-                            {
-                                return;
+                                if (result == MessageBoxResult.Yes)
+                                {
+                                    return;
+                                }
                             }
-                        }
-                        else
-                        {
-                            partnerDB = new PartnerDB()
+                            else
                             {
-                                Pib = paySaleViewModel.BuyerId,
-                                Name = paySaleViewModel.BuyerName,
-                                Address = !string.IsNullOrEmpty(paySaleViewModel.BuyerAdress) ? paySaleViewModel.BuyerAdress : null
-                            };
-                            paySaleViewModel.DbContext.Partners.Add(partnerDB);
-                            paySaleViewModel.DbContext.SaveChanges();
+                                partnerDB = new PartnerDB()
+                                {
+                                    Pib = paySaleViewModel.BuyerId,
+                                    Name = paySaleViewModel.BuyerName,
+                                    Address = !string.IsNullOrEmpty(paySaleViewModel.BuyerAdress) ? paySaleViewModel.BuyerAdress : null
+                                };
+                                dbContext.Partners.Add(partnerDB);
+                                await dbContext.SaveChangesAsync();
+                            }
                         }
                     }
                 }
@@ -228,7 +234,11 @@ namespace ClickBar.Commands.Sale
 
                 await FinisedSale(paySaleViewModel, popust);
 
-                paySaleViewModel.Window.Close();
+                if(paySaleViewModel.SaleViewModel.PayWindow != null &&
+                    paySaleViewModel.SaleViewModel.PayWindow.IsActive)
+                {
+                    paySaleViewModel.SaleViewModel.PayWindow.Close();
+                }
             }
             else if (_viewModel is SplitOrderViewModel splitOrderViewModel)
             {
@@ -479,110 +489,113 @@ namespace ClickBar.Commands.Sale
         {
             try
             {
-                var unprocessedOrders = paySaleViewModel.DbContext.UnprocessedOrders.FirstOrDefault(order => order.PaymentPlaceId == tableId);
-
-                if (unprocessedOrders != null)
+                using (var dbContext = paySaleViewModel.DbContext.CreateDbContext())
                 {
-                    OrderDB orderDB = new OrderDB()
-                    {
-                        InvoiceId = invoice.Id,
-                        PaymentPlaceId = tableId,
-                        CashierId = paySaleViewModel.SaleViewModel.LoggedCashier.Id
-                    };
-                    paySaleViewModel.DbContext.Orders.Add(orderDB);
+                    var unprocessedOrders = dbContext.UnprocessedOrders.FirstOrDefault(order => order.PaymentPlaceId == tableId);
 
-                    var itemsInUnprocessedOrder = paySaleViewModel.DbContext.ItemsInUnprocessedOrder.AsNoTracking().Where(item => item.UnprocessedOrderId == unprocessedOrders.Id);
-
-                    //decimal totalAmount = unprocessedOrders.TotalAmount;
-                    if (itemsInUnprocessedOrder != null &&
-                        itemsInUnprocessedOrder.Any())
+                    if (unprocessedOrders != null)
                     {
-                        if (itemsInUnprocessedOrder.Sum(a => a.Quantity) == invoice.ItemInvoices.Where(a => a.IsSirovina == null ||
-                        a.IsSirovina == 0).Sum(b => b.Quantity))
+                        OrderDB orderDB = new OrderDB()
                         {
-                            paySaleViewModel.DbContext.ItemsInUnprocessedOrder.RemoveRange(itemsInUnprocessedOrder);
-                            paySaleViewModel.DbContext.SaveChanges();
+                            InvoiceId = invoice.Id,
+                            PaymentPlaceId = tableId,
+                            CashierId = paySaleViewModel.SaleViewModel.LoggedCashier.Id
+                        };
+                        dbContext.Orders.Add(orderDB);
+
+                        var itemsInUnprocessedOrder = dbContext.ItemsInUnprocessedOrder.AsNoTracking().Where(item => item.UnprocessedOrderId == unprocessedOrders.Id);
+
+                        //decimal totalAmount = unprocessedOrders.TotalAmount;
+                        if (itemsInUnprocessedOrder != null &&
+                            itemsInUnprocessedOrder.Any())
+                        {
+                            if (itemsInUnprocessedOrder.Sum(a => a.Quantity) == invoice.ItemInvoices.Where(a => a.IsSirovina == null ||
+                            a.IsSirovina == 0).Sum(b => b.Quantity))
+                            {
+                                dbContext.ItemsInUnprocessedOrder.RemoveRange(itemsInUnprocessedOrder);
+                                dbContext.SaveChanges();
+                            }
+                            else
+                            {
+                                foreach(var item in itemsInUnprocessedOrder)
+                                {
+                                    var invoiceItem = invoice.ItemInvoices.FirstOrDefault(itemInvoice => itemInvoice.ItemCode == item.ItemId);
+
+                                    if (invoiceItem != null)
+                                    {
+                                        if (invoiceItem.Quantity.HasValue &&
+                                        invoiceItem.TotalAmout.HasValue &&
+                                        invoiceItem.UnitPrice.HasValue)
+                                        {
+                                            decimal ta = 0;
+                                            if (item.Quantity <= invoiceItem.Quantity.Value)
+                                            {
+                                                ta = item.Quantity * invoiceItem.UnitPrice.Value;
+                                                dbContext.ItemsInUnprocessedOrder.Remove(item);
+
+                                                Log.Debug($"PayCommand -> TakingDownOrder -> obrisan je artikal sa stola_{unprocessedOrders.PaymentPlaceId} - {item.ItemId}: {item.Quantity}  {ta} din");
+                                            }
+                                            else if (item.Quantity > invoiceItem.Quantity.Value)
+                                            {
+                                                Log.Debug($"PayCommand -> TakingDownOrder -> update artikla {item.ItemId}: stara vrednost: {item.Quantity} -> nova vrednost: {invoiceItem.Quantity.Value}");
+                                                item.Quantity -= invoiceItem.Quantity.Value;
+                                                ta = invoiceItem.TotalAmout.Value;
+                                                dbContext.ItemsInUnprocessedOrder.Update(item);
+
+                                                Log.Debug($"PayCommand -> TakingDownOrder -> update je artikal sa stola_{unprocessedOrders.PaymentPlaceId} - {item.ItemId}: {item.Quantity}  {ta} din");
+                                            }
+                                            unprocessedOrders.TotalAmount -= ta;
+
+                                            dbContext.UnprocessedOrders.Update(unprocessedOrders);
+                                            dbContext.SaveChanges();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        itemsInUnprocessedOrder = dbContext.ItemsInUnprocessedOrder.AsNoTracking().Where(item => item.UnprocessedOrderId == unprocessedOrders.Id);
+
+                        if (itemsInUnprocessedOrder != null &&
+                            itemsInUnprocessedOrder.Any())
+                        {
+                            Log.Debug($"PayCommand -> TakingDownOrder -> Preostali iznos na stolu {unprocessedOrders.PaymentPlaceId} je: {unprocessedOrders.TotalAmount}");
                         }
                         else
                         {
-                            await itemsInUnprocessedOrder.ForEachAsync(item =>
+                            dbContext.UnprocessedOrders.Remove(unprocessedOrders);
+
+                            var pathToDrljaDB = SettingsManager.Instance.GetPathToDrljaKuhinjaDB();
+
+                            if (!string.IsNullOrEmpty(pathToDrljaDB))
                             {
-                                var invoiceItem = invoice.ItemInvoices.FirstOrDefault(itemInvoice => itemInvoice.ItemCode == item.ItemId);
-
-                                if (invoiceItem != null)
+                                var narudzbineDrlja = paySaleViewModel.DrljaDbContext.Narudzbine.AsNoTracking().Where(nar => nar.TR_STO.Contains(tableId.ToString())
+                                        && nar.TR_FAZA != 4);
+                                if (narudzbineDrlja != null &&
+                                    narudzbineDrlja.Any())
                                 {
-                                    if (invoiceItem.Quantity.HasValue &&
-                                    invoiceItem.TotalAmout.HasValue &&
-                                    invoiceItem.UnitPrice.HasValue)
+                                    narudzbineDrlja.ToList().ForEach(narudzbinaDrlja =>
                                     {
-                                        decimal ta = 0;
-                                        if (item.Quantity <= invoiceItem.Quantity.Value)
-                                        {
-                                            ta = item.Quantity * invoiceItem.UnitPrice.Value;
-                                            paySaleViewModel.DbContext.ItemsInUnprocessedOrder.Remove(item);
-
-                                            Log.Debug($"PayCommand -> TakingDownOrder -> obrisan je artikal sa stola_{unprocessedOrders.PaymentPlaceId} - {item.ItemId}: {item.Quantity}  {ta} din");
-                                        }
-                                        else if (item.Quantity > invoiceItem.Quantity.Value)
-                                        {
-                                            Log.Debug($"PayCommand -> TakingDownOrder -> update artikla {item.ItemId}: stara vrednost: {item.Quantity} -> nova vrednost: {invoiceItem.Quantity.Value}");
-                                            item.Quantity -= invoiceItem.Quantity.Value;
-                                            ta = invoiceItem.TotalAmout.Value;
-                                            paySaleViewModel.DbContext.ItemsInUnprocessedOrder.Update(item);
-
-                                            Log.Debug($"PayCommand -> TakingDownOrder -> update je artikal sa stola_{unprocessedOrders.PaymentPlaceId} - {item.ItemId}: {item.Quantity}  {ta} din");
-                                        }
-                                        unprocessedOrders.TotalAmount -= ta;
-
-                                        paySaleViewModel.DbContext.UnprocessedOrders.Update(unprocessedOrders);
-                                        paySaleViewModel.DbContext.SaveChanges();
-                                    }
+                                        narudzbinaDrlja.TR_FAZA = 4;
+                                        paySaleViewModel.DrljaDbContext.Narudzbine.Update(narudzbinaDrlja);
+                                        RetryHelperDrlja.ExecuteWithRetry(() => { paySaleViewModel.DrljaDbContext.SaveChanges(); });
+                                    });
                                 }
-                            });
+                            }
                         }
-                    }
-
-                    itemsInUnprocessedOrder = paySaleViewModel.DbContext.ItemsInUnprocessedOrder.AsNoTracking().Where(item => item.UnprocessedOrderId == unprocessedOrders.Id);
-
-                    if (itemsInUnprocessedOrder != null &&
-                        itemsInUnprocessedOrder.Any())
-                    {
-                        Log.Debug($"PayCommand -> TakingDownOrder -> Preostali iznos na stolu {unprocessedOrders.PaymentPlaceId} je: {unprocessedOrders.TotalAmount}");
+                        await dbContext.SaveChangesAsync();
                     }
                     else
                     {
-                        paySaleViewModel.DbContext.UnprocessedOrders.Remove(unprocessedOrders);
-
-                        var pathToDrljaDB = SettingsManager.Instance.GetPathToDrljaKuhinjaDB();
-
-                        if (!string.IsNullOrEmpty(pathToDrljaDB))
+                        OrderDB orderDB = new OrderDB()
                         {
-                            var narudzbineDrlja = paySaleViewModel.DrljaDbContext.Narudzbine.AsNoTracking().Where(nar => nar.TR_STO.Contains(tableId.ToString())
-                                    && nar.TR_FAZA != 4);
-                            if (narudzbineDrlja != null &&
-                                narudzbineDrlja.Any())
-                            {
-                                narudzbineDrlja.ToList().ForEach(narudzbinaDrlja =>
-                                {
-                                    narudzbinaDrlja.TR_FAZA = 4;
-                                    paySaleViewModel.DrljaDbContext.Narudzbine.Update(narudzbinaDrlja);
-                                    RetryHelperDrlja.ExecuteWithRetry(() => { paySaleViewModel.DrljaDbContext.SaveChanges(); });
-                                });
-                            }
-                        }
+                            InvoiceId = invoice.Id,
+                            PaymentPlaceId = tableId,
+                            CashierId = paySaleViewModel.SaleViewModel.LoggedCashier.Id
+                        };
+                        dbContext.Orders.Add(orderDB);
+                        await dbContext.SaveChangesAsync();
                     }
-                    paySaleViewModel.DbContext.SaveChanges();
-                }
-                else
-                {
-                    OrderDB orderDB = new OrderDB()
-                    {
-                        InvoiceId = invoice.Id,
-                        PaymentPlaceId = tableId,
-                        CashierId = paySaleViewModel.SaleViewModel.LoggedCashier.Id
-                    };
-                    paySaleViewModel.DbContext.Orders.Add(orderDB);
-                    paySaleViewModel.DbContext.SaveChanges();
                 }
             }
             catch (Exception ex)
@@ -601,29 +614,31 @@ namespace ClickBar.Commands.Sale
                 invoiceDB.TotalAmount = total;
                 invoiceDB.InvoiceCounter = responseJson.TotalInvoiceNumber;
                 invoiceDB.InvoiceNumberResult = responseJson.InvoiceNumber;
-
-                paySaleViewModel.DbContext.Invoices.Update(invoiceDB);
-                paySaleViewModel.DbContext.SaveChanges();
-
-                if (responseJson.TaxItems != null &&
-                    responseJson.TaxItems.Any())
+                using (var dbContext = paySaleViewModel.DbContext.CreateDbContext())
                 {
-                    responseJson.TaxItems.ToList().ForEach(taxItem =>
-                    {
-                        TaxItemInvoiceDB taxItemInvoiceDB = new TaxItemInvoiceDB()
-                        {
-                            Amount = taxItem.Amount,
-                            CategoryName = taxItem.CategoryName,
-                            CategoryType = (int)taxItem.CategoryType.Value,
-                            Label = taxItem.Label,
-                            Rate = taxItem.Rate,
-                            InvoiceId = invoiceDB.Id
-                        };
+                    dbContext.Invoices.Update(invoiceDB);
+                    await dbContext.SaveChangesAsync();
 
-                        paySaleViewModel.DbContext.TaxItemInvoices.Add(taxItemInvoiceDB);
-                    });
+                    if (responseJson.TaxItems != null &&
+                        responseJson.TaxItems.Any())
+                    {
+                        responseJson.TaxItems.ToList().ForEach(taxItem =>
+                        {
+                            TaxItemInvoiceDB taxItemInvoiceDB = new TaxItemInvoiceDB()
+                            {
+                                Amount = taxItem.Amount,
+                                CategoryName = taxItem.CategoryName,
+                                CategoryType = (int)taxItem.CategoryType.Value,
+                                Label = taxItem.Label,
+                                Rate = taxItem.Rate,
+                                InvoiceId = invoiceDB.Id
+                            };
+
+                            dbContext.TaxItemInvoices.Add(taxItemInvoiceDB);
+                        });
+                    }
+                    await dbContext.SaveChangesAsync();
                 }
-                paySaleViewModel.DbContext.SaveChanges();
             }
             catch (Exception ex)
             {
@@ -652,104 +667,127 @@ namespace ClickBar.Commands.Sale
                 BuyerName = invoiceRequset.BuyerName,
                 BuyerAddress = invoiceRequset.BuyerAddress,
             };
-
-            paySaleViewModel.DbContext.Add(invoiceDB);
-            paySaleViewModel.DbContext.SaveChanges();
-
-            int itemInvoiceId = 0;
-            paySaleViewModel.ItemsInvoice.ToList().ForEach(async item =>
+            using (var dbContext = paySaleViewModel.DbContext.CreateDbContext())
             {
-                ItemDB? itemDB = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == item.Item.Id);
-                if (itemDB != null)
+                dbContext.Add(invoiceDB);
+                await dbContext.SaveChangesAsync();
+
+                int itemInvoiceId = 0;
+                foreach(var item in paySaleViewModel.ItemsInvoice.ToList())
                 {
-                    if (itemDB.IdNorm != null)
+                    ItemDB? itemDB = dbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == item.Item.Id);
+                    if (itemDB != null)
                     {
-                        var norms = paySaleViewModel.DbContext.ItemsInNorm.AsNoTracking().Where(norm => norm.IdNorm == itemDB.IdNorm);
-
-                        if (norms != null &&
-                            norms.Any())
+                        if (itemDB.IdNorm != null)
                         {
-                            await norms.ForEachAsync(async norm =>
+                            var norms = dbContext.ItemsInNorm.AsNoTracking().Where(norm => norm.IdNorm == itemDB.IdNorm);
+
+                            if (norms != null &&
+                                norms.Any())
                             {
-                                var normItem = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm.IdItem);
-                                if (normItem != null)
+                                foreach(var norm in norms)
                                 {
-                                    if (normItem.IdNorm != null)
+                                    var normItem = dbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm.IdItem);
+                                    if (normItem != null)
                                     {
-                                        var norms2 = paySaleViewModel.DbContext.ItemsInNorm.AsNoTracking().Where(norm => norm.IdNorm == normItem.IdNorm);
-
-                                        if (norms2 != null &&
-                                            norms2.Any())
+                                        if (normItem.IdNorm != null)
                                         {
-                                            await norms2.ForEachAsync(async norm2 =>
+                                            var norms2 = dbContext.ItemsInNorm.AsNoTracking().Where(norm => norm.IdNorm == normItem.IdNorm);
+
+                                            if (norms2 != null &&
+                                                norms2.Any())
                                             {
-                                                var normItem2 = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm2.IdItem);
-
-                                                if (normItem2 != null)
+                                                foreach(var norm2 in norms2)
                                                 {
-                                                    if (normItem2.IdNorm != null)
-                                                    {
-                                                        var norms3 = paySaleViewModel.DbContext.ItemsInNorm.AsNoTracking().Where(norm => norm.IdNorm == normItem2.IdNorm);
-                                                        if (norms3 != null &&
-                                                            norms3.Any())
-                                                        {
-                                                            await norms3.ForEachAsync(norm3 =>
-                                                            {
-                                                                var normItem3 = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm3.IdItem);
-                                                                if (normItem3 != null)
-                                                                {
-                                                                    decimal unitPrice = normItem3.InputUnitPrice != null && normItem3.InputUnitPrice.HasValue ?
-                                                                    normItem3.InputUnitPrice.Value : 0;
+                                                    var normItem2 = dbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm2.IdItem);
 
-                                                                    var itemInvoice = new ItemInvoiceDB()
+                                                    if (normItem2 != null)
+                                                    {
+                                                        if (normItem2.IdNorm != null)
+                                                        {
+                                                            var norms3 = dbContext.ItemsInNorm.AsNoTracking().Where(norm => norm.IdNorm == normItem2.IdNorm);
+                                                            if (norms3 != null &&
+                                                                norms3.Any())
+                                                            {
+                                                                foreach(var norm3 in norms3)
+                                                                {
+                                                                    var normItem3 = dbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm3.IdItem);
+                                                                    if (normItem3 != null)
                                                                     {
-                                                                        Id = itemInvoiceId++,
-                                                                        Quantity = item.Quantity * norm.Quantity * norm2.Quantity * norm3.Quantity,
-                                                                        TotalAmout = item.Quantity * norm.Quantity * norm2.Quantity * norm3.Quantity * unitPrice,
-                                                                        Label = normItem3.Label,
-                                                                        Name = normItem3.Name,
-                                                                        UnitPrice = unitPrice,
-                                                                        ItemCode = normItem3.Id,
-                                                                        OriginalUnitPrice = unitPrice,
-                                                                        InvoiceId = invoiceDB.Id,
-                                                                        IsSirovina = 1,
-                                                                        InputUnitPrice = unitPrice
-                                                                    };
-                                                                    paySaleViewModel.DbContext.Add(itemInvoice);
+                                                                        decimal unitPrice = normItem3.InputUnitPrice != null && normItem3.InputUnitPrice.HasValue ?
+                                                                        normItem3.InputUnitPrice.Value : 0;
+
+                                                                        var itemInvoice3 = new ItemInvoiceDB()
+                                                                        {
+                                                                            Id = itemInvoiceId++,
+                                                                            Quantity = item.Quantity * norm.Quantity * norm2.Quantity * norm3.Quantity,
+                                                                            TotalAmout = item.Quantity * norm.Quantity * norm2.Quantity * norm3.Quantity * unitPrice,
+                                                                            Label = normItem3.Label,
+                                                                            Name = normItem3.Name,
+                                                                            UnitPrice = unitPrice,
+                                                                            ItemCode = normItem3.Id,
+                                                                            OriginalUnitPrice = unitPrice,
+                                                                            InvoiceId = invoiceDB.Id,
+                                                                            IsSirovina = 1,
+                                                                            InputUnitPrice = unitPrice
+                                                                        };
+                                                                        dbContext.Add(itemInvoice3);
+                                                                    }
                                                                 }
-                                                            });
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            decimal unitPrice = normItem2.InputUnitPrice != null && normItem2.InputUnitPrice.HasValue ?
+                                                            normItem2.InputUnitPrice.Value : 0;
+
+                                                            var itemInvoice2 = new ItemInvoiceDB()
+                                                            {
+                                                                Id = itemInvoiceId++,
+                                                                Quantity = item.Quantity * norm.Quantity * norm2.Quantity,
+                                                                TotalAmout = item.Quantity * norm.Quantity * norm2.Quantity * unitPrice,
+                                                                Label = normItem2.Label,
+                                                                Name = normItem2.Name,
+                                                                UnitPrice = unitPrice,
+                                                                ItemCode = normItem2.Id,
+                                                                OriginalUnitPrice = unitPrice,
+                                                                InvoiceId = invoiceDB.Id,
+                                                                IsSirovina = 1,
+                                                                InputUnitPrice = unitPrice
+                                                            };
+                                                            dbContext.Add(itemInvoice2);
                                                         }
                                                     }
-                                                    else
-                                                    {
-                                                        decimal unitPrice = normItem2.InputUnitPrice != null && normItem2.InputUnitPrice.HasValue ?
-                                                        normItem2.InputUnitPrice.Value : 0;
-
-                                                        var itemInvoice = new ItemInvoiceDB()
-                                                        {
-                                                            Id = itemInvoiceId++,
-                                                            Quantity = item.Quantity * norm.Quantity * norm2.Quantity,
-                                                            TotalAmout = item.Quantity * norm.Quantity * norm2.Quantity * unitPrice,
-                                                            Label = normItem2.Label,
-                                                            Name = normItem2.Name,
-                                                            UnitPrice = unitPrice,
-                                                            ItemCode = normItem2.Id,
-                                                            OriginalUnitPrice = unitPrice,
-                                                            InvoiceId = invoiceDB.Id,
-                                                            IsSirovina = 1,
-                                                            InputUnitPrice = unitPrice
-                                                        };
-                                                        paySaleViewModel.DbContext.Add(itemInvoice);
-                                                    }
                                                 }
-                                            });
+                                            }
+                                            else
+                                            {
+                                                decimal unitPrice = normItem.InputUnitPrice != null && normItem.InputUnitPrice.HasValue ?
+                                                normItem.InputUnitPrice.Value : 0;
+
+                                                var itemInvoice1 = new ItemInvoiceDB()
+                                                {
+                                                    Id = itemInvoiceId++,
+                                                    Quantity = item.Quantity * norm.Quantity,
+                                                    TotalAmout = item.Quantity * norm.Quantity * unitPrice,
+                                                    Label = normItem.Label,
+                                                    Name = normItem.Name,
+                                                    UnitPrice = unitPrice,
+                                                    ItemCode = normItem.Id,
+                                                    OriginalUnitPrice = unitPrice,
+                                                    InvoiceId = invoiceDB.Id,
+                                                    IsSirovina = 1,
+                                                    InputUnitPrice = unitPrice
+                                                };
+                                                dbContext.Add(itemInvoice1);
+                                            }
                                         }
                                         else
                                         {
                                             decimal unitPrice = normItem.InputUnitPrice != null && normItem.InputUnitPrice.HasValue ?
                                             normItem.InputUnitPrice.Value : 0;
 
-                                            var itemInvoice = new ItemInvoiceDB()
+                                            var itemInvoice4 = new ItemInvoiceDB()
                                             {
                                                 Id = itemInvoiceId++,
                                                 Quantity = item.Quantity * norm.Quantity,
@@ -763,66 +801,44 @@ namespace ClickBar.Commands.Sale
                                                 IsSirovina = 1,
                                                 InputUnitPrice = unitPrice
                                             };
-                                            paySaleViewModel.DbContext.Add(itemInvoice);
+                                            dbContext.Add(itemInvoice4);
                                         }
                                     }
-                                    else
-                                    {
-                                        decimal unitPrice = normItem.InputUnitPrice != null && normItem.InputUnitPrice.HasValue ?
-                                        normItem.InputUnitPrice.Value : 0;
-
-                                        var itemInvoice = new ItemInvoiceDB()
-                                        {
-                                            Id = itemInvoiceId++,
-                                            Quantity = item.Quantity * norm.Quantity,
-                                            TotalAmout = item.Quantity * norm.Quantity * unitPrice,
-                                            Label = normItem.Label,
-                                            Name = normItem.Name,
-                                            UnitPrice = unitPrice,
-                                            ItemCode = normItem.Id,
-                                            OriginalUnitPrice = unitPrice,
-                                            InvoiceId = invoiceDB.Id,
-                                            IsSirovina = 1,
-                                            InputUnitPrice = unitPrice
-                                        };
-                                        paySaleViewModel.DbContext.Add(itemInvoice);
-                                    }
                                 }
-                            });
+                            }
                         }
+
+                        var itemInvoice = new ItemInvoiceDB()
+                        {
+                            Id = itemInvoiceId++,
+                            Quantity = item.Quantity,
+                            TotalAmout = item.Quantity * item.Item.SellingUnitPrice,
+                            Label = item.Item.Label,
+                            Name = item.Item.Name,
+                            UnitPrice = item.Item.SellingUnitPrice,
+                            ItemCode = item.Item.Id,
+                            OriginalUnitPrice = itemDB.SellingUnitPrice,
+                            InvoiceId = invoiceDB.Id,
+                            IsSirovina = 0,
+                            InputUnitPrice = itemDB.InputUnitPrice
+                        };
+                        dbContext.Add(itemInvoice);
                     }
-
-                    var itemInvoice = new ItemInvoiceDB()
-                    {
-                        Id = itemInvoiceId++,
-                        Quantity = item.Quantity,
-                        TotalAmout = item.Quantity * item.Item.SellingUnitPrice,
-                        Label = item.Item.Label,
-                        Name = item.Item.Name,
-                        UnitPrice = item.Item.SellingUnitPrice,
-                        ItemCode = item.Item.Id,
-                        OriginalUnitPrice = itemDB.SellingUnitPrice,
-                        InvoiceId = invoiceDB.Id,
-                        IsSirovina = 0,
-                        InputUnitPrice = itemDB.InputUnitPrice
-                    };
-                    paySaleViewModel.DbContext.Add(itemInvoice);
                 }
-            });
 
-            _payment.ForEach(payment =>
-            {
-                PaymentInvoiceDB paymentInvoice = new PaymentInvoiceDB()
+                _payment.ForEach(payment =>
                 {
-                    InvoiceId = invoiceDB.Id,
-                    Amout = payment.Amount,
-                    PaymentType = payment.PaymentType
-                };
+                    PaymentInvoiceDB paymentInvoice = new PaymentInvoiceDB()
+                    {
+                        InvoiceId = invoiceDB.Id,
+                        Amout = payment.Amount,
+                        PaymentType = payment.PaymentType
+                    };
 
-                paySaleViewModel.DbContext.PaymentInvoices.Add(paymentInvoice);
-            });
-            paySaleViewModel.DbContext.SaveChanges();
-
+                    dbContext.PaymentInvoices.Add(paymentInvoice);
+                });
+                await dbContext.SaveChangesAsync();
+            }
             return invoiceDB;
         }
         private async Task TakingDownNorm(InvoiceDB invoice,
@@ -831,96 +847,98 @@ namespace ClickBar.Commands.Sale
             try
             {
                 List<ItemDB> itemsForCondition = new List<ItemDB>();
-
-                var itemsInInvoice = paySaleViewModel.DbContext.ItemInvoices.AsNoTracking().Where(item => item.IsSirovina == 0);
-
-                if (itemsInInvoice != null &&
-                    itemsInInvoice.Any())
+                using (var dbContext = paySaleViewModel.DbContext.CreateDbContext())
                 {
-                    itemsInInvoice.ToList().ForEach(async item =>
+                    var itemsInInvoice = dbContext.ItemInvoices.AsNoTracking().Where(item => item.IsSirovina == 0);
+
+                    if (itemsInInvoice != null &&
+                        itemsInInvoice.Any())
                     {
-                        var it = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == item.ItemCode);
-                        if (it != null &&
-                        item.Quantity.HasValue)
+                        foreach(var item in itemsInInvoice.ToList())
                         {
-                            var itemInNorm = paySaleViewModel.DbContext.ItemsInNorm.AsNoTracking().Where(norm => it.IdNorm == norm.IdNorm);
-
-                            if (itemInNorm != null &&
-                            itemInNorm.Any())
+                            var it = dbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == item.ItemCode);
+                            if (it != null &&
+                            item.Quantity.HasValue)
                             {
-                                await itemInNorm.ForEachAsync(norm =>
+                                var itemInNorm = dbContext.ItemsInNorm.AsNoTracking().Where(norm => it.IdNorm == norm.IdNorm);
+
+                                if (itemInNorm != null &&
+                                itemInNorm.Any())
                                 {
-                                    var itm = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm.IdItem);
-
-                                    if (itm != null)
+                                    foreach(var norm in itemInNorm)
                                     {
-                                        if (itm.IdNorm == null)
+                                        var itm = dbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm.IdItem);
+
+                                        if (itm != null)
                                         {
-                                            itm.TotalQuantity -= item.Quantity.Value * norm.Quantity;
-                                            paySaleViewModel.DbContext.Items.Update(itm);
-                                        }
-                                        else
-                                        {
-                                            var itemInNorm2 = paySaleViewModel.DbContext.ItemsInNorm.AsNoTracking().Where(norm => itm.IdNorm == norm.IdNorm);
-                                            if (itemInNorm2.Any())
+                                            if (itm.IdNorm == null)
                                             {
-                                                itemInNorm2.ToList().ForEach(norm2 =>
-                                                {
-                                                    var itm2 = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm2.IdItem);
-
-                                                    if (itm2 != null)
-                                                    {
-                                                        if (itm2.IdNorm == null)
-                                                        {
-                                                            itm2.TotalQuantity -= item.Quantity.Value * norm.Quantity * norm2.Quantity;
-                                                            paySaleViewModel.DbContext.Items.Update(itm2);
-                                                        }
-                                                        else
-                                                        {
-                                                            var itemInNorm3 = paySaleViewModel.DbContext.ItemsInNorm.AsNoTracking().Where(norm => itm2.IdNorm == norm2.IdNorm);
-                                                            if (itemInNorm3.Any())
-                                                            {
-                                                                itemInNorm3.ToList().ForEach(norm3 =>
-                                                                {
-                                                                    var itm3 = paySaleViewModel.DbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm3.IdItem);
-
-                                                                    if (itm3 != null)
-                                                                    {
-                                                                        if (itm3.IdNorm == null)
-                                                                        {
-                                                                            itm3.TotalQuantity -= item.Quantity.Value * norm.Quantity * norm2.Quantity * norm3.Quantity;
-                                                                            paySaleViewModel.DbContext.Items.Update(itm3);
-                                                                        }
-                                                                    }
-                                                                });
-                                                            }
-                                                            else
-                                                            {
-                                                                itm2.TotalQuantity -= item.Quantity.Value * norm.Quantity * norm2.Quantity;
-                                                                paySaleViewModel.DbContext.Items.Update(itm2);
-                                                            }
-                                                        }
-                                                    }
-                                                });
+                                                itm.TotalQuantity -= item.Quantity.Value * norm.Quantity;
+                                                dbContext.Items.Update(itm);
                                             }
                                             else
                                             {
-                                                itm.TotalQuantity -= item.Quantity.Value * norm.Quantity;
-                                                paySaleViewModel.DbContext.Items.Update(itm);
+                                                var itemInNorm2 = dbContext.ItemsInNorm.AsNoTracking().Where(norm => itm.IdNorm == norm.IdNorm);
+                                                if (itemInNorm2.Any())
+                                                {
+                                                    foreach(var norm2 in itemInNorm2.ToList())
+                                                    {
+                                                        var itm2 = dbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm2.IdItem);
+
+                                                        if (itm2 != null)
+                                                        {
+                                                            if (itm2.IdNorm == null)
+                                                            {
+                                                                itm2.TotalQuantity -= item.Quantity.Value * norm.Quantity * norm2.Quantity;
+                                                                dbContext.Items.Update(itm2);
+                                                            }
+                                                            else
+                                                            {
+                                                                var itemInNorm3 = dbContext.ItemsInNorm.AsNoTracking().Where(norm => itm2.IdNorm == norm2.IdNorm);
+                                                                if (itemInNorm3.Any())
+                                                                {
+                                                                    foreach(var norm3 in itemInNorm3)
+                                                                    {
+                                                                        var itm3 = dbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm3.IdItem);
+
+                                                                        if (itm3 != null)
+                                                                        {
+                                                                            if (itm3.IdNorm == null)
+                                                                            {
+                                                                                itm3.TotalQuantity -= item.Quantity.Value * norm.Quantity * norm2.Quantity * norm3.Quantity;
+                                                                                dbContext.Items.Update(itm3);
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                                else
+                                                                {
+                                                                    itm2.TotalQuantity -= item.Quantity.Value * norm.Quantity * norm2.Quantity;
+                                                                    dbContext.Items.Update(itm2);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    itm.TotalQuantity -= item.Quantity.Value * norm.Quantity;
+                                                    dbContext.Items.Update(itm);
+                                                }
                                             }
                                         }
                                     }
-                                });
-                            }
-                            else
-                            {
-                                it.TotalQuantity -= item.Quantity.Value;
-                                paySaleViewModel.DbContext.Items.Update(it);
+                                }
+                                else
+                                {
+                                    it.TotalQuantity -= item.Quantity.Value;
+                                    dbContext.Items.Update(it);
+                                }
                             }
                         }
-                    });
 
-                    paySaleViewModel.DbContext.SaveChanges();
+                        await dbContext.SaveChangesAsync();
+                    }
                 }
             }
             catch (Exception ex)
@@ -941,12 +959,12 @@ namespace ClickBar.Commands.Sale
             await TakingDownNorm(invoiceDB, paySaleViewModel);
             await TakingDownOrder(invoiceDB, paySaleViewModel, tableId, itemsInvoice);
         }
-        private void Black(InvoceRequestFileSystemWatcher invoiceRequset,
+        private async void Black(InvoceRequestFileSystemWatcher invoiceRequset,
             PaySaleViewModel paySaleViewModel,
             decimal total,
             List<ItemFileSystemWatcher> items)
         {
-            Task.Run(() =>
+            await Task.Run(() =>
             {
                 try
                 {
@@ -969,54 +987,55 @@ namespace ClickBar.Commands.Sale
                 SdcDateTime = DateTime.Now,
                 TotalAmount = total,
             };
-            paySaleViewModel.DbContext.Add(invoiceDB);
-
-            paySaleViewModel.DbContext.SaveChanges();
-
-            int itemInvoiceId = 0;
-            List<ItemInvoiceDB> itemsInvoiceDB = new List<ItemInvoiceDB>();
-            items.ForEach(item =>
+            using (var dbContext = paySaleViewModel.DbContext.CreateDbContext())
             {
-                ItemDB? itemDB = paySaleViewModel.DbContext.Items.Find(item.Id);
-                if (itemDB != null)
+                dbContext.Add(invoiceDB);
+
+                await dbContext.SaveChangesAsync();
+
+                int itemInvoiceId = 0;
+                List<ItemInvoiceDB> itemsInvoiceDB = new List<ItemInvoiceDB>();
+                items.ForEach(item =>
                 {
-                    itemsInvoiceDB.Add(new ItemInvoiceDB()
+                    ItemDB? itemDB = dbContext.Items.Find(item.Id);
+                    if (itemDB != null)
                     {
-                        Id = itemInvoiceId++,
-                        Quantity = item.Quantity,
-                        TotalAmout = item.TotalAmount,
-                        Label = item.Label,
-                        Name = item.Name,
-                        UnitPrice = item.UnitPrice,
-                        ItemCode = item.Id
-                    });
+                        itemsInvoiceDB.Add(new ItemInvoiceDB()
+                        {
+                            Id = itemInvoiceId++,
+                            Quantity = item.Quantity,
+                            TotalAmout = item.TotalAmount,
+                            Label = item.Label,
+                            Name = item.Name,
+                            UnitPrice = item.UnitPrice,
+                            ItemCode = item.Id
+                        });
+                    }
+                });
+
+                itemsInvoiceDB.ForEach(itemInvoice =>
+                {
+                    itemInvoice.InvoiceId = invoiceDB.Id;
+
+                    dbContext.Add(itemInvoice);
+                });
+                await dbContext.SaveChangesAsync();
+
+                await TakingDownOrder(invoiceDB, paySaleViewModel, paySaleViewModel.SaleViewModel.TableId, itemsInvoice);
+
+                if (SettingsManager.Instance.EnableSmartCard())
+                {
+                    paySaleViewModel.SaleViewModel.LogoutCommand.Execute(true);
                 }
-            });
+                else
+                {
+                    paySaleViewModel.SaleViewModel.Reset();
 
-            itemsInvoiceDB.ForEach(itemInvoice =>
-            {
-                itemInvoice.InvoiceId = invoiceDB.Id;
-
-                paySaleViewModel.DbContext.Add(itemInvoice);
-            });
-            paySaleViewModel.DbContext.SaveChanges();
-
-            TakingDownOrder(invoiceDB, paySaleViewModel, paySaleViewModel.SaleViewModel.TableId, itemsInvoice);
-
-            if (SettingsManager.Instance.EnableSmartCard())
-            {
-                paySaleViewModel.SaleViewModel.LogoutCommand.Execute(true);
-            }
-            else
-            {
-                paySaleViewModel.SaleViewModel.Reset();
-
-                AppStateParameter appStateParameter = new AppStateParameter(paySaleViewModel.DbContext, 
-                    paySaleViewModel.DrljaDbContext,
-                    AppStateEnumerable.TableOverview,
-                    paySaleViewModel.SaleViewModel.LoggedCashier,
-                    paySaleViewModel.SaleViewModel);
-                paySaleViewModel.SaleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+                    AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
+                        paySaleViewModel.SaleViewModel.LoggedCashier,
+                        paySaleViewModel.SaleViewModel);
+                    paySaleViewModel.SaleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+                }
             }
         }
         private async void Normal(InvoceRequestFileSystemWatcher invoiceRequset,
@@ -1119,16 +1138,14 @@ namespace ClickBar.Commands.Sale
                 {
                     paySaleViewModel.SaleViewModel.Reset();
 
-                    AppStateParameter appStateParameter = new AppStateParameter(paySaleViewModel.DbContext,
-                        paySaleViewModel.DrljaDbContext,
-                        AppStateEnumerable.TableOverview,
+                    AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
                         paySaleViewModel.SaleViewModel.LoggedCashier,
                         paySaleViewModel.SaleViewModel);
                     paySaleViewModel.SaleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
                 }
             }
         }
-        private void PrintOrder(CashierDB cashierDB, 
+        private async void PrintOrder(CashierDB cashierDB,
             List<ItemInvoice> items,
             PaySaleViewModel paySaleViewModel)
         {
@@ -1160,14 +1177,15 @@ namespace ClickBar.Commands.Sale
                 OrderTime = orderTime,
                 PartHall = "Za poneti"
             };
-
-            items.ForEach(item =>
+            using (var dbContext = paySaleViewModel.DbContext.CreateDbContext())
             {
-                var itemNadgroup = paySaleViewModel.DbContext.Items.Join(paySaleViewModel.DbContext.ItemGroups,
+                items.ForEach(item =>
+            {
+                var itemNadgroup = dbContext.Items.Join(dbContext.ItemGroups,
                 item => item.IdItemGroup,
                 itemGroup => itemGroup.Id,
                 (item, itemGroup) => new { Item = item, ItemGroup = itemGroup })
-                .Join(paySaleViewModel.DbContext.Supergroups,
+                .Join(dbContext.Supergroups,
                 group => group.ItemGroup.IdSupergroup,
                 supergroup => supergroup.Id,
                 (group, supergroup) => new { Group = group, Supergroup = supergroup })
@@ -1259,177 +1277,178 @@ namespace ClickBar.Commands.Sale
                 }
             });
 
-            int orderCounterTotal = 1;
+                int orderCounterTotal = 1;
 
-            var ordersTodayTotalDB = paySaleViewModel.DbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date);
+                var ordersTodayTotalDB = dbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date);
 
-            if (ordersTodayTotalDB != null &&
-                ordersTodayTotalDB.Any())
-            {
-                orderCounterTotal = ordersTodayTotalDB.Max(o => o.Counter);
-                orderCounterTotal++;
-            }
-
-            var posType = SettingsManager.Instance.GetPrinterFormat() == PrinterFormatEnumeration.Pos80mm ?
-            ClickBar_Printer.Enums.PosTypeEnumeration.Pos80mm : ClickBar_Printer.Enums.PosTypeEnumeration.Pos58mm;
-            if (orderSank.Items.Any())
-            {
-                int orderCounterType = 1;
-
-                var ordersTodayTypeDB = paySaleViewModel.DbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
-                !string.IsNullOrEmpty(o.Name) &&
-                o.Name.ToLower().Contains(orderSank.OrderName.ToLower()));
-
-                if (ordersTodayTypeDB != null &&
-                    ordersTodayTypeDB.Any())
+                if (ordersTodayTotalDB != null &&
+                    ordersTodayTotalDB.Any())
                 {
-                    orderCounterType = ordersTodayTypeDB.Max(o => o.CounterType);
-                    orderCounterType++;
+                    orderCounterTotal = ordersTodayTotalDB.Max(o => o.Counter);
+                    orderCounterTotal++;
                 }
 
-                orderSank.OrderName += orderCounterType.ToString() + "_" + orderCounterTotal.ToString();
-
-                decimal totalAmount = orderSank.Items.Sum(i => i.TotalAmount);
-
-                OrderTodayDB orderTodayDB = new OrderTodayDB()
+                var posType = SettingsManager.Instance.GetPrinterFormat() == PrinterFormatEnumeration.Pos80mm ?
+                ClickBar_Printer.Enums.PosTypeEnumeration.Pos80mm : ClickBar_Printer.Enums.PosTypeEnumeration.Pos58mm;
+                if (orderSank.Items.Any())
                 {
-                    Id = Guid.NewGuid().ToString(),
-                    CashierId = cashierDB.Id,
-                    CounterType = orderCounterType,
-                    Counter = orderCounterTotal,
-                    OrderDateTime = DateTime.Now,
-                    TotalPrice = totalAmount,
-                    Name = orderSank.OrderName,
-                    TableId = 0,
-                };
+                    int orderCounterType = 1;
 
-                paySaleViewModel.DbContext.OrdersToday.Add(orderTodayDB);
-                paySaleViewModel.DbContext.SaveChanges();
+                    var ordersTodayTypeDB = dbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
+                    !string.IsNullOrEmpty(o.Name) &&
+                    o.Name.ToLower().Contains(orderSank.OrderName.ToLower()));
 
-                orderSank.Items.ForEach(item =>
-                {
-                    OrderTodayItemDB orderTodayItemDB = new OrderTodayItemDB()
+                    if (ordersTodayTypeDB != null &&
+                        ordersTodayTypeDB.Any())
                     {
-                        ItemId = item.Id,
-                        OrderTodayId = orderTodayDB.Id,
-                        Quantity = item.Quantity,
-                        TotalPrice = item.TotalAmount,
-                    };
-                    paySaleViewModel.DbContext.OrderTodayItems.Add(orderTodayItemDB);
-                });
-                paySaleViewModel.DbContext.SaveChanges();
-
-                FormatPos.PrintOrder(orderSank, posType, ClickBar_Printer.Enums.OrderTypeEnumeration.Sank);
-            }
-            if (orderKuhinja.Items.Any())
-            {
-                int orderCounter = 1;
-
-                var ordersTodayDB = paySaleViewModel.DbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
-                !string.IsNullOrEmpty(o.Name) &&
-                o.Name.ToLower().Contains(orderKuhinja.OrderName.ToLower()));
-
-                if (ordersTodayDB != null &&
-                    ordersTodayDB.Any())
-                {
-                    orderCounter = ordersTodayDB.Max(o => o.CounterType);
-                    orderCounter++;
-                }
-
-                orderKuhinja.OrderName += orderCounter.ToString() + "_" + orderCounterTotal.ToString();
-
-                decimal totalAmount = orderKuhinja.Items.Sum(i => i.TotalAmount);
-
-                OrderTodayDB orderTodayDB = new OrderTodayDB()
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    CashierId = cashierDB.Id,
-                    CounterType = orderCounter,
-                    Counter = orderCounterTotal,
-                    OrderDateTime = DateTime.Now,
-                    TotalPrice = totalAmount,
-                    Name = orderKuhinja.OrderName,
-                    TableId = 0
-                };
-
-                paySaleViewModel.DbContext.OrdersToday.Add(orderTodayDB);
-                paySaleViewModel.DbContext.SaveChanges();
-
-                orderKuhinja.Items.ForEach(item =>
-                {
-                    var orderTodayItemDB = paySaleViewModel.DbContext.OrderTodayItems.FirstOrDefault(o => o.ItemId == item.Id &&
-                    o.OrderTodayId == orderTodayDB.Id);
-
-                    if (orderTodayItemDB != null)
-                    {
-                        orderTodayItemDB.Quantity += item.Quantity;
-                        orderTodayItemDB.TotalPrice += item.TotalAmount;
-                        paySaleViewModel.DbContext.OrderTodayItems.Update(orderTodayItemDB);
+                        orderCounterType = ordersTodayTypeDB.Max(o => o.CounterType);
+                        orderCounterType++;
                     }
-                    else
+
+                    orderSank.OrderName += orderCounterType.ToString() + "_" + orderCounterTotal.ToString();
+
+                    decimal totalAmount = orderSank.Items.Sum(i => i.TotalAmount);
+
+                    OrderTodayDB orderTodayDB = new OrderTodayDB()
                     {
-                        orderTodayItemDB = new OrderTodayItemDB()
+                        Id = Guid.NewGuid().ToString(),
+                        CashierId = cashierDB.Id,
+                        CounterType = orderCounterType,
+                        Counter = orderCounterTotal,
+                        OrderDateTime = DateTime.Now,
+                        TotalPrice = totalAmount,
+                        Name = orderSank.OrderName,
+                        TableId = 0,
+                    };
+
+                    dbContext.OrdersToday.Add(orderTodayDB);
+                    await dbContext.SaveChangesAsync();
+
+                    orderSank.Items.ForEach(item =>
+                    {
+                        OrderTodayItemDB orderTodayItemDB = new OrderTodayItemDB()
                         {
                             ItemId = item.Id,
                             OrderTodayId = orderTodayDB.Id,
                             Quantity = item.Quantity,
                             TotalPrice = item.TotalAmount,
                         };
-                        paySaleViewModel.DbContext.OrderTodayItems.Add(orderTodayItemDB);
-                    }
-                    paySaleViewModel.DbContext.SaveChanges();
-                });
+                        dbContext.OrderTodayItems.Add(orderTodayItemDB);
+                    });
+                    await dbContext.SaveChangesAsync();
 
-                FormatPos.PrintOrder(orderKuhinja, posType, ClickBar_Printer.Enums.OrderTypeEnumeration.Kuhinja);
-            }
-            if (orderDrugo.Items.Any())
-            {
-                int orderCounter = 1;
-
-                var ordersTodayDB = paySaleViewModel.DbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
-                !string.IsNullOrEmpty(o.Name) &&
-                o.Name.ToLower().Contains(orderDrugo.OrderName.ToLower()));
-
-                if (ordersTodayDB != null &&
-                    ordersTodayDB.Any())
-                {
-                    orderCounter = ordersTodayDB.Max(o => o.Counter);
-                    orderCounter++;
+                    FormatPos.PrintOrder(orderSank, posType, ClickBar_Printer.Enums.OrderTypeEnumeration.Sank);
                 }
-
-                orderDrugo.OrderName += orderCounter.ToString() + "_" + orderCounterTotal.ToString();
-
-                decimal totalAmount = orderDrugo.Items.Sum(i => i.TotalAmount);
-
-                OrderTodayDB orderTodayDB = new OrderTodayDB()
+                if (orderKuhinja.Items.Any())
                 {
-                    Id = Guid.NewGuid().ToString(),
-                    CashierId = cashierDB.Id,
-                    CounterType = orderCounter,
-                    Counter = orderCounterTotal,
-                    OrderDateTime = DateTime.Now,
-                    TotalPrice = totalAmount,
-                    Name = orderDrugo.OrderName,
-                    TableId = 0
-                };
+                    int orderCounter = 1;
 
-                paySaleViewModel.DbContext.OrdersToday.Add(orderTodayDB);
-                paySaleViewModel.DbContext.SaveChanges();
+                    var ordersTodayDB = dbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
+                    !string.IsNullOrEmpty(o.Name) &&
+                    o.Name.ToLower().Contains(orderKuhinja.OrderName.ToLower()));
 
-                orderDrugo.Items.ForEach(item =>
-                {
-                    OrderTodayItemDB orderTodayItemDB = new OrderTodayItemDB()
+                    if (ordersTodayDB != null &&
+                        ordersTodayDB.Any())
                     {
-                        ItemId = item.Id,
-                        OrderTodayId = orderTodayDB.Id,
-                        Quantity = item.Quantity,
-                        TotalPrice = item.TotalAmount,
-                    };
-                    paySaleViewModel.DbContext.OrderTodayItems.Add(orderTodayItemDB);
-                });
-                paySaleViewModel.DbContext.SaveChanges();
+                        orderCounter = ordersTodayDB.Max(o => o.CounterType);
+                        orderCounter++;
+                    }
 
-                FormatPos.PrintOrder(orderDrugo, posType, ClickBar_Printer.Enums.OrderTypeEnumeration.Sank);
+                    orderKuhinja.OrderName += orderCounter.ToString() + "_" + orderCounterTotal.ToString();
+
+                    decimal totalAmount = orderKuhinja.Items.Sum(i => i.TotalAmount);
+
+                    OrderTodayDB orderTodayDB = new OrderTodayDB()
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        CashierId = cashierDB.Id,
+                        CounterType = orderCounter,
+                        Counter = orderCounterTotal,
+                        OrderDateTime = DateTime.Now,
+                        TotalPrice = totalAmount,
+                        Name = orderKuhinja.OrderName,
+                        TableId = 0
+                    };
+
+                    dbContext.OrdersToday.Add(orderTodayDB);
+                    await dbContext.SaveChangesAsync();
+
+                    orderKuhinja.Items.ForEach(async item =>
+                    {
+                        var orderTodayItemDB = dbContext.OrderTodayItems.FirstOrDefault(o => o.ItemId == item.Id &&
+                        o.OrderTodayId == orderTodayDB.Id);
+
+                        if (orderTodayItemDB != null)
+                        {
+                            orderTodayItemDB.Quantity += item.Quantity;
+                            orderTodayItemDB.TotalPrice += item.TotalAmount;
+                            dbContext.OrderTodayItems.Update(orderTodayItemDB);
+                        }
+                        else
+                        {
+                            orderTodayItemDB = new OrderTodayItemDB()
+                            {
+                                ItemId = item.Id,
+                                OrderTodayId = orderTodayDB.Id,
+                                Quantity = item.Quantity,
+                                TotalPrice = item.TotalAmount,
+                            };
+                            dbContext.OrderTodayItems.Add(orderTodayItemDB);
+                        }
+                        await dbContext.SaveChangesAsync();
+                    });
+
+                    FormatPos.PrintOrder(orderKuhinja, posType, ClickBar_Printer.Enums.OrderTypeEnumeration.Kuhinja);
+                }
+                if (orderDrugo.Items.Any())
+                {
+                    int orderCounter = 1;
+
+                    var ordersTodayDB = dbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
+                    !string.IsNullOrEmpty(o.Name) &&
+                    o.Name.ToLower().Contains(orderDrugo.OrderName.ToLower()));
+
+                    if (ordersTodayDB != null &&
+                        ordersTodayDB.Any())
+                    {
+                        orderCounter = ordersTodayDB.Max(o => o.Counter);
+                        orderCounter++;
+                    }
+
+                    orderDrugo.OrderName += orderCounter.ToString() + "_" + orderCounterTotal.ToString();
+
+                    decimal totalAmount = orderDrugo.Items.Sum(i => i.TotalAmount);
+
+                    OrderTodayDB orderTodayDB = new OrderTodayDB()
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        CashierId = cashierDB.Id,
+                        CounterType = orderCounter,
+                        Counter = orderCounterTotal,
+                        OrderDateTime = DateTime.Now,
+                        TotalPrice = totalAmount,
+                        Name = orderDrugo.OrderName,
+                        TableId = 0
+                    };
+
+                    dbContext.OrdersToday.Add(orderTodayDB);
+                    await dbContext.SaveChangesAsync();
+
+                    orderDrugo.Items.ForEach(item =>
+                    {
+                        OrderTodayItemDB orderTodayItemDB = new OrderTodayItemDB()
+                        {
+                            ItemId = item.Id,
+                            OrderTodayId = orderTodayDB.Id,
+                            Quantity = item.Quantity,
+                            TotalPrice = item.TotalAmount,
+                        };
+                        dbContext.OrderTodayItems.Add(orderTodayItemDB);
+                    });
+                    await dbContext.SaveChangesAsync();
+
+                    FormatPos.PrintOrder(orderDrugo, posType, ClickBar_Printer.Enums.OrderTypeEnumeration.Sank);
+                }
             }
         }
         private bool IsFileLocked(string file)

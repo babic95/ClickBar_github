@@ -134,11 +134,11 @@ namespace ClickBar.ViewModels.Login
                         AppStateParameter appStateParameter;
                         if (c.Type == CashierTypeEnumeration.Worker)
                         {
-                            appStateParameter = new AppStateParameter(DbContext, DrljaDbContext, AppStateEnumerable.Sale, scopedCashierDB);
+                            appStateParameter = new AppStateParameter(AppStateEnumerable.Sale, scopedCashierDB);
                         }
                         else
                         {
-                            appStateParameter = new AppStateParameter(DbContext, DrljaDbContext, AppStateEnumerable.Main, scopedCashierDB);
+                            appStateParameter = new AppStateParameter(AppStateEnumerable.Main, scopedCashierDB);
                         }
                         UpdateCurrentAppStateViewModelCommand.Execute(appStateParameter);
                     }

@@ -77,7 +77,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
             }
             else if (p == "S")
             {
-                await _dbContext.Supergroups.ForEachAsync(s =>
+                foreach(var s in _dbContext.Supergroups)
                 {
                     var ss = s.Name.ToLower();
 
@@ -88,7 +88,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                     {
                         supergroupDB = s;
                     }
-                });
+                }
             }
 
             if (supergroupDB != null)

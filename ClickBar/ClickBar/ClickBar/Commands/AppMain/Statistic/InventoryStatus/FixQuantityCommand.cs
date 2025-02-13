@@ -55,7 +55,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
 
                 if (items != null && items.Any())
                 {
-                    await items.ForEachAsync(itemDB =>
+                    foreach(var itemDB in items)
                     {
                         decimal totalCalculationQuantity = 0;
                         decimal totalOtpisQuantity = 0;
@@ -150,7 +150,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
 
                         _viewModel.DbContext.SaveChanges();
 
-                    });
+                    }
                 }
 
                 MessageBox.Show("Uspešno sređivanje količina artikala!",

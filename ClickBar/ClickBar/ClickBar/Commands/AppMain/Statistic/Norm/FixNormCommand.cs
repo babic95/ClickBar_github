@@ -69,7 +69,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                 if (invoices != null &&
                     invoices.Any())
                 {
-                    await invoices.ForEachAsync(async invoice =>
+                    foreach(var invoice in invoices)
                     {
                         List<ItemInNormForChange> itemInNormForChanges = new List<ItemInNormForChange>();
 
@@ -117,7 +117,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                             if (itemsInInvoiceNotSirovina != null &&
                                 itemsInInvoiceNotSirovina.Any())
                             {
-                                await itemsInInvoiceNotSirovina.ForEachAsync(itemInvoice =>
+                                foreach(var itemInvoice in itemsInInvoiceNotSirovina)
                                 {
                                     var itemDB = _currentViewModel.DbContext.Items.Find(itemInvoice.ItemCode);
 
@@ -213,7 +213,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                                         //                    itemInNormForChanges);
                                         //}
                                     }
-                                });
+                                }
                             }
                         }
                         _currentViewModel.DbContext.SaveChanges();
@@ -224,7 +224,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                         if (itemsInInvoice != null &&
                         itemsInInvoice.Any())
                         {
-                            await itemsInInvoice.ForEachAsync(itemInvoice =>
+                            foreach (var itemInvoice in itemsInInvoice)
                             {
                                 var itemDB = _currentViewModel.DbContext.Items.Find(itemInvoice.ItemCode);
 
@@ -368,9 +368,9 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                                     //                quantity);
                                     //}
                                 }
-                            });
+                            }
                         }
-                    });
+                    }
                 }
                 _currentViewModel.DbContext.SaveChanges();
 
@@ -434,7 +434,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                 {
                     itemsInvoice = itemsInvoice.OrderByDescending(i => i.Id);
 
-                    itemsInvoice.ToList().ForEach(i =>
+                    foreach(var i in itemsInvoice)
                     {
                         var itemInvoice = new ItemInvoiceDB()
                         {
@@ -453,7 +453,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                         _currentViewModel.DbContext.ItemInvoices.Remove(i);
                         _currentViewModel.DbContext.ItemInvoices.Add(itemInvoice);
                         _currentViewModel.DbContext.SaveChanges();
-                    });
+                    }
                 }
 
                 itemInvoiceDB = new ItemInvoiceDB()

@@ -267,7 +267,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
         }
 
         [HttpPost("moveOrder")]
-        public async IActionResult MoveOrder(MovePorudzbine movePorudzbine)
+        public async Task<IActionResult> MoveOrder(MovePorudzbine movePorudzbine)
         {
             try
             {

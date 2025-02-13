@@ -31,6 +31,8 @@ namespace ClickBar.ViewModels.Sale
         private bool _firstChangeQuantity;
         private readonly IServiceProvider _serviceProvider;
         private readonly Lazy<PayCommand<SplitOrderViewModel>> _payCommand;
+
+        private PaySaleViewModel _paySaleViewModel;
         #endregion Fields
 
         #region Constructors
@@ -39,13 +41,10 @@ namespace ClickBar.ViewModels.Sale
             _serviceProvider = serviceProvider;
             DbContext = _serviceProvider.GetRequiredService<SqlServerDbContext>();
             DrljaDbContext = _serviceProvider.GetRequiredService<SqliteDrljaDbContext>();
-            PaySaleViewModel = _serviceProvider.GetRequiredService<PaySaleViewModel>();
-            ItemsInvoice = PaySaleViewModel.ItemsInvoice;
-            TotalAmount = PaySaleViewModel.TotalAmount;
             ItemsInvoiceForPay = new ObservableCollection<ItemInvoice>();
-            _payCommand = new Lazy<PayCommand<SplitOrderViewModel>>(() => new PayCommand<SplitOrderViewModel>(this));
+            _payCommand = new Lazy<PayCommand<SplitOrderViewModel>>(() => new PayCommand<SplitOrderViewModel>(serviceProvider, this));
             //PayCommand = _serviceProvider.GetRequiredService<PayCommand<SplitOrderViewModel>>();
-            ChangePaymentPlaceCommand = _serviceProvider.GetRequiredService<ChangePaymentPlaceCommand>();
+            //ChangePaymentPlaceCommand = _serviceProvider.GetRequiredService<ChangePaymentPlaceCommand>();
 
             Quantity = "1";
         }
@@ -130,7 +129,27 @@ namespace ClickBar.ViewModels.Sale
         #endregion Properties
 
         #region Internal Properties
-        internal PaySaleViewModel PaySaleViewModel { get; set; }
+        internal PaySaleViewModel PaySaleViewModel
+        {   get  { return _paySaleViewModel; } 
+            set 
+            {
+                _paySaleViewModel = value;
+                if (value != null)
+                {
+                    if (value.SaleViewModel != null)
+                    {
+                        if (value.SaleViewModel.ItemsInvoice != null)
+                        {
+                            ItemsInvoice = value.SaleViewModel.ItemsInvoice;
+                        }
+                        if (value.SaleViewModel.TotalAmount != 0)
+                        {
+                            TotalAmount = value.SaleViewModel.TotalAmount;
+                        }
+                    }
+                }
+            } 
+        }
         internal Window ChangePaymentPlaceWindow { get; set; }
         #endregion Internal Properties
 
@@ -138,7 +157,7 @@ namespace ClickBar.ViewModels.Sale
         public ICommand CancelCommand => new CancelCommand(this);
         public ICommand PayCommand => _payCommand.Value;
         public ICommand StornoKuhinjaCommand => new StornoKuhinjaCommand(this);
-        public ICommand ChangePaymentPlaceCommand { get; }
+        public ICommand ChangePaymentPlaceCommand => new ChangePaymentPlaceCommand(_serviceProvider, this);
         public ICommand MoveToOrderCommand => new MoveToOrderCommand(this);
         public ICommand MoveToPaymentCommand => new MoveToPaymentCommand(this);
         public ICommand MoveAllToPaymentCommand => new MoveAllToPaymentCommand(this);

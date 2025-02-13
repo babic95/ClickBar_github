@@ -22,11 +22,11 @@ namespace ClickBar.Views.Sale.PaySale
     /// </summary>
     public partial class PaySaleWindow : Window
     {
-        public PaySaleWindow(SaleViewModel saleViewModel)
+        public PaySaleWindow(PaySaleViewModel paySaleViewModel)
         {
             InitializeComponent();
 
-            DataContext = saleViewModel;
+            DataContext = paySaleViewModel;
 
             Focusable = true;
 

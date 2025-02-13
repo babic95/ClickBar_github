@@ -344,7 +344,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
                     TaxSubtotal = new List<TaxTotalTaxSubtotal>(),
                 };
 
-                await taxDB.ForEachAsync(tax =>
+                foreach(var tax in taxDB)
                 {
                     if (tax.Amount.HasValue &&
                     tax.Rate.HasValue)
@@ -355,7 +355,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
                             MessageBox.Show($"Greška u poreskim stopama za račun {_currentViewModel.CurrentInvoice.InvoiceNumber} (NEISPRAVNE)!",
                                 "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
                             invoice = null;
-                            return;
+                            return null;
                         }
                         TaxTotalTaxSubtotal taxTotalTaxSubtotal = new TaxTotalTaxSubtotal()
                         {
@@ -387,7 +387,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
                         invoice.TaxTotal.TaxSubtotal.Add(taxTotalTaxSubtotal);
                         invoice.TaxTotal.TaxAmount.Value += Decimal.Round(tax.Amount.Value, 2);
                     }
-                });
+                }
             }
             return invoice;
         }
@@ -413,7 +413,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
 
             invoice.InvoiceLine = new List<InvoiceLine>();
 
-            await itemInInvoiceDB.ForEachAsync(item =>
+            foreach(var item in itemInInvoiceDB)
             {
                 if (item.TotalAmout.HasValue &&
                 !string.IsNullOrEmpty(item.Label))
@@ -424,7 +424,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
                         MessageBox.Show($"Greška u poreskim stopama za račun {_currentViewModel.CurrentInvoice.InvoiceNumber} (NEISPRAVNE)!",
                             "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
                         invoice = null;
-                        return;
+                        return null;
                     }
 
                     brutoIznos += item.TotalAmout.Value;
@@ -505,7 +505,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
                         MessageBox.Show($"Greška u jedinici mere artikla {item.ItemCode} - {item.Name} u racunu {_currentViewModel.CurrentInvoice.InvoiceNumber}!",
                             "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
                         invoice = null;
-                        return;
+                        return null;
                     }
 
                     InvoiceLine invoiceLine = new InvoiceLine()
@@ -550,7 +550,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
 
                     invoice.InvoiceLine.Add(invoiceLine);
                 }
-            });
+            }
 
             invoice.LegalMonetaryTotal = new LegalMonetaryTotal()
             {

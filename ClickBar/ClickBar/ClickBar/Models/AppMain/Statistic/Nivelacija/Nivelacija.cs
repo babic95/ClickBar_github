@@ -39,12 +39,12 @@ namespace ClickBar.Models.AppMain.Statistic
             if (nivelacijaItems != null &&
                 nivelacijaItems.Any())
             {
-                nivelacijaItems.ForEachAsync(nivelacijaItemDB =>
+                foreach(var nivelacijaItemDB in nivelacijaItems)
                 {
                     var nivelacijaItem = new NivelacijaItem(sqliteDbContext, nivelacijaItemDB);
 
                     NivelacijaItems.Add(nivelacijaItem);
-                }).Wait();
+                }
             }
         }
 

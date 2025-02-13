@@ -65,7 +65,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                     {
                         List<PocetnoStanjeItem> items = new List<PocetnoStanjeItem>();
 
-                        DbContext.Items.Where(i => i.IdNorm == null).ForEachAsync(itemDB =>
+                        foreach(var itemDB in DbContext.Items.Where(i => i.IdNorm == null))
                         {
                             var pocetnoStanjeItemDB = DbContext.PocetnaStanjaItems.FirstOrDefault(p => p.IdPocetnoStanje == pocetnoStanjeDB.Id &&
                             p.IdItem == itemDB.Id);
@@ -110,7 +110,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                                     items.Add(pocetnoStanjeItem);
                                 }
                             }
-                        }).Wait();
+                        }
 
                         if (CurrentPocetnoStanje == null)
                         {

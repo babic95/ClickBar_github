@@ -54,7 +54,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Radnici
                         _currentViewModel.WhatDidWorkerSells = new ObservableCollection<WhatDidWorkerSell>();
                         _currentViewModel.Total = 0;
 
-                        await items.ForEachAsync(item =>
+                        foreach (var item in items)
                         {
                             var itemDB = _currentViewModel.DbContext.Items.Find(item.Item.ItemCode);
                             if (itemDB != null &&
@@ -72,7 +72,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Radnici
 
                                 _currentViewModel.Total += item.Item.TotalAmout.Value;
                             }
-                        });
+                        }
 
                         WhatDidWorkerSellWindow whatDidWorkerSellWindow = new WhatDidWorkerSellWindow(_currentViewModel);
                         whatDidWorkerSellWindow.ShowDialog();

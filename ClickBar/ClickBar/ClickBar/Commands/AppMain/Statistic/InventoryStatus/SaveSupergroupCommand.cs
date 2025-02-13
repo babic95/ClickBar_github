@@ -79,10 +79,10 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
 
                     _currentViewModel.AllSupergroups = new ObservableCollection<Supergroup>();
 
-                    await _currentViewModel.DbContext.Supergroups.ForEachAsync(supergroup =>
+                    foreach(var supergroup1 in _currentViewModel.DbContext.Supergroups)
                     {
-                        _currentViewModel.AllSupergroups.Add(new Supergroup(supergroup.Id, supergroup.Name));
-                    });
+                        _currentViewModel.AllSupergroups.Add(new Supergroup(supergroup1.Id, supergroup1.Name));
+                    }
 
                     _currentViewModel.CurrentSupergroup = _currentViewModel.AllSupergroups.FirstOrDefault();
 

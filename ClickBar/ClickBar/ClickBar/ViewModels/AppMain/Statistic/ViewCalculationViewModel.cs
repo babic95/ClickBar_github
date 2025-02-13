@@ -97,7 +97,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             if (calculations != null &&
                 calculations.Any())
             {
-                calculations.ForEachAsync(cal =>
+                foreach(var cal in calculations)
                 {
                     Calculation calculation = new Calculation()
                     {
@@ -118,7 +118,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                     CalculationsAll.Add(calculation);
                     TotalInputPrice += calculation.InputTotalPrice;
                     TotalOutputPrice += calculation.OutputTotalPrice;
-                }).Wait();
+                }
             }
             Calculations = new ObservableCollection<Calculation>(CalculationsAll.OrderBy(cal => cal.CalculationDate));
         }

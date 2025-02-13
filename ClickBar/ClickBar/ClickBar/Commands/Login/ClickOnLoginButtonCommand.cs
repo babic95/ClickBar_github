@@ -86,16 +86,12 @@ namespace ClickBar.Commands.Login
                 AppStateParameter appStateParameter;
                 if (cashierDB.Type == CashierTypeEnumeration.Worker)
                 {
-                    appStateParameter = new AppStateParameter(_currentView.DbContext,
-                        _currentView.DrljaDbContext, 
-                        AppStateEnumerable.TableOverview,
+                    appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
                         scopedCashierDB);
                 }
                 else
                 {
-                    appStateParameter = new AppStateParameter(_currentView.DbContext,
-                        _currentView.DrljaDbContext, 
-                        AppStateEnumerable.Main,
+                    appStateParameter = new AppStateParameter(AppStateEnumerable.Main,
                         scopedCashierDB);
                 }
                 _currentView.UpdateCurrentAppStateViewModelCommand.Execute(appStateParameter);

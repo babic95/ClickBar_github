@@ -29,7 +29,10 @@ namespace ClickBar.Commands.Sale.Pay
             _viewModel.SplitOrder = true;
 
             // Kreiranje instance SplitOrderWindow-a koristeći IServiceProvider
-            var splitOrderWindow = _serviceProvider.GetRequiredService<SplitOrderWindow>();
+            var splitViewModel = _serviceProvider.GetRequiredService<SplitOrderViewModel>();
+            splitViewModel.PaySaleViewModel = _viewModel;
+
+            var splitOrderWindow = new SplitOrderWindow(splitViewModel); 
 
             _viewModel.SplitOrderWindow = splitOrderWindow;
             _viewModel.SplitOrderWindow.ShowDialog();

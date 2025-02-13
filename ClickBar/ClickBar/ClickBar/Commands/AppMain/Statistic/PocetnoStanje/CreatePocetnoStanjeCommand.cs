@@ -119,7 +119,7 @@ namespace ClickBar.Commands.AppMain.Statistic.PocetnoStanje
                                 {
                                     if (itemDB.IdNorm == null)
                                     {
-                                        await itemInInvoices.ForEachAsync(i =>
+                                       foreach(var i in itemInInvoices)
                                         {
                                             if (i.ItemsInvoice.Quantity != null)
                                             {
@@ -135,7 +135,7 @@ namespace ClickBar.Commands.AppMain.Statistic.PocetnoStanje
                                                     }
                                                 }
                                             }
-                                        });
+                                        }
                                     }
                                 }
 
@@ -167,7 +167,7 @@ namespace ClickBar.Commands.AppMain.Statistic.PocetnoStanje
                                     {
                                         if (itemDB.IdNorm == null)
                                         {
-                                            await itemInInvoices.ForEachAsync(i =>
+                                            foreach(var i in itemInInvoices)
                                             {
                                                 if (i.ItemsInvoice.Quantity != null)
                                                 {
@@ -183,7 +183,7 @@ namespace ClickBar.Commands.AppMain.Statistic.PocetnoStanje
                                                         }
                                                     }
                                                 }
-                                            });
+                                            }
                                         }
                                     }
 
