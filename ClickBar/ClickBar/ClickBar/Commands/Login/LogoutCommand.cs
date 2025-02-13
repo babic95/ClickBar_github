@@ -2,12 +2,11 @@
 using ClickBar.ViewModels;
 using ClickBar.ViewModels.AppMain;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using Microsoft.Extensions.DependencyInjection;
+using ClickBar_DatabaseSQLManager.Models;
 
 namespace ClickBar.Commands.Login
 {
@@ -15,11 +14,13 @@ namespace ClickBar.Commands.Login
     {
         public event EventHandler CanExecuteChanged;
 
-        private ViewModelBase _currentView;
+        private readonly ViewModelBase _currentView;
+        private readonly IServiceProvider _serviceProvider;
 
-        public LogoutCommand(ViewModelBase currentView)
+        public LogoutCommand(ViewModelBase currentView, IServiceProvider serviceProvider)
         {
             _currentView = currentView;
+            _serviceProvider = serviceProvider;
         }
 
         public bool CanExecute(object parameter)
@@ -35,50 +36,37 @@ namespace ClickBar.Commands.Login
 
                 if (result == MessageBoxResult.Yes)
                 {
-                    if (_currentView is AppMainViewModel)
-                    {
-                        AppMainViewModel appMainViewModel = (AppMainViewModel)_currentView;
-
-                        AppStateParameter appStateParameter = new AppStateParameter(appMainViewModel.DbContext,
-                            appMainViewModel.DrljaDbContext,
-                            AppStateEnumerable.Login, null);
-
-                        appMainViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
-                    }
-                    else if (_currentView is SaleViewModel)
-                    {
-                        SaleViewModel saleViewModel = (SaleViewModel)_currentView;
-
-                        AppStateParameter appStateParameter = new AppStateParameter(saleViewModel.DbContext,
-                            saleViewModel.DrljaDbContext,
-                            AppStateEnumerable.Login, null);
-
-                        saleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
-                    }
+                    Logout();
                 }
             }
             else
             {
-                if (_currentView is AppMainViewModel)
-                {
-                    AppMainViewModel appMainViewModel = (AppMainViewModel)_currentView;
+                Logout();
+            }
+        }
 
-                    AppStateParameter appStateParameter = new AppStateParameter(appMainViewModel.DbContext,
-                            appMainViewModel.DrljaDbContext, 
-                            AppStateEnumerable.Login, null);
+        private void Logout()
+        {
+            // Resetovanje CashierDB
+            var scopedCashierDB = _serviceProvider.GetRequiredService<CashierDB>();
+            scopedCashierDB.Id = null;
+            scopedCashierDB.Name = null;
+            scopedCashierDB.Type = ClickBar_Common.Enums.CashierTypeEnumeration.Error;
 
-                    appMainViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
-                }
-                else if (_currentView is SaleViewModel)
-                {
-                    SaleViewModel saleViewModel = (SaleViewModel)_currentView;
-
-                    AppStateParameter appStateParameter = new AppStateParameter(saleViewModel.DbContext,
-                            saleViewModel.DrljaDbContext,
-                            AppStateEnumerable.Login, null);
-
-                    saleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
-                }
+            AppStateParameter appStateParameter;
+            if (_currentView is AppMainViewModel appMainViewModel)
+            {
+                appStateParameter = new AppStateParameter(appMainViewModel.DbContext,
+                    appMainViewModel.DrljaDbContext,
+                    AppStateEnumerable.Login, null);
+                appMainViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+            }
+            else if (_currentView is SaleViewModel saleViewModel)
+            {
+                appStateParameter = new AppStateParameter(saleViewModel.DbContext,
+                    saleViewModel.DrljaDbContext,
+                    AppStateEnumerable.Login, null);
+                saleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
             }
         }
     }

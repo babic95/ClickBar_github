@@ -3,6 +3,7 @@ using ClickBar.ViewModels.Login;
 using ClickBar_Common.Enums;
 using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Settings;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,10 +22,12 @@ namespace ClickBar.Commands.Login
         public event EventHandler CanExecuteChanged;
 
         private LoginViewModel _currentView;
+        private IServiceProvider _serviceProvider;
 
-        public ClickOnLoginButtonCommand(LoginViewModel currentView)
+        public ClickOnLoginButtonCommand(LoginViewModel currentView, IServiceProvider serviceProvider)
         {
             _currentView = currentView;
+            _serviceProvider = serviceProvider;
         }
 
         public bool CanExecute(object parameter)
@@ -74,20 +77,26 @@ namespace ClickBar.Commands.Login
                     SendPin();
                 });
 #endif
+
+                var scopedCashierDB = _serviceProvider.GetRequiredService<CashierDB>();
+                scopedCashierDB.Id = cashierDB.Id;
+                scopedCashierDB.Name = cashierDB.Name;
+                scopedCashierDB.Type = cashierDB.Type;
+
                 AppStateParameter appStateParameter;
                 if (cashierDB.Type == CashierTypeEnumeration.Worker)
                 {
                     appStateParameter = new AppStateParameter(_currentView.DbContext,
                         _currentView.DrljaDbContext, 
                         AppStateEnumerable.TableOverview,
-                        cashierDB);
+                        scopedCashierDB);
                 }
                 else
                 {
                     appStateParameter = new AppStateParameter(_currentView.DbContext,
                         _currentView.DrljaDbContext, 
-                        AppStateEnumerable.Main, 
-                        cashierDB);
+                        AppStateEnumerable.Main,
+                        scopedCashierDB);
                 }
                 _currentView.UpdateCurrentAppStateViewModelCommand.Execute(appStateParameter);
             }

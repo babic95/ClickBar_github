@@ -378,7 +378,7 @@ namespace ClickBar.ViewModels
         #region Commands
         public ICommand ClickOnQuantityButtonCommand => new ClickOnQuantityButtonCommand(this);
         public ICommand UpdateAppViewModelCommand => _updateCurrentAppStateViewModelCommand.Value;
-        public ICommand LogoutCommand => new LogoutCommand(this);
+        public ICommand LogoutCommand => new LogoutCommand(this, _serviceProvider);
         public ICommand SelectSupergroupCommand => new SelectSupergroupCommand(this);
         public ICommand SelectGroupCommand => new SelectGroupCommand(this);
         public ICommand SelectItemCommand => new SelectItemCommand(this);

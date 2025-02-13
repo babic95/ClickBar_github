@@ -125,14 +125,20 @@ namespace ClickBar.ViewModels.Login
                             SendPin();
                         });
 #endif
+
+                        var scopedCashierDB = _serviceProvider.GetRequiredService<CashierDB>();
+                        scopedCashierDB.Id = c.Id;
+                        scopedCashierDB.Name = c.Name;
+                        scopedCashierDB.Type = c.Type;
+
                         AppStateParameter appStateParameter;
                         if (c.Type == CashierTypeEnumeration.Worker)
                         {
-                            appStateParameter = new AppStateParameter(DbContext, DrljaDbContext, AppStateEnumerable.Sale, c);
+                            appStateParameter = new AppStateParameter(DbContext, DrljaDbContext, AppStateEnumerable.Sale, scopedCashierDB);
                         }
                         else
                         {
-                            appStateParameter = new AppStateParameter(DbContext, DrljaDbContext, AppStateEnumerable.Main, c);
+                            appStateParameter = new AppStateParameter(DbContext, DrljaDbContext, AppStateEnumerable.Main, scopedCashierDB);
                         }
                         UpdateCurrentAppStateViewModelCommand.Execute(appStateParameter);
                     }

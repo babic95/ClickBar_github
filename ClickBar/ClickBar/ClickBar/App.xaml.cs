@@ -139,7 +139,7 @@ namespace ClickBar
             services.AddTransient(typeof(PayCommand<>));
 
             // Registracija ulogovanog korisnika (ako je potrebno)
-            services.AddTransient<CashierDB>();
+            services.AddScoped<CashierDB>();
         }
 
         protected override void OnStartup(StartupEventArgs e)

@@ -110,7 +110,7 @@ namespace ClickBar.ViewModels.Login
         #endregion Properties
 
         public UpdateCurrentAppStateViewModelCommand UpdateCurrentAppStateViewModelCommand => _updateCurrentAppStateViewModelCommand.Value;
-        public ICommand ClickOnLoginButtonCommand => new ClickOnLoginButtonCommand(this);
+        public ICommand ClickOnLoginButtonCommand => new ClickOnLoginButtonCommand(this, _serviceProvider);
 
         private void KillApp()
         {

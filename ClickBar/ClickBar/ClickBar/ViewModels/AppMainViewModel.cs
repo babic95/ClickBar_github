@@ -166,7 +166,7 @@ namespace ClickBar.ViewModels
         #region Commands
         public ICommand UpdateAppViewModelCommand => _updateCurrentAppStateViewModelCommand.Value;
         public ICommand UpdateCurrentViewModelCommand => new UpdateCurrentViewModelCommand(this);
-        public ICommand LogoutCommand => new LogoutCommand(this);
+        public ICommand LogoutCommand => new LogoutCommand(this, _serviceProvider);
         public ICommand InformationCommand => new InformationCommand();
         #endregion Commands
 
