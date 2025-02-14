@@ -45,11 +45,13 @@ namespace ClickBar.ViewModels
 
         private Timer _timer;
 
-        public AppMainViewModel(IServiceProvider serviceProvider, IDbContextFactory<SqlServerDbContext> dbContextFactory, IDbContextFactory<SqliteDrljaDbContext> drljaDbContextFactory)
+        public AppMainViewModel(IServiceProvider serviceProvider, 
+            IDbContextFactory<SqlServerDbContext> dbContextFactory,
+            IDbContextFactory<SqliteDrljaDbContext>? drljaDbContextFactory)
         {
             _serviceProvider = serviceProvider;
             DbContext = dbContextFactory.CreateDbContext();
-            DrljaDbContext = drljaDbContextFactory.CreateDbContext();
+            DrljaDbContext = drljaDbContextFactory != null ? drljaDbContextFactory.CreateDbContext() : null;
             _loggedCashier = serviceProvider.GetRequiredService<CashierDB>();
             _updateCurrentAppStateViewModelCommand = new Lazy<UpdateCurrentAppStateViewModelCommand>(() => serviceProvider.GetRequiredService<UpdateCurrentAppStateViewModelCommand>());
 

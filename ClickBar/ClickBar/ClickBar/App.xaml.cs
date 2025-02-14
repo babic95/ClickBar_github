@@ -52,9 +52,21 @@ namespace ClickBar
                     options.UseSqlite(drljaConnectionString), ServiceLifetime.Scoped);
                 services.AddDbContextFactory<SqliteDrljaDbContext>(options =>
                     options.UseSqlite(drljaConnectionString), ServiceLifetime.Scoped);
-            }
 
-            services.AddScoped<DatabaseInitializer>(); // Promenjeno u Scoped
+                services.AddScoped<DatabaseInitializer>(provider =>
+                    new DatabaseInitializer(
+                        provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>(),
+                        provider.GetRequiredService<IDbContextFactory<SqliteDrljaDbContext>>()
+                    ));
+            }
+            else
+            {
+                services.AddScoped<DatabaseInitializer>(provider =>
+                    new DatabaseInitializer(
+                        provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>(),
+                        null
+                    ));
+            }
 
             // Registracija INavigator sa MainViewModel
             services.AddSingleton<INavigator, MainViewModel>();
@@ -65,32 +77,32 @@ namespace ClickBar
             services.AddTransient<LoginCardViewModel>(provider =>
             {
                 var dbContextFactory = provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
-                var drljaDbContextFactory = provider.GetRequiredService<IDbContextFactory<SqliteDrljaDbContext>>();
+                var drljaDbContextFactory = provider.GetService<IDbContextFactory<SqliteDrljaDbContext>>();
                 return new LoginCardViewModel(provider, dbContextFactory, drljaDbContextFactory);
             });
             services.AddTransient<LoginViewModel>(provider =>
             {
                 var dbContextFactory = provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
-                var drljaDbContextFactory = provider.GetRequiredService<IDbContextFactory<SqliteDrljaDbContext>>();
+                var drljaDbContextFactory = provider.GetService<IDbContextFactory<SqliteDrljaDbContext>>();
                 return new LoginViewModel(provider, dbContextFactory, drljaDbContextFactory);
             });
             //services.AddTransient<TableOverviewViewModel>(provider =>
             //{
             //    var dbContextFactory = provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
-            //    var drljaDbContextFactory = provider.GetRequiredService<IDbContextFactory<SqliteDrljaDbContext>>();
+            //    var drljaDbContextFactory = provider.GetService<IDbContextFactory<SqliteDrljaDbContext>>();
             //    var saleViewModel = provider.GetRequiredService<SaleViewModel>();
             //    return new TableOverviewViewModel(provider, dbContextFactory, drljaDbContextFactory, saleViewModel);
             //});
             services.AddTransient<SaleViewModel>(provider =>
             {
                 var dbContextFactory = provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
-                var drljaDbContextFactory = provider.GetRequiredService<IDbContextFactory<SqliteDrljaDbContext>>();
+                var drljaDbContextFactory = provider.GetService<IDbContextFactory<SqliteDrljaDbContext>>();
                 return new SaleViewModel(provider, dbContextFactory, drljaDbContextFactory);
             });
             services.AddTransient<AppMainViewModel>(provider =>
             {
                 var dbContextFactory = provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
-                var drljaDbContextFactory = provider.GetRequiredService<IDbContextFactory<SqliteDrljaDbContext>>();
+                var drljaDbContextFactory = provider.GetService<IDbContextFactory<SqliteDrljaDbContext>>();
                 return new AppMainViewModel(provider, dbContextFactory, drljaDbContextFactory);
             });
             //services.AddTransient<TableOverviewViewModel>();

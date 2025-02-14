@@ -57,6 +57,12 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                 {
                     foreach(var itemDB in items)
                     {
+                        if(itemDB.Id == "000045" ||
+                            itemDB.Id == "000049")
+                        {
+                            int a = 2;
+                        }
+
                         decimal totalCalculationQuantity = 0;
                         decimal totalOtpisQuantity = 0;
                         decimal totalPazarQuantity = 0;
@@ -86,7 +92,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                             calItem => calItem.CalculationId,
                             (cal, calItem) => new { Cal = cal, CalItem = calItem })
                         .Where(cal => cal.CalItem.ItemId == itemDB.Id &&
-                        cal.Cal.CalculationDate.Date >= pocetnoStanjeDate.Date);
+                        cal.Cal.CalculationDate.Date > pocetnoStanjeDate.Date);
 
                         if (itemInCal != null &&
                         itemInCal.Any())
@@ -99,7 +105,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                             otpisItem => otpisItem.OtpisId,
                             (otpis, otpisItem) => new { Otpis = otpis, OtpisItem = otpisItem })
                         .Where(otp => otp.OtpisItem.ItemId == itemDB.Id &&
-                        otp.Otpis.OtpisDate.Date >= pocetnoStanjeDate.Date);
+                        otp.Otpis.OtpisDate.Date > pocetnoStanjeDate.Date);
 
                         if (itemInOtpis != null &&
                         itemInOtpis.Any())
@@ -114,7 +120,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                             .Where(pazar => pazar.Inv.SdcDateTime != null &&
                             pazar.Inv.SdcDateTime.HasValue &&
                             pazar.InvItem.ItemCode == itemDB.Id &&
-                            pazar.Inv.SdcDateTime.Value > pocetnoStanjeDate)
+                            pazar.Inv.SdcDateTime.Value.Date >= pocetnoStanjeDate.Date)
                             .OrderByDescending(item => item.Inv.SdcDateTime);
 
                         if (itemDB.IdNorm == null &&

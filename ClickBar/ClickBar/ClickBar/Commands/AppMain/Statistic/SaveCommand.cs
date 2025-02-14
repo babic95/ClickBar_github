@@ -351,11 +351,16 @@ namespace ClickBar.Commands.AppMain.Statistic
                         if (itemDB == null)
                         {
                             MessageBox.Show("GREŠKA U IZMENI ARTIKLA!", "", MessageBoxButton.OK, MessageBoxImage.Error);
+                            return;
                         }
 
                         if (inventoryStatusViewModel.CurrentNorm >= 0)
                         {
                             itemDB.IdNorm = inventoryStatusViewModel.CurrentNorm;
+                        }
+                        else
+                        {
+                            itemDB.IdNorm = null;
                         }
 
                         itemDB.Name = inventoryStatusViewModel.CurrentInventoryStatus.Item.Name;

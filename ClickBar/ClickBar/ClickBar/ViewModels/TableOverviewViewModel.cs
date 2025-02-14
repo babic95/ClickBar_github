@@ -61,11 +61,11 @@ namespace ClickBar.ViewModels
         #region Constructors
         public TableOverviewViewModel(IServiceProvider serviceProvider, 
             IDbContextFactory<SqlServerDbContext> dbContextFactory, 
-            IDbContextFactory<SqliteDrljaDbContext> drljaDbContextFactory,
+            IDbContextFactory<SqliteDrljaDbContext>? drljaDbContextFactory,
             SaleViewModel saleViewModel)
         {
             DbContext = dbContextFactory.CreateDbContext();
-            DrljaDbContext = drljaDbContextFactory.CreateDbContext();
+            DrljaDbContextFactory = drljaDbContextFactory;
             SaleViewModel = saleViewModel;
             Order = SaleViewModel.CurrentOrder;
 
@@ -102,7 +102,7 @@ namespace ClickBar.ViewModels
 
         #region Internal Properties
         internal SqlServerDbContext DbContext { get; private set; }
-        internal SqliteDrljaDbContext DrljaDbContext { get; private set; }
+        internal IDbContextFactory<SqliteDrljaDbContext>? DrljaDbContextFactory { get; private set; }
         #endregion Internal Properties
 
         #region Properties
@@ -334,114 +334,120 @@ namespace ClickBar.ViewModels
         #region Internal Methods
         internal async void SetKuhinjaNarudzbine()
         {
-            Narudzbe = new ObservableCollection<Narudzbe>();
-            var allNarudzbe = DrljaDbContext.StavkeNarudzbine.AsNoTracking()
-                .Join(DrljaDbContext.Narudzbine.AsNoTracking(),
-                s => s.TR_NARUDZBE_ID,
-                n => n.TR_NARUDZBE_ID,
-                (s, n) => new { s, n })
-                .Where(n => n.n.TR_VREMENARUDZBE.Date == SelectedDate.Date);
-
-            if (allNarudzbe.Any())
+            if (DrljaDbContextFactory != null)
             {
-                var maxBrPorudzbine = DrljaDbContext.Narudzbine.AsNoTracking()
-                    .Where(n => n.TR_VREMENARUDZBE.Date == SelectedDate.Date)
-                    .Max(n => n.TR_BROJNARUDZBE);
-
-                var minBrPorudzbine = DrljaDbContext.Narudzbine.AsNoTracking()
-                    .Where(n => n.TR_VREMENARUDZBE.Date == SelectedDate.Date)
-                    .Min(n => n.TR_BROJNARUDZBE);
-
-                var allStavkeToDay = DrljaDbContext.StavkeNarudzbine.AsNoTracking()
-                    .Where(s => s.TR_BROJNARUDZBE >= minBrPorudzbine &&
-                    s.TR_BROJNARUDZBE <= maxBrPorudzbine);
-
-                if (allStavkeToDay != null && allStavkeToDay.Any())
+                using (var DrljaDbContext = DrljaDbContextFactory.CreateDbContext())
                 {
-                    TotalNarudzbeSmena1 = 0;
-                    TotalNarudzbeSmena2 = 0;
-                    TotalNarudzbeDostava1 = 0;
-                    TotalNarudzbeDostava2 = 0;
-                    TotalNarudzbe = 0;
+                    Narudzbe = new ObservableCollection<Narudzbe>();
+                    var allNarudzbe = DrljaDbContext.StavkeNarudzbine.AsNoTracking()
+                        .Join(DrljaDbContext.Narudzbine.AsNoTracking(),
+                        s => s.TR_NARUDZBE_ID,
+                        n => n.TR_NARUDZBE_ID,
+                        (s, n) => new { s, n })
+                        .Where(n => n.n.TR_VREMENARUDZBE.Date == SelectedDate.Date);
 
-                    foreach(var s in allStavkeToDay)
+                    if (allNarudzbe.Any())
                     {
-                        try
+                        var maxBrPorudzbine = DrljaDbContext.Narudzbine.AsNoTracking()
+                            .Where(n => n.TR_VREMENARUDZBE.Date == SelectedDate.Date)
+                            .Max(n => n.TR_BROJNARUDZBE);
+
+                        var minBrPorudzbine = DrljaDbContext.Narudzbine.AsNoTracking()
+                            .Where(n => n.TR_VREMENARUDZBE.Date == SelectedDate.Date)
+                            .Min(n => n.TR_BROJNARUDZBE);
+
+                        var allStavkeToDay = DrljaDbContext.StavkeNarudzbine.AsNoTracking()
+                            .Where(s => s.TR_BROJNARUDZBE >= minBrPorudzbine &&
+                            s.TR_BROJNARUDZBE <= maxBrPorudzbine);
+
+                        if (allStavkeToDay != null && allStavkeToDay.Any())
                         {
-                            var narudzbaDB = DrljaDbContext.Narudzbine.AsNoTracking()
-                                .Where(n => n.TR_NARUDZBE_ID == s.TR_NARUDZBE_ID)
-                                .OrderByDescending(n => n.TR_VREMENARUDZBE)
-                                .FirstOrDefault();
+                            TotalNarudzbeSmena1 = 0;
+                            TotalNarudzbeSmena2 = 0;
+                            TotalNarudzbeDostava1 = 0;
+                            TotalNarudzbeDostava2 = 0;
+                            TotalNarudzbe = 0;
 
-                            if (narudzbaDB != null)
+                            foreach (var s in allStavkeToDay)
                             {
-                                var narudzbe = Narudzbe.FirstOrDefault(na => na.BrojNarudzbe == s.TR_BROJNARUDZBE &&
-                                    na.NarudzneId == s.TR_NARUDZBE_ID);
-
-                                if (narudzbe == null)
+                                try
                                 {
-                                    narudzbe = new Narudzbe()
+                                    var narudzbaDB = DrljaDbContext.Narudzbine.AsNoTracking()
+                                        .Where(n => n.TR_NARUDZBE_ID == s.TR_NARUDZBE_ID)
+                                        .OrderByDescending(n => n.TR_VREMENARUDZBE)
+                                        .FirstOrDefault();
+
+                                    if (narudzbaDB != null)
                                     {
-                                        Id = narudzbaDB.Id,
-                                        BrojNarudzbe = s.TR_BROJNARUDZBE,
-                                        NarudzneId = s.TR_NARUDZBE_ID,
-                                        RadnikId = narudzbaDB.TR_RADNIK,
-                                        Smena = narudzbaDB.TR_RADNIK == "1111" || narudzbaDB.TR_RADNIK == "3333" ? 1 : 2,
-                                        StoName = narudzbaDB.TR_STO,
-                                        VremeNarudzbe = Convert.ToDateTime(narudzbaDB.TR_VREMENARUDZBE),
-                                        Stavke = new ObservableCollection<StavkaNarudzbe>()
-                                    };
-                                    Narudzbe.Add(narudzbe);
-                                }
-                                narudzbe.Stavke.Add(new StavkaNarudzbe()
-                                {
-                                    BrArt = s.TR_BRART,
-                                    Id = s.Id,
-                                    Kolicina = s.TR_KOL,
-                                    Mpc = s.TR_MPC,
-                                    Naziv = s.TR_NAZIV,
-                                    StornoKolicina = s.TR_KOL_STORNO,
-                                    Ukupno = decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2)
-                                });
+                                        var narudzbe = Narudzbe.FirstOrDefault(na => na.BrojNarudzbe == s.TR_BROJNARUDZBE &&
+                                            na.NarudzneId == s.TR_NARUDZBE_ID);
 
-                                if (s.TR_KOL_STORNO > 0)
-                                {
-                                    narudzbe.Storno = "IMA STORNO";
-                                }
-                                else
-                                {
-                                    narudzbe.Storno = "NEMA STORNO";
-                                }
+                                        if (narudzbe == null)
+                                        {
+                                            narudzbe = new Narudzbe()
+                                            {
+                                                Id = narudzbaDB.Id,
+                                                BrojNarudzbe = s.TR_BROJNARUDZBE,
+                                                NarudzneId = s.TR_NARUDZBE_ID,
+                                                RadnikId = narudzbaDB.TR_RADNIK,
+                                                Smena = narudzbaDB.TR_RADNIK == "1111" || narudzbaDB.TR_RADNIK == "3333" ? 1 : 2,
+                                                StoName = narudzbaDB.TR_STO,
+                                                VremeNarudzbe = Convert.ToDateTime(narudzbaDB.TR_VREMENARUDZBE),
+                                                Stavke = new ObservableCollection<StavkaNarudzbe>()
+                                            };
+                                            Narudzbe.Add(narudzbe);
+                                        }
+                                        narudzbe.Stavke.Add(new StavkaNarudzbe()
+                                        {
+                                            BrArt = s.TR_BRART,
+                                            Id = s.Id,
+                                            Kolicina = s.TR_KOL,
+                                            Mpc = s.TR_MPC,
+                                            Naziv = s.TR_NAZIV,
+                                            StornoKolicina = s.TR_KOL_STORNO,
+                                            Ukupno = decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2)
+                                        });
 
-                                if (narudzbe.RadnikId == "1111")
-                                {
-                                    TotalNarudzbeSmena1 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
+                                        if (s.TR_KOL_STORNO > 0)
+                                        {
+                                            narudzbe.Storno = "IMA STORNO";
+                                        }
+                                        else
+                                        {
+                                            narudzbe.Storno = "NEMA STORNO";
+                                        }
+
+                                        if (narudzbe.RadnikId == "1111")
+                                        {
+                                            TotalNarudzbeSmena1 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
+                                        }
+                                        else if (narudzbe.RadnikId == "2222")
+                                        {
+                                            TotalNarudzbeSmena2 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
+                                        }
+                                        else if (narudzbe.RadnikId == "3333")
+                                        {
+                                            TotalNarudzbeDostava1 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
+                                        }
+                                        else if (narudzbe.RadnikId == "4444")
+                                        {
+                                            TotalNarudzbeDostava2 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
+                                        }
+                                    }
                                 }
-                                else if (narudzbe.RadnikId == "2222")
+                                catch (Exception ex)
                                 {
-                                    TotalNarudzbeSmena2 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
-                                }
-                                else if (narudzbe.RadnikId == "3333")
-                                {
-                                    TotalNarudzbeDostava1 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
-                                }
-                                else if (narudzbe.RadnikId == "4444")
-                                {
-                                    TotalNarudzbeDostava2 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
+                                    Log.Error("SetKuhinjaNarudzbine -> Error processing order items: ", ex);
                                 }
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            Log.Error("SetKuhinjaNarudzbine -> Error processing order items: ", ex);
+                            TotalNarudzbe = TotalNarudzbeSmena1 +
+                                TotalNarudzbeSmena2 +
+                                TotalNarudzbeDostava1 +
+                                TotalNarudzbeDostava2;
+
+                            Narudzbe = new ObservableCollection<Narudzbe>(Narudzbe.OrderByDescending(n => n.BrojNarudzbe));
                         }
                     }
-                    TotalNarudzbe = TotalNarudzbeSmena1 +
-                        TotalNarudzbeSmena2 +
-                        TotalNarudzbeDostava1 +
-                        TotalNarudzbeDostava2;
-
-                    Narudzbe = new ObservableCollection<Narudzbe>(Narudzbe.OrderByDescending(n => n.BrojNarudzbe));
                 }
             }
         }
@@ -640,41 +646,47 @@ namespace ClickBar.ViewModels
         {
             try
             {
-                var noveNarudzbe = DrljaDbContext.Narudzbine.AsNoTracking()
-                    .Where(n => n.TR_FAZA == 2 && n.TR_VREMENARUDZBE.Date == DateTime.Now.Date);
-
-                if (noveNarudzbe != null && noveNarudzbe.Any())
+                if (DrljaDbContextFactory != null)
                 {
-                    Application.Current.Dispatcher.Invoke(async () =>
+                    using (var DrljaDbContext = DrljaDbContextFactory.CreateDbContext())
                     {
-                        foreach(var n in noveNarudzbe)
+                        var noveNarudzbe = DrljaDbContext.Narudzbine.AsNoTracking()
+                        .Where(n => n.TR_FAZA == 2 && n.TR_VREMENARUDZBE.Date == DateTime.Now.Date);
+
+                        if (noveNarudzbe != null && noveNarudzbe.Any())
                         {
-                            if (n.TR_STO.StartsWith("S"))
+                            Application.Current.Dispatcher.Invoke(async () =>
                             {
-                                string numberPart = n.TR_STO.Substring(1);
-
-                                if (int.TryParse(numberPart, out int stoId))
+                                foreach (var n in noveNarudzbe)
                                 {
-                                    var sto = AllNormalPaymentPlaces.FirstOrDefault(p => p.Id == stoId)
-                                        ?? AllRoundPaymentPlaces.FirstOrDefault(p => p.Id == stoId);
-
-                                    if (sto != null && sto.Background != Brushes.Blue)
+                                    if (n.TR_STO.StartsWith("S"))
                                     {
-                                        sto.Background = Brushes.Blue;
-                                        SystemSounds.Asterisk.Play();
+                                        string numberPart = n.TR_STO.Substring(1);
+
+                                        if (int.TryParse(numberPart, out int stoId))
+                                        {
+                                            var sto = AllNormalPaymentPlaces.FirstOrDefault(p => p.Id == stoId)
+                                                ?? AllRoundPaymentPlaces.FirstOrDefault(p => p.Id == stoId);
+
+                                            if (sto != null && sto.Background != Brushes.Blue)
+                                            {
+                                                sto.Background = Brushes.Blue;
+                                                SystemSounds.Asterisk.Play();
+                                            }
+                                        }
+                                        else
+                                        {
+                                            Log.Error("Greska prilikom konvertovanja stringa u broj za broj stola.");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Log.Error("String ne počinje sa 'S' za broj stola iz Drljine baze.");
                                     }
                                 }
-                                else
-                                {
-                                    Log.Error("Greska prilikom konvertovanja stringa u broj za broj stola.");
-                                }
-                            }
-                            else
-                            {
-                                Log.Error("String ne počinje sa 'S' za broj stola iz Drljine baze.");
-                            }
+                            });
                         }
-                    });
+                    }
                 }
             }
             catch(Exception ex)

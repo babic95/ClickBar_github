@@ -541,7 +541,7 @@ namespace ClickBar_DatabaseSQLManager
 
                 entity.Property(e => e.City).HasMaxLength(45);
 
-                entity.Property(e => e.ContractNumber).HasMaxLength(20);
+                entity.Property(e => e.ContractNumber).HasMaxLength(50);
 
                 entity.Property(e => e.Email).HasMaxLength(60);
 
@@ -1294,7 +1294,7 @@ namespace ClickBar_DatabaseSQLManager
                         "PIB NVARCHAR(45) NOT NULL, " +
                         "Name NVARCHAR(95) NOT NULL, " +
                         "Address NVARCHAR(75), " +
-                        "ContractNumber NVARCHAR(20), " +
+                        "ContractNumber NVARCHAR(50), " +
                         "Email NVARCHAR(60), " +
                         "City NVARCHAR(45), " +
                         "MB NVARCHAR(45), " +

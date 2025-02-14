@@ -145,21 +145,25 @@ namespace ClickBar.Commands.TableOverview
 
                 if (paymentPlace != null)
                 {
-                    if (paymentPlace.Background == Brushes.Blue)
+                    if (_viewModel.DrljaDbContextFactory != null &&
+                        paymentPlace.Background == Brushes.Blue)
                     {
-                        var nrudzbine = _viewModel.DrljaDbContext.Narudzbine.Where(n => n.TR_STO == $"S{paymentPlace.Id}" &&
+                        using (var DrljaDbContext = _viewModel.DrljaDbContextFactory.CreateDbContext())
+                        {
+                            var nrudzbine = DrljaDbContext.Narudzbine.Where(n => n.TR_STO == $"S{paymentPlace.Id}" &&
                         n.TR_FAZA == 2);
 
-                        if (nrudzbine != null &&
-                            nrudzbine.Any())
-                        {
-                            foreach(var n in nrudzbine)
+                            if (nrudzbine != null &&
+                                nrudzbine.Any())
                             {
-                                n.TR_FAZA = 3;
-                                _viewModel.DrljaDbContext.Narudzbine.Update(n);
-                            }
+                                foreach (var n in nrudzbine)
+                                {
+                                    n.TR_FAZA = 3;
+                                    DrljaDbContext.Narudzbine.Update(n);
+                                }
 
-                            RetryHelperDrlja.ExecuteWithRetry(() => { _viewModel.DrljaDbContext.SaveChanges(); });
+                                RetryHelperDrlja.ExecuteWithRetry(() => { DrljaDbContext.SaveChanges(); });
+                            }
                         }
                     }
 

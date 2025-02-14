@@ -80,9 +80,17 @@ namespace ClickBar.ViewModels.Sale
         {
             _serviceProvider = serviceProvider;
             DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
-            var drljaDbContext = serviceProvider.GetRequiredService<SqliteDrljaDbContext>();
+            var drljaDbContext = serviceProvider.GetRequiredService< IDbContextFactory<SqliteDrljaDbContext>>();
 
-            DrljaDbContext = drljaDbContext;
+            if(drljaDbContext == null)
+            {
+                DrljaDbContext = null;
+            }
+            else
+            {
+                DrljaDbContext = drljaDbContext.CreateDbContext();
+            }
+
             _payCommand = new Lazy<PayCommand<PaySaleViewModel>>(() => new PayCommand<PaySaleViewModel>(serviceProvider, this));
             //PayCommand = _serviceProvider.GetRequiredService<PayCommand<PaySaleViewModel>>();
             //SplitOrderCommand = _serviceProvider.GetRequiredService<SplitOrderCommand>();

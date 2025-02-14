@@ -30,8 +30,8 @@ namespace ClickBar_Settings
         private static readonly string _excelExportFolderName = @"Export";
         private static readonly string _databaseName = @"ClickBar_DB.db";
         private static readonly string _sqlServerDatabaseName = "ClickBar_DB";
-        private static readonly string _masterDatabaseConnectionString = @"Data Source=.\ClickBar_SSMS;Initial Catalog=master;User ID=sa;Password=Jajajaja95!;MultipleActiveResultSets=True;TrustServerCertificate=True";
-        private static readonly string _databaseConnectionString = @"Data Source=.\ClickBar_SSMS;Initial Catalog=ClickBar_DB;User ID=sa;Password=Jajajaja95!;MultipleActiveResultSets=True;TrustServerCertificate=True";
+        private static readonly string _masterDatabaseConnectionString = @"\ClickBar_SSMS;Initial Catalog=master;User ID=sa;Password=Jajajaja95!;MultipleActiveResultSets=True;TrustServerCertificate=True";
+        private static readonly string _databaseConnectionString = @"\ClickBar_SSMS;Initial Catalog=ClickBar_DB;User ID=sa;Password=Jajajaja95!;MultipleActiveResultSets=True;TrustServerCertificate=True";
         private static readonly string _appFileName = @"app.json";
         private static readonly string _model = "CCS ClickBar";
         private static readonly string _logo = "logo.png";
@@ -125,11 +125,24 @@ namespace ClickBar_Settings
         }
         public string GetConnectionString()
         {
-            return _databaseConnectionString;
+            string dataSource = "Data Source=.";
+
+            if (_settingsFile.HostPC_IP != null)
+            {
+                dataSource = $"Data Source={_settingsFile.HostPC_IP},1433";
+            }
+            return dataSource + _databaseConnectionString;
         }
         public string GetConnectionStringMaster()
         {
-            return _masterDatabaseConnectionString;
+            string dataSource = "Data Source=.";
+
+            if (_settingsFile.HostPC_IP != null)
+            {
+                dataSource = $"Data Source={_settingsFile.HostPC_IP},1433";
+            }
+
+            return dataSource + _masterDatabaseConnectionString;
         }
         public bool GetRunPorudzbineServis()
         {

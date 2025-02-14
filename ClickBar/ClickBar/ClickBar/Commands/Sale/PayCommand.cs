@@ -567,7 +567,8 @@ namespace ClickBar.Commands.Sale
 
                             var pathToDrljaDB = SettingsManager.Instance.GetPathToDrljaKuhinjaDB();
 
-                            if (!string.IsNullOrEmpty(pathToDrljaDB))
+                            if (paySaleViewModel.DrljaDbContext != null &&
+                                !string.IsNullOrEmpty(pathToDrljaDB))
                             {
                                 var narudzbineDrlja = paySaleViewModel.DrljaDbContext.Narudzbine.AsNoTracking().Where(nar => nar.TR_STO.Contains(tableId.ToString())
                                         && nar.TR_FAZA != 4);

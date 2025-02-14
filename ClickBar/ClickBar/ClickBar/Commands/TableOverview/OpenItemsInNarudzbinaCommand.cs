@@ -35,31 +35,37 @@ namespace ClickBar.Commands.TableOverview
 
         public void Execute(object parameter)
         {
-            try
+            if (_currentView.DrljaDbContextFactory != null)
             {
-                DataGridCellInfo dataGridCellInfo = (DataGridCellInfo)parameter;
-                Narudzbe narudzba = (Narudzbe)dataGridCellInfo.Item;
-                if (narudzba != null)
+                try
                 {
-                    var stavkeNarudzbine = _currentView.DrljaDbContext.StavkeNarudzbine.Where(s => s.TR_BROJNARUDZBE == narudzba.BrojNarudzbe);
-
-                    if (stavkeNarudzbine != null &&
-                        stavkeNarudzbine.Any())
+                    using (var DrljaDbContext = _currentView.DrljaDbContextFactory.CreateDbContext())
                     {
-                        _currentView.CurrentNarudzba = narudzba;
+                        DataGridCellInfo dataGridCellInfo = (DataGridCellInfo)parameter;
+                        Narudzbe narudzba = (Narudzbe)dataGridCellInfo.Item;
+                        if (narudzba != null)
+                        {
+                            var stavkeNarudzbine = DrljaDbContext.StavkeNarudzbine.Where(s => s.TR_BROJNARUDZBE == narudzba.BrojNarudzbe);
 
-                        KuhinjaStavkePorudzbine KuhinjaStavkePorudzbine = new KuhinjaStavkePorudzbine(_currentView);
-                        KuhinjaStavkePorudzbine.ShowDialog();
+                            if (stavkeNarudzbine != null &&
+                                stavkeNarudzbine.Any())
+                            {
+                                _currentView.CurrentNarudzba = narudzba;
+
+                                KuhinjaStavkePorudzbine KuhinjaStavkePorudzbine = new KuhinjaStavkePorudzbine(_currentView);
+                                KuhinjaStavkePorudzbine.ShowDialog();
+                            }
+                        }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Greska prilikom otvaranja stavki narudzbine", ex);
-                MessageBox.Show("Greska prilikom otvaranja stavki narudzbine",
-                    "Greska",
-                    System.Windows.MessageBoxButton.OK, 
-                    System.Windows.MessageBoxImage.Error);
+                catch (Exception ex)
+                {
+                    Log.Error("Greska prilikom otvaranja stavki narudzbine", ex);
+                    MessageBox.Show("Greska prilikom otvaranja stavki narudzbine",
+                        "Greska",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Error);
+                }
             }
         }
     }

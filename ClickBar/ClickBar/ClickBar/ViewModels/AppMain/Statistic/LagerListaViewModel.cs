@@ -176,7 +176,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             if (DbContext.PocetnaStanja != null &&
                 DbContext.PocetnaStanja.Any())
             {
-                pocetnoStanjeDB = DbContext.PocetnaStanja.OrderByDescending(p => p.PopisDate).FirstOrDefault();
+                pocetnoStanjeDB = DbContext.PocetnaStanja.Where(p => p.PopisDate.Date < SelectedDate.Date).OrderByDescending(p => p.PopisDate).FirstOrDefault();
             }
 
             DateTime pocetnoStanjeDate = new DateTime(DateTime.Now.Year, 1, 1, 0, 0, 0);
@@ -193,13 +193,16 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                 calculation => calculation.Id,
                 calculationItem => calculationItem.CalculationId,
                 (calculation, calculationItem) => new { Calculation = calculation, CalculationItem = calculationItem })
-                .Where(cal => cal.Calculation.CalculationDate.Date > SelectedDate.Date);
+                .Where(cal => cal.Calculation.CalculationDate.Date >= pocetnoStanjeDate.Date &&
+                cal.Calculation.CalculationDate.Date <= SelectedDate.Date);
 
             var pazar = DbContext.Invoices.Join(DbContext.ItemInvoices,
                 invoice => invoice.Id,
                 invoiceItem => invoiceItem.InvoiceId,
                 (invoice, invoiceItem) => new { Invoice = invoice, InvoiceItem = invoiceItem })
-                .Where(inv => inv.Invoice.SdcDateTime != null && inv.Invoice.SdcDateTime.Value.Date > SelectedDate.Date);
+                .Where(inv => inv.Invoice.SdcDateTime != null && 
+                inv.Invoice.SdcDateTime.Value.Date >= pocetnoStanjeDate.Date &&
+                inv.Invoice.SdcDateTime.Value.Date <= SelectedDate.Date);
 
             if (DbContext.Items != null &&
                 DbContext.Items.Any())
@@ -224,7 +227,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
 
                     if (group != null)
                     {
-                        decimal quantity = x.TotalQuantity;
+                        decimal quantity = totalQuantityPocetnoStanje;
 
                         if (x.IdNorm == null)
                         {
@@ -238,7 +241,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                                 {
                                     foreach(var i in itemsInCal)
                                     {
-                                        quantity -= i.CalculationItem.Quantity;
+                                        quantity += i.CalculationItem.Quantity;
                                     }
                                 }
                             }
@@ -255,8 +258,16 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                                     {
                                         if (i.InvoiceItem.Quantity != null)
                                         {
-                                            quantity += i.InvoiceItem.Quantity.Value;
+                                            if(i.Invoice.TransactionType == 0)
+                                            {
+                                                quantity -= i.InvoiceItem.Quantity.Value;
+                                            }
+                                            else
+                                            {
+                                                quantity += i.InvoiceItem.Quantity.Value;
+                                            }
                                         }
+
                                     }
                                 }
                             }

@@ -70,11 +70,11 @@ namespace ClickBar.ViewModels
         #region Constructors
         public SaleViewModel(IServiceProvider serviceProvider,
             IDbContextFactory<SqlServerDbContext> dbContextFactory,
-            IDbContextFactory<SqliteDrljaDbContext> drljaDbContextFactory)
+            IDbContextFactory<SqliteDrljaDbContext>? drljaDbContextFactory)
         {
             _serviceProvider = serviceProvider;
             DbContext = dbContextFactory.CreateDbContext();
-            DrljaDbContext = drljaDbContextFactory.CreateDbContext();
+            DrljaDbContext = drljaDbContextFactory != null ? drljaDbContextFactory.CreateDbContext() : null;
             _updateCurrentAppStateViewModelCommand = new Lazy<UpdateCurrentAppStateViewModelCommand>(() => serviceProvider.GetRequiredService<UpdateCurrentAppStateViewModelCommand>());
             LoggedCashier = serviceProvider.GetRequiredService<CashierDB>();
             //TableOverviewCommand = serviceProvider.GetRequiredService<TableOverviewCommand>();

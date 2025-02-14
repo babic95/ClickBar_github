@@ -13,6 +13,7 @@ using ClickBar_DatabaseSQLManager.Models;
 using System.Windows.Navigation;
 using ClickBar_Database_Drlja;
 using ClickBar.Enums;
+using ClickBar.ViewModels.Sale;
 
 namespace ClickBar.Commands.Sale
 {
@@ -160,7 +161,8 @@ namespace ClickBar.Commands.Sale
 
                                 var pathToDrljaDB = SettingsManager.Instance.GetPathToDrljaKuhinjaDB();
 
-                                if (!string.IsNullOrEmpty(pathToDrljaDB))
+                                if (_viewModel.DrljaDbContext != null &&
+                                    !string.IsNullOrEmpty(pathToDrljaDB))
                                 {
                                     var narudzbineDrlja = _viewModel.DrljaDbContext.Narudzbine.Where(nar => nar.TR_STO.Contains(order.PaymentPlaceId.ToString())
                                     && nar.TR_FAZA != 4);

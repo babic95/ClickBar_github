@@ -35,18 +35,21 @@ namespace ClickBar.Commands.TableOverview
 
         public void Execute(object parameter)
         {
-            try
+            if (_currentView.DrljaDbContextFactory != null)
             {
-                _currentView.SetKuhinjaNarudzbine();
+                try
+                {
+                    _currentView.SetKuhinjaNarudzbine();
 
-                KuhinjaPorudzbineWindow kuhinjaPorudzbineWindow = new KuhinjaPorudzbineWindow(_currentView);
-                kuhinjaPorudzbineWindow.ShowDialog();
-                
-            }
-            catch (Exception ex)
-            {
-                Log.Error("OpenKuhinjaCommand -> Execute -> Greska prilikom otvaranja kuhinje: ", ex);
-                MessageBox.Show("Došlo je do greške prilikom otvaranja kuhinje!", "", MessageBoxButton.OK, MessageBoxImage.Error);
+                    KuhinjaPorudzbineWindow kuhinjaPorudzbineWindow = new KuhinjaPorudzbineWindow(_currentView);
+                    kuhinjaPorudzbineWindow.ShowDialog();
+
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("OpenKuhinjaCommand -> Execute -> Greska prilikom otvaranja kuhinje: ", ex);
+                    MessageBox.Show("Došlo je do greške prilikom otvaranja kuhinje!", "", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
     }

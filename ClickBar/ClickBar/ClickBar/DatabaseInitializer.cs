@@ -7,10 +7,10 @@ using Microsoft.Data.SqlClient;
 public class DatabaseInitializer
 {
     private readonly IDbContextFactory<SqlServerDbContext> _sqlServerDbContextFactory;
-    private readonly IDbContextFactory<SqliteDrljaDbContext> _sqliteDrljaDbContextFactory;
+    private readonly IDbContextFactory<SqliteDrljaDbContext>? _sqliteDrljaDbContextFactory;
 
     public DatabaseInitializer(IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory,
-                               IDbContextFactory<SqliteDrljaDbContext> sqliteDrljaDbContextFactory)
+                               IDbContextFactory<SqliteDrljaDbContext>? sqliteDrljaDbContextFactory)
     {
         _sqlServerDbContextFactory = sqlServerDbContextFactory;
         _sqliteDrljaDbContextFactory = sqliteDrljaDbContextFactory;
@@ -29,7 +29,7 @@ public class DatabaseInitializer
             dbContext.Database.EnsureCreated();
         }
 
-        if (!string.IsNullOrEmpty(SettingsManager.Instance.GetPathToDrljaKuhinjaDB()))
+        if (_sqliteDrljaDbContextFactory != null)
         {
             using (var dbContext = _sqliteDrljaDbContextFactory.CreateDbContext())
             {

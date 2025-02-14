@@ -120,12 +120,13 @@ namespace ClickBar.ViewModels
         {
             if (!Window.IsVisible || Window.WindowState == WindowState.Minimized)
             {
-                Window.WindowState = WindowState.Normal;
+                Window.Show();
+                Window.WindowState = WindowState.Maximized;
                 Window.Activate();
             }
             else
             {
-                Window.Show();
+                Window.Activate();
             }
         }
         private void backgroundWorker_DoWork()
