@@ -37,7 +37,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
             if (artikliDB != null &&
                 artikliDB.Any())
             {
-                await artikliDB.ForEachAsync(async artikalDB =>
+                foreach(var artikalDB in artikliDB)
                 {
                     if (artikalDB.Group.Group.Name.ToLower() != "sirovina" &&
                        artikalDB.Group.Group.Name.ToLower() != "sirovine" &&
@@ -72,12 +72,10 @@ namespace ClickBar_Porudzbine.Server.Controllers
                         if (zelje != null &&
                         zelje.Any())
                         {
-                            await zelje.ForEachAsync(z =>
+                            foreach(var z in zelje)
                             {
-                                Zelja zelja = new Zelja(z);
-
-                                artikal.Zelje.Add(zelja);
-                            });
+                                artikal.Zelje.Add(new Zelja(z));
+                            }
                         }
 
                         Zelja zelja = new Zelja(new ZeljaDB()
@@ -88,7 +86,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
                         });
                         artikal.Zelje.Add(zelja);
                     }
-                });
+                }
 
                 return Ok(nadgrupe);
             }

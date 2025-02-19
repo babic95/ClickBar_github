@@ -65,7 +65,7 @@ namespace ClickBar_Report
             if (refundInvoices != null &&
                 refundInvoices.Any())
             {
-                refundInvoices.ForEachAsync(refundInvoiceDB =>
+                foreach(var refundInvoiceDB in refundInvoices )
                 {
                     var invoice = _invoices.FirstOrDefault(i => i.InvoiceNumberResult == refundInvoiceDB.ReferentDocumentNumber);
 
@@ -73,7 +73,7 @@ namespace ClickBar_Report
                     {
                         _invoices.Remove(invoice);
                     }
-                }).Wait();
+                }
             }
             SetReport();
         }

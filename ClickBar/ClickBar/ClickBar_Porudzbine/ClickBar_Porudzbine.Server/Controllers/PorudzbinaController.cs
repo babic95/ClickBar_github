@@ -790,7 +790,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
                 if (porudzbineDB != null &&
                     porudzbineDB.Any())
                 {
-                    await porudzbineDB.ForEachAsync(async n =>
+                    foreach(var n  in porudzbineDB )
                     {
                         var itemsDB = sqliteDrljaDbContext.StavkeNarudzbine.Where(i => i.TR_BROJNARUDZBE == n.TR_BROJNARUDZBE);
 
@@ -805,7 +805,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
                                 Items = new List<PorudzbinaItem>()
                             };
 
-                            await itemsDB.ForEachAsync(itemDB =>
+                            foreach(var itemDB in itemsDB)
                             {
                                 PorudzbinaItem porudzbinaItem = new PorudzbinaItem()
                                 {
@@ -820,11 +820,11 @@ namespace ClickBar_Porudzbine.Server.Controllers
                                 };
 
                                 porudzbina.Items.Add(porudzbinaItem);
-                            });
+                            }
 
                             notifications.Add(porudzbina);
                         }
-                    });
+                    }
                 }
 
                 return Ok(notifications);

@@ -193,7 +193,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                 calculation => calculation.Id,
                 calculationItem => calculationItem.CalculationId,
                 (calculation, calculationItem) => new { Calculation = calculation, CalculationItem = calculationItem })
-                .Where(cal => cal.Calculation.CalculationDate.Date >= pocetnoStanjeDate.Date &&
+                .Where(cal => cal.Calculation.CalculationDate.Date > pocetnoStanjeDate.Date &&
                 cal.Calculation.CalculationDate.Date <= SelectedDate.Date);
 
             var pazar = DbContext.Invoices.Join(DbContext.ItemInvoices,
@@ -201,7 +201,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                 invoiceItem => invoiceItem.InvoiceId,
                 (invoice, invoiceItem) => new { Invoice = invoice, InvoiceItem = invoiceItem })
                 .Where(inv => inv.Invoice.SdcDateTime != null && 
-                inv.Invoice.SdcDateTime.Value.Date >= pocetnoStanjeDate.Date &&
+                inv.Invoice.SdcDateTime.Value.Date > pocetnoStanjeDate.Date &&
                 inv.Invoice.SdcDateTime.Value.Date <= SelectedDate.Date);
 
             if (DbContext.Items != null &&
@@ -209,6 +209,11 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             {
                 foreach(var x in DbContext.Items.Where(i => i.IdNorm == null))
                 {
+                    if(x.Id == "000045")
+                    {
+                        int a = 2;
+                    }
+
                     decimal totalQuantityPocetnoStanje = 0;
 
                     if (pocetnoStanjeDB != null)

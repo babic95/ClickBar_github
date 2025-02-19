@@ -27,12 +27,10 @@ namespace ClickBar_Porudzbine.Server.Controllers
                 sqliteDbContext.Cashiers.Any())
             {
                 List<User> users = new List<User>();
-                await sqliteDbContext.Cashiers.Where(c => c.Type == 0)
-                    .ForEachAsync(radnik =>
+                foreach(var radnik in sqliteDbContext.Cashiers.Where(c => c.Type == 0))
                 {
-                    User user = new User(radnik);
-                    users.Add(user);
-                });
+                    users.Add(new User(radnik));
+                }
 
                 return Ok(users);
             }

@@ -34,14 +34,13 @@ namespace ClickBar_Porudzbine.Server.Controllers
                     sqliteDbContext.PartHalls.Any())
                 {
                     List<DeoSale> deloviSale = new List<DeoSale>();
-                    await sqliteDbContext.PartHalls.ForEachAsync(async deoSaleDB =>
+                    foreach(var deoSaleDB in sqliteDbContext.PartHalls)
                     {
                         DeoSale deoSale = new DeoSale(deoSaleDB);
 
                         if (deoSale.Stolovi != null)
                         {
-                            await sqliteDbContext.PaymentPlaces.Where(s => s.PartHallId == deoSaleDB.Id)
-                            .ForEachAsync(stoDB =>
+                            foreach(var stoDB in sqliteDbContext.PaymentPlaces.Where(s => s.PartHallId == deoSaleDB.Id))
                             {
                                 Sto sto = new Sto(stoDB);
                                 string stoName = $"S{stoDB.Id}";
@@ -63,10 +62,10 @@ namespace ClickBar_Porudzbine.Server.Controllers
                                 }
 
                                 deoSale.Stolovi.Add(sto);
-                            });
+                            }
                         }
                         deloviSale.Add(deoSale);
-                    });
+                    }
 
                     return Ok(deloviSale);
                 }
@@ -88,20 +87,17 @@ namespace ClickBar_Porudzbine.Server.Controllers
                     sqliteDbContext.PartHalls.Any())
                 {
                     List<DeoSale> deloviSale = new List<DeoSale>();
-                    await sqliteDbContext.PartHalls.ForEachAsync(async deoSaleDB =>
+                    foreach(var deoSaleDB in sqliteDbContext.PartHalls)
                     {
                         DeoSale deoSale = new DeoSale(deoSaleDB);
 
-                        await sqliteDbContext.PaymentPlaces.Where(s => s.PartHallId == deoSaleDB.Id)
-                        .ForEachAsync(stoDB =>
+                        foreach(var stoDB in sqliteDbContext.PaymentPlaces.Where(s => s.PartHallId == deoSaleDB.Id))
                         {
-                            Sto sto = new Sto(stoDB);
-
-                            deoSale.Stolovi.Add(sto);
-                        });
+                            deoSale.Stolovi.Add(new Sto(stoDB));
+                        }
 
                         deloviSale.Add(deoSale);
-                    });
+                    }
 
                     return Ok(deloviSale);
                 }
@@ -248,11 +244,11 @@ namespace ClickBar_Porudzbine.Server.Controllers
                 if (porudzbineDB != null &&
                     porudzbineDB.Any())
                 {
-                    await porudzbineDB.ForEachAsync(porDB =>
+                    foreach(var porDB in porudzbineDB)
                     {
                         porDB.TR_FAZA = 4;
                         sqliteDrljaDbContext.Narudzbine.Update(porDB);
-                    });
+                    }
 
                     sqliteDrljaDbContext.SaveChanges();
                 }
@@ -289,7 +285,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
                             if (itemsFromSto != null &&
                                 itemsFromSto.Any())
                             {
-                                await itemsFromSto.ForEachAsync(item =>
+                                foreach(var item in itemsFromSto)
                                 {
                                     var itemInToSto = itemsToSto.FirstOrDefault(i => i.ItemId == item.ItemId);
                                     if (itemInToSto != null)
@@ -301,7 +297,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
                                         item.UnprocessedOrderId = toStoDB.Id;
                                     }
                                     sqliteDbContext.ItemsInUnprocessedOrder.Update(item);
-                                });
+                                }
                             }
 
                             toStoDB.TotalAmount += fromStoDB.TotalAmount;
@@ -335,11 +331,11 @@ namespace ClickBar_Porudzbine.Server.Controllers
                 if (porudzbineFromDB != null &&
                     porudzbineFromDB.Any())
                 {
-                    await porudzbineFromDB.ForEachAsync(porDB =>
+                    foreach(var porDB in porudzbineFromDB)
                     {
                         porDB.TR_RADNIK = moveKonobar.ToKonobarId;
                         sqliteDrljaDbContext.Narudzbine.Update(porDB);
-                    });
+                    }
 
                     sqliteDrljaDbContext.SaveChanges();
                 }
@@ -364,14 +360,13 @@ namespace ClickBar_Porudzbine.Server.Controllers
                 sqliteDbContext.PartHalls.Any())
                 {
                     List<DeoSalePorudzbina> deloviSale = new List<DeoSalePorudzbina>();
-                    await sqliteDbContext.PartHalls.ForEachAsync(async deoSaleDB =>
+                    foreach(var deoSaleDB in sqliteDbContext.PartHalls)
                     {
                         DeoSalePorudzbina deoSale = new DeoSalePorudzbina(deoSaleDB);
 
                         if (deoSale.Stolovi != null)
                         {
-                            await sqliteDbContext.PaymentPlaces.Where(s => s.PartHallId == deoSaleDB.Id)
-                            .ForEachAsync(stoDB =>
+                            foreach(var stoDB in sqliteDbContext.PaymentPlaces.Where(s => s.PartHallId == deoSaleDB.Id))
                             {
                                 Sto sto = new Sto(stoDB);
                                 StoPorudzbina stoPorudzbina = new StoPorudzbina()
@@ -394,7 +389,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
                                     if (itemsInUnprocessedOrder != null &&
                                         itemsInUnprocessedOrder.Any())
                                     {
-                                        itemsInUnprocessedOrder.ToList().ForEach(item =>
+                                        foreach(var item in itemsInUnprocessedOrder)
                                         {
                                             PorudzbinaItem porudzbinaItem = new PorudzbinaItem()
                                             {
@@ -409,7 +404,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
                                             };
 
                                             stoPorudzbina.Items.Add(porudzbinaItem);
-                                        });
+                                        }
 
                                         stoPorudzbina.Sto.Color = "#ff2c2c";
                                     }
@@ -421,14 +416,14 @@ namespace ClickBar_Porudzbine.Server.Controllers
                                 //if (porudzbineDB != null &&
                                 //porudzbineDB.Any())
                                 //{
-                                //    porudzbineDB.ForEachAsync(porDB =>
+                                //    foreach(var porDB in porudzbineDB)
                                 //    {
                                 //        var itemsDB = sqliteDrljaDbContext.StavkeNarudzbine.Where(i => i.TR_BROJNARUDZBE == porDB.TR_BROJNARUDZBE);
 
                                 //        if (itemsDB != null &&
                                 //        itemsDB.Any())
                                 //        {
-                                //            itemsDB.ForEachAsync(itemDB =>
+                                //            foreach(var itemDB in itemsDB)
                                 //            {
                                 //                PorudzbinaItem porudzbinaItem = new PorudzbinaItem()
                                 //                {
@@ -443,19 +438,19 @@ namespace ClickBar_Porudzbine.Server.Controllers
                                 //                };
 
                                 //                stoPorudzbina.Items.Add(porudzbinaItem);
-                                //            });
+                                //            }
 
                                 //            stoPorudzbina.Sto.Color = "#ff2c2c";
                                 //        }
-                                //    });
+                                //    }
                                 //}
 
                                 deoSale.Stolovi.Add(stoPorudzbina);
-                            });
+                            }
                         }
 
                         deloviSale.Add(deoSale);
-                    });
+                    }
 
                     return Ok(deloviSale);
                 }

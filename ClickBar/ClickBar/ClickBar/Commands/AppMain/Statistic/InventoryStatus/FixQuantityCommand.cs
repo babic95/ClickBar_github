@@ -57,8 +57,7 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                 {
                     foreach(var itemDB in items)
                     {
-                        if(itemDB.Id == "000045" ||
-                            itemDB.Id == "000049")
+                        if(itemDB.Id == "000358")
                         {
                             int a = 2;
                         }

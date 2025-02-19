@@ -63,7 +63,7 @@ namespace ClickBar.Commands.Sale
             //    if (fixneZeljeDB != null &&
             //        fixneZeljeDB.Any())
             //    {
-            //        fixneZeljeDB.ForEachAsync(z =>
+            //        foreach(var z in fixneZeljeDB)
             //        {
             //            ItemZelja itemZelja = new ItemZelja()
             //            {
@@ -73,7 +73,7 @@ namespace ClickBar.Commands.Sale
             //            };
 
             //            fixneZelje.Add(itemZelja);
-            //        });
+            //        }
             //    }
             //}
 

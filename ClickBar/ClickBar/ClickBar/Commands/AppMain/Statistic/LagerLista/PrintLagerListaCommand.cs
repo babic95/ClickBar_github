@@ -156,10 +156,10 @@ namespace ClickBar.Commands.AppMain.Statistic.LagerLista
 
             if (itemsInKuhinja.Any())
             {
-                await itemsInKuhinja.ForEachAsync(itemDB =>
+                foreach(var itemDB in itemsInKuhinja )
                 {
 
-                });
+                }
             }
 
             foreach(var itemDB in _currentViewModel.DbContext.Items)

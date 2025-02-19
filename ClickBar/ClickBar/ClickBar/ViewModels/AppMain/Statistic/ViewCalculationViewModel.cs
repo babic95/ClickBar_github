@@ -490,7 +490,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             if (calculationItemsDB != null &&
                 calculationItemsDB.Any())
             {
-                calculationItemsDB.ToList().ForEach(async item =>
+                foreach(var item in calculationItemsDB.ToList())
                 {
                     var itemDB = await DbContext.Items.FindAsync(item.ItemId);
 
@@ -508,7 +508,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
 
                         calculationItems.Add(calculationItem);
                     }
-                });
+                }
 
             }
             return calculationItems;
