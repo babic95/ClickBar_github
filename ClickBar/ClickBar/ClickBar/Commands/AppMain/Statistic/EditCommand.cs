@@ -91,37 +91,41 @@ namespace ClickBar.Commands.AppMain.Statistic
 
                             if (itemDB != null)
                             {
-                                //var itemZelje = inventoryStatusViewModel.DbContext.Zelje.Where(x => x.ItemId == itemDB.Id);
+                                var itemZelje = inventoryStatusViewModel.DbContext.Zelje.Where(x => x.ItemId == itemDB.Id);
 
-                                //if (itemZelje != null &&
-                                //    itemZelje.Any())
-                                //{
-                                //    itemZelje.ToList().ForEach(zelja =>
-                                //    {
-                                //        inventoryStatusViewModel.Zelje.Add(new ItemZelja()
-                                //        {
-                                //            Id = zelja.Id,
-                                //            ItemId = zelja.ItemId,
-                                //            Zelja = zelja.Zelja
-                                //        });
-                                //    });
-                                //}
-
-                                var itemInNorm = inventoryStatusViewModel.DbContext.ItemsInNorm.Where(x => x.IdNorm == itemDB.IdNorm);
-
-                                if (itemInNorm.Any())
+                                if (itemZelje != null &&
+                                    itemZelje.Any())
                                 {
-                                    itemInNorm.ToList().ForEach(item =>
+                                    itemZelje.ToList().ForEach(zelja =>
                                     {
-                                        ItemDB? itemDB = inventoryStatusViewModel.DbContext.Items.Find(item.IdItem);
-
-                                        if (itemDB != null)
+                                        inventoryStatusViewModel.Zelje.Add(new ItemZelja()
                                         {
-                                            Item it = new Item(itemDB);
-                                            Invertory invertory = new Invertory(it, itemDB.IdItemGroup, item.Quantity, 0, 0, isSirovina);
-                                            inventoryStatusViewModel.Norma.Add(invertory);
-                                        }
+                                            Id = zelja.Id,
+                                            ItemId = zelja.ItemId,
+                                            Zelja = zelja.Zelja
+                                        });
                                     });
+                                }
+
+                                if (itemDB.IdNorm != null)
+                                {
+                                    var itemInNorm = inventoryStatusViewModel.DbContext.ItemsInNorm.Where(x => x.IdNorm == itemDB.IdNorm);
+
+                                    if (itemInNorm.Any())
+                                    {
+                                        inventoryStatusViewModel.CurrentNorm = itemDB.IdNorm.Value;
+                                        itemInNorm.ToList().ForEach(item =>
+                                        {
+                                            ItemDB? itemDB = inventoryStatusViewModel.DbContext.Items.Find(item.IdItem);
+
+                                            if (itemDB != null)
+                                            {
+                                                Item it = new Item(itemDB);
+                                                Invertory invertory = new Invertory(it, itemDB.IdItemGroup, item.Quantity, 0, 0, isSirovina);
+                                                inventoryStatusViewModel.Norma.Add(invertory);
+                                            }
+                                        });
+                                    }
                                 }
                             }
 

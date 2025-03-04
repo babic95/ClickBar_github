@@ -58,7 +58,7 @@
                                 BorderThickness="1"
                                 Grid.Column="0">
                             <Grid>
-                                <Label Content="Kasir: "
+                                <Label Content="Konobar: "
                                        FontSize="14"
                                        HorizontalAlignment="Left"/>
                                 <Label Content="{Binding CashierNema}"
@@ -124,96 +124,140 @@
                         <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                                       VerticalScrollBarVisibility="Auto"
                                       Grid.Row="0"
-                                      Visibility="{Binding OldItemsInvoiceVisibility, Mode=TwoWay}"
+                                      Visibility="{Binding OldOrdersVisibility, Mode=TwoWay}"
                                       MaxHeight="{Binding ActualHeight,
                             RelativeSource={RelativeSource AncestorType=Window},
                             Converter={StaticResource FractionHeightConverter}, 
                             ConverterParameter=0.5}">
                             <Grid Margin="10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="55*"/>
-                                    <ColumnDefinition Width="25*"/>
-                                    <ColumnDefinition Width="20*"/>
-                                    <ColumnDefinition Width="auto"/>
-                                </Grid.ColumnDefinitions>
+                                <ItemsControl ItemsSource="{Binding OldOrders}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="Black"
+                                                    BorderThickness="3"
+                                                    Margin="0 5">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="auto"/>
+                                                        <RowDefinition Height="auto"/>
+                                                        <RowDefinition Height="*"/>
+                                                    </Grid.RowDefinitions>
+                                                    <Grid Grid.Row="0">
+                                                        <StackPanel Orientation="Horizontal"
+                                                                    HorizontalAlignment="Center"
+                                                                    VerticalAlignment="Center">
+                                                            <Label Content="Porudzbina:"/>
+                                                            <Label Content="{Binding Name}"
+                                                                ContentStringFormat="dd.MM.yyyy HH:mm:ss"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <Grid Grid.Row="1">
+                                                        <StackPanel Orientation="Horizontal"
+                                                                    HorizontalAlignment="Left"
+                                                                    VerticalAlignment="Center">
+                                                            <Label Content="Vreme:"/>
+                                                            <Label Content="{Binding OrderDateTime}"
+                                                                ContentStringFormat="dd.MM.yyyy HH:mm:ss"/>
+                                                        </StackPanel>
+                                                        <StackPanel Orientation="Horizontal"
+                                                                    HorizontalAlignment="Right"
+                                                                    VerticalAlignment="Center">
+                                                            <Label Content="Konobar:"/>
+                                                            <Label Content="{Binding CashierName}"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <Grid Grid.Row="2"
+                                                          Margin="5">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="55*"/>
+                                                            <ColumnDefinition Width="25*"/>
+                                                            <ColumnDefinition Width="20*"/>
+                                                            <ColumnDefinition Width="auto"/>
+                                                        </Grid.ColumnDefinitions>
 
-                                <StackPanel Grid.Column="0"
-                                        Orientation="Vertical">
-                                    <Label Content="Artikal:"
-                                       HorizontalAlignment="Left"
-                                       FontWeight="Bold"
-                                       FontSize="16"/>
+                                                        <StackPanel Grid.Column="0"
+                                                                Orientation="Vertical">
+                                                            <Label Content="Artikal:"
+                                                                   HorizontalAlignment="Left"
+                                                                   FontWeight="Bold"
+                                                                   FontSize="16"/>
 
-                                    <ItemsControl ItemsSource="{Binding OldItemsInvoice}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Orientation="Vertical">
-                                                    <Label Content="{Binding Item.Name}"
-                                                           HorizontalAlignment="Stretch"
-                                                           ToolTip="{Binding Item.Name}"
-                                                           HorizontalContentAlignment="Left"
-                                                           VerticalAlignment="Center"
-                                                           BorderBrush="Black"
-                                                           BorderThickness="1"
-                                                           FontSize="14"
-                                                           Height="30">
-                                                    </Label>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                                            <ItemsControl ItemsSource="{Binding Items}">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <StackPanel Orientation="Vertical">
+                                                                            <Label Content="{Binding Item.Name}"
+                                                                                   HorizontalAlignment="Stretch"
+                                                                                   ToolTip="{Binding Item.Name}"
+                                                                                   HorizontalContentAlignment="Left"
+                                                                                   VerticalAlignment="Center"
+                                                                                   BorderBrush="Black"
+                                                                                   BorderThickness="1"
+                                                                                   FontSize="14"
+                                                                                   Height="30">
+                                                                            </Label>
+                                                                        </StackPanel>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
 
-                                </StackPanel>
-                                <StackPanel Grid.Column="1"
-                                        Orientation="Vertical">
-                                    <Label Content="Količina:"
-                                       HorizontalAlignment="Center"
-                                       FontWeight="Bold"
-                                       FontSize="16"/>
+                                                        </StackPanel>
+                                                        <StackPanel Grid.Column="1"
+                                                                    Orientation="Vertical">
+                                                            <Label Content="Količina:"
+                                                                   HorizontalAlignment="Center"
+                                                                   FontWeight="Bold"
+                                                                   FontSize="16"/>
 
-                                    <ItemsControl ItemsSource="{Binding OldItemsInvoice}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Orientation="Vertical">
-                                                    <Label Content="{Binding Quantity, Converter={StaticResource decimalQuantityToString}}"
-                                                           HorizontalAlignment="Stretch"
-                                                           HorizontalContentAlignment="Center"
-                                                           VerticalAlignment="Center"
-                                                           FontSize="14"
-                                                           Height="30"
-                                                           BorderBrush="Black"
-                                                           BorderThickness="1">
-                                                    </Label>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </StackPanel>
-                                <StackPanel Grid.Column="2"
-                                        Orientation="Vertical">
-                                    <Label Content="Cena:"
-                                       HorizontalAlignment="Center"
-                                       FontWeight="Bold"
-                                       FontSize="16"/>
+                                                            <ItemsControl ItemsSource="{Binding Items}">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <StackPanel Orientation="Vertical">
+                                                                            <Label Content="{Binding Quantity, Converter={StaticResource decimalQuantityToString}}"
+                                                                                   HorizontalAlignment="Stretch"
+                                                                                   HorizontalContentAlignment="Center"
+                                                                                   VerticalAlignment="Center"
+                                                                                   FontSize="14"
+                                                                                   Height="30"
+                                                                                   BorderBrush="Black"
+                                                                                   BorderThickness="1">
+                                                                            </Label>
+                                                                        </StackPanel>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                        </StackPanel>
+                                                        <StackPanel Grid.Column="2"
+                                                                    Orientation="Vertical">
+                                                            <Label Content="Cena:"
+                                                                   HorizontalAlignment="Center"
+                                                                   FontWeight="Bold"
+                                                                   FontSize="16"/>
 
-                                    <ItemsControl ItemsSource="{Binding OldItemsInvoice}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Orientation="Vertical">
-                                                    <Label Content="{Binding TotalAmout, Converter={StaticResource decimalToString}}"
-                                                           HorizontalAlignment="Stretch"
-                                                           HorizontalContentAlignment="Center"
-                                                           VerticalAlignment="Center"
-                                                           FontSize="14"
-                                                           Height="30"
-                                                           BorderBrush="Black"
-                                                           BorderThickness="1">
-                                                    </Label>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </StackPanel>
+                                                            <ItemsControl ItemsSource="{Binding Items}">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <StackPanel Orientation="Vertical">
+                                                                            <Label Content="{Binding TotalAmout, Converter={StaticResource decimalToString}}"
+                                                                                   HorizontalAlignment="Stretch"
+                                                                                   HorizontalContentAlignment="Center"
+                                                                                   VerticalAlignment="Center"
+                                                                                   FontSize="14"
+                                                                                   Height="30"
+                                                                                   BorderBrush="Black"
+                                                                                   BorderThickness="1">
+                                                                            </Label>
+                                                                        </StackPanel>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </Grid>
                         </ScrollViewer>
 

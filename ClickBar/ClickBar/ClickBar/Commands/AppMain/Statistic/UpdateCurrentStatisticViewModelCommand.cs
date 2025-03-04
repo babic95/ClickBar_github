@@ -225,6 +225,20 @@ namespace ClickBar.Commands.AppMain.Statistic
                         }
 #endif
                         break;
+                    case StatisticStateEnumerable.DPU:
+
+#if CRNO
+                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
+                            "Nemate pravo korišćenja",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+#else
+                        if (_currentViewModel.CurrentViewModel is not DPU_PeriodicniViewModel)
+                        {
+                            _currentViewModel.CheckedDPU();
+                        }
+#endif
+                        break; 
                     case StatisticStateEnumerable.PriceIncrease:
                         if (_currentViewModel.CurrentViewModel is not PriceIncreaseViewModel)
                         {

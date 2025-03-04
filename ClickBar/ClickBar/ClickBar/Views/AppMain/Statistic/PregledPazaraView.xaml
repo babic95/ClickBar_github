@@ -217,15 +217,27 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal"
-                                        MinWidth="30">
+                                        MinWidth="70">
                                 <Button Command="{Binding DataContext.OpenItemsInInvoicesCommand, ElementName=dataGrid}"
-                                            CommandParameter="{Binding Id}"
-                                            Background="{x:Null}"
-                                            ToolTip="Pregledaj artikle računa"
-                                            BorderBrush="{x:Null}"
-                                            Width="30"
-                                            MinWidth="30">
+                                        CommandParameter="{Binding Id}"
+                                        Background="{x:Null}"
+                                        ToolTip="Pregledaj artikle računa"
+                                        BorderBrush="{x:Null}"
+                                        Width="30"
+                                        Margin="2.5 0"
+                                        MinWidth="30">
                                     <Image Source="../../../Icons/open.png"/>
+                                </Button>
+
+                                <Button Command="{Binding DataContext.PrintInvoiceCommand, ElementName=dataGrid}"
+                                        CommandParameter="{Binding Id}"
+                                        Background="{x:Null}"
+                                        ToolTip="Štampaj dodatak uz račun"
+                                        BorderBrush="{x:Null}"
+                                        Width="30"
+                                        MinWidth="30"
+                                        Margin="2.5 0">
+                                    <Image Source="../../../Icons/printer.png"/>
                                 </Button>
                             </StackPanel>
                         </DataTemplate>

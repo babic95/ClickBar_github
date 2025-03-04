@@ -55,7 +55,6 @@ namespace ClickBar.Commands.Sale
 
             ItemInvoice? itemInvoice = _viewModel.ItemsInvoice.Where(item => item.Item.Id == itemDB.Id).FirstOrDefault();
 
-            ObservableCollection<ItemZelja> fixneZelje = new ObservableCollection<ItemZelja>();
             //using (SqlServerDbContext sqliteDbContext = new SqlServerDbContext())
             //{
             //    var fixneZeljeDB = sqliteDbContext.Zelje.Where(z => z.ItemId == itemDB.Id);
@@ -92,6 +91,21 @@ namespace ClickBar.Commands.Sale
 
                 for (int i = zeljeCounter + 1; i <= zeljeCounter + quantity; i++)
                 {
+                    ObservableCollection<ItemZelja> fixneZelje = new ObservableCollection<ItemZelja>();
+
+                    if (itemInvoice.Item.Zelje.Any())
+                    {
+                        foreach(var z in itemInvoice.Item.Zelje)
+                        {
+                            fixneZelje.Add(new ItemZelja()
+                            {
+                                Id = z.Id,
+                                IsChecked = false,
+                                ItemId = z.ItemId,
+                                Zelja = z.Zelja
+                            });
+                        }
+                    }
                     itemInvoice.Zelje.Add(new Zelja(i, itemDB.Name, fixneZelje));
                 }
 
@@ -106,6 +120,22 @@ namespace ClickBar.Commands.Sale
 
                 for (int i = 1; i <= quantity; i++)
                 {
+                    ObservableCollection<ItemZelja> fixneZelje = new ObservableCollection<ItemZelja>();
+
+                    if (item.Item.Zelje.Any())
+                    {
+                        foreach (var z in item.Item.Zelje)
+                        {
+                            fixneZelje.Add(new ItemZelja()
+                            {
+                                Id = z.Id,
+                                IsChecked = false,
+                                ItemId = z.ItemId,
+                                Zelja = z.Zelja
+                            });
+                        }
+                    }
+
                     item.Zelje.Add(new Zelja(i, itemDB.Name, fixneZelje));
                 }
 

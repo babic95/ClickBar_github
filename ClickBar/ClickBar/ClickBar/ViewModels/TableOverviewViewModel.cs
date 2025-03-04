@@ -671,7 +671,7 @@ namespace ClickBar.ViewModels
                                             if (sto != null && sto.Background != Brushes.Blue)
                                             {
                                                 sto.Background = Brushes.Blue;
-                                                SystemSounds.Asterisk.Play();
+                                                //SystemSounds.Asterisk.Play();
                                             }
                                         }
                                         else

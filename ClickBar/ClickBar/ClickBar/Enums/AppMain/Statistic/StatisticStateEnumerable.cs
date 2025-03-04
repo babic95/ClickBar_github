@@ -27,5 +27,6 @@ namespace ClickBar.Enums.AppMain.Statistic
         Radnici = 16,
         Otpis = 17,
         OtpisPreview = 18,
+        DPU = 19,
     }
 }

@@ -44,7 +44,8 @@ namespace ClickBar.Commands.Sale
         {
             return true;
         }
-        public void Execute(object parameter)
+
+        public async void Execute(object parameter)
         {
             if (_viewModel.TableId == 0)
             {
@@ -111,7 +112,7 @@ namespace ClickBar.Commands.Sale
                             else
                             {
                                 itemInUnprocessedOrderDB.Quantity += item.Quantity;
-                                _viewModel.DbContext.ItemsInUnprocessedOrder.Update(itemInUnprocessedOrderDB);
+                                //_viewModel.DbContext.ItemsInUnprocessedOrder.Update(itemInUnprocessedOrderDB);
                             }
 
                             unprocessedOrderDB.TotalAmount += item.TotalAmout;
@@ -146,7 +147,29 @@ namespace ClickBar.Commands.Sale
                         _viewModel.DbContext.UnprocessedOrders.Add(unprocessedOrderDB);
                     }
 
-                    _viewModel.DbContext.SaveChanges();
+                    bool saveFailed;
+                    int retryCount = 0;
+                    do
+                    {
+                        saveFailed = false;
+                        try
+                        {
+                            _viewModel.DbContext.SaveChanges();
+                        }
+                        catch (DbUpdateConcurrencyException ex)
+                        {
+                            saveFailed = true;
+                            retryCount++;
+
+                            // Update the values of the entity that failed to save from the store
+                            ex.Entries.Single().Reload();
+
+                            if (retryCount >= 3)
+                            {
+                                throw;
+                            }
+                        }
+                    } while (saveFailed);
 
                     var loggedCashier = _viewModel.LoggedCashier;
                     var tableId = _viewModel.TableId;
@@ -363,13 +386,14 @@ namespace ClickBar.Commands.Sale
                         orderCounterType++;
                     }
 
-                    orderSank.OrderName += orderCounterType.ToString() + "_" + orderCounter.ToString();
+                    orderSank.OrderName += orderCounterType.ToString() + "__" + orderCounter.ToString();
 
                     decimal totalAmount = orderSank.Items.Sum(i => i.TotalAmount);
 
                     OrderTodayDB orderTodayDB = new OrderTodayDB()
                     {
                         Id = Guid.NewGuid().ToString(),
+                        UnprocessedOrderId = unprocessedOrderDB.Id,
                         CashierId = cashierDB.Id,
                         Counter = orderCounter,
                         CounterType = orderCounterType,
@@ -425,13 +449,14 @@ namespace ClickBar.Commands.Sale
                         orderCounterType++;
                     }
 
-                    orderKuhinja.OrderName += orderCounterType.ToString() + "_" + orderCounter.ToString();
+                    orderKuhinja.OrderName += orderCounterType.ToString() + "__" + orderCounter.ToString();
 
                     decimal totalAmount = orderKuhinja.Items.Sum(i => i.TotalAmount);
 
                     OrderTodayDB orderTodayDB = new OrderTodayDB()
                     {
                         Id = Guid.NewGuid().ToString(),
+                        UnprocessedOrderId = unprocessedOrderDB.Id,
                         CashierId = cashierDB.Id,
                         Counter = orderCounter,
                         CounterType = orderCounterType,
@@ -504,13 +529,14 @@ namespace ClickBar.Commands.Sale
                         orderCounterType++;
                     }
 
-                    orderDrugo.OrderName += orderCounterType.ToString() + "_" + orderCounter.ToString();
+                    orderDrugo.OrderName += orderCounterType.ToString() + "__" + orderCounter.ToString();
 
                     decimal totalAmount = orderDrugo.Items.Sum(i => i.TotalAmount);
 
                     OrderTodayDB orderTodayDB = new OrderTodayDB()
                     {
                         Id = Guid.NewGuid().ToString(),
+                        UnprocessedOrderId = unprocessedOrderDB.Id,
                         CashierId = cashierDB.Id,
                         Counter = orderCounter,
                         CounterType = orderCounterType,
@@ -521,9 +547,6 @@ namespace ClickBar.Commands.Sale
                         OrderTodayItems = new List<OrderTodayItemDB>()
                     };
 
-                    //sqliteDbContext.OrdersToday.Add(orderTodayDB);
-                    //sqliteDbContext.SaveChanges();
-
                     orderDrugo.Items.ForEach(item =>
                     {
                         var orderTodayItemDB = orderTodayDB.OrderTodayItems.FirstOrDefault(o => o.ItemId == item.Id);
@@ -532,7 +555,6 @@ namespace ClickBar.Commands.Sale
                         {
                             orderTodayItemDB.Quantity += item.Quantity;
                             orderTodayItemDB.TotalPrice += item.TotalAmount;
-                            //sqliteDbContext.OrderTodayItems.Update(orderTodayItemDB);
                         }
                         else
                         {
@@ -562,6 +584,7 @@ namespace ClickBar.Commands.Sale
                     MessageBoxImage.Error);
             }
         }
+
         private async Task<bool> AddDrljaNarudzbina(OrderTodayDB orderTodayDB,
             List<ClickBar_Common.Models.Order.ItemOrder> items,
             CashierDB cashierDB,

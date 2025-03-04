@@ -9,6 +9,7 @@ using ClickBar_DatabaseSQLManager;
 using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Settings;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -46,7 +47,7 @@ namespace ClickBar.ViewModels
         private ObservableCollection<Item> _items;
 
         private ObservableCollection<ItemInvoice> _itemsInvoice;
-        private ObservableCollection<ItemInvoice> _oldItemsInvoice;
+        private ObservableCollection<OldOrder> _oldOrders;
 
         private decimal _totalAmount;
         private int _tableId;
@@ -64,7 +65,7 @@ namespace ClickBar.ViewModels
         private string _quantity;
         private bool _firstChangeQuantity;
 
-        private Visibility _oldItemsInvoiceVisibility;
+        private Visibility _oldOrdersVisibility;
         #endregion Fields
 
         #region Constructors
@@ -95,7 +96,7 @@ namespace ClickBar.ViewModels
             Groups = new ObservableCollection<GroupItems>();
             Items = new ObservableCollection<Item>();
 
-            AllItems = DbContext.Items.AsNoTracking().Where(i => i.DisableItem == 0).ToList();
+            AllItems = DbContext.Items.AsNoTracking().Where(i => i.DisableItem == 0).Include(i => i.Zelje).ToList();
             AllGroups = DbContext.ItemGroups.AsNoTracking().ToList();
 
             if (SettingsManager.Instance.EnableSuperGroup())
@@ -130,7 +131,7 @@ namespace ClickBar.ViewModels
             }
 
             ItemsInvoice = new ObservableCollection<ItemInvoice>();
-            OldItemsInvoice = new ObservableCollection<ItemInvoice>();
+            OldOrders = new ObservableCollection<OldOrder>();
             TotalAmount = 0;
 
             RunTimer();
@@ -163,7 +164,7 @@ namespace ClickBar.ViewModels
         {
             get; private set;
         }
-        internal SqliteDrljaDbContext DrljaDbContext
+        internal SqliteDrljaDbContext? DrljaDbContext
         {
             get; private set;
         }
@@ -289,30 +290,30 @@ namespace ClickBar.ViewModels
                 OnPropertyChange(nameof(Items));
             }
         }
-        public Visibility OldItemsInvoiceVisibility
+        public Visibility OldOrdersVisibility
         {
-            get { return _oldItemsInvoiceVisibility; }
+            get { return _oldOrdersVisibility; }
             set
             {
-                _oldItemsInvoiceVisibility = value;
-                OnPropertyChange(nameof(OldItemsInvoiceVisibility));
+                _oldOrdersVisibility = value;
+                OnPropertyChange(nameof(OldOrdersVisibility));
             }
         }
-        public ObservableCollection<ItemInvoice> OldItemsInvoice
+        public ObservableCollection<OldOrder> OldOrders
         {
-            get { return _oldItemsInvoice; }
+            get { return _oldOrders; }
             set
             {
-                _oldItemsInvoice = value;
-                OnPropertyChange(nameof(OldItemsInvoice));
+                _oldOrders = value;
+                OnPropertyChange(nameof(OldOrders));
 
                 if (value != null && value.Any())
                 {
-                    OldItemsInvoiceVisibility = Visibility.Visible;
+                    OldOrdersVisibility = Visibility.Visible;
                 }
                 else
                 {
-                    OldItemsInvoiceVisibility = Visibility.Collapsed;
+                    OldOrdersVisibility = Visibility.Collapsed;
                 }
             }
         }
@@ -417,11 +418,16 @@ namespace ClickBar.ViewModels
             TableId = 0;
             TotalAmount = 0;
             ItemsInvoice = new ObservableCollection<ItemInvoice>();
-            OldItemsInvoice = new ObservableCollection<ItemInvoice>();
+            OldOrders = new ObservableCollection<OldOrder>();
             HookOrderEnable = false;
 
             var dbContextFactory = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
-            var drljaDbContextFactory = _serviceProvider.GetRequiredService<IDbContextFactory<SqliteDrljaDbContext>>();
+
+            IDbContextFactory<SqliteDrljaDbContext>? drljaDbContextFactory = null;
+            if (DrljaDbContext != null)
+            {
+                drljaDbContextFactory = _serviceProvider.GetRequiredService<IDbContextFactory<SqliteDrljaDbContext>>();
+            }
             TableOverviewViewModel = new TableOverviewViewModel(_serviceProvider, dbContextFactory, drljaDbContextFactory, this);
         }
 

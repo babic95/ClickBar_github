@@ -42,7 +42,7 @@ namespace ClickBar_Report
 
             _includeItems = includeItems;
             _invoices = sqliteDbContext.GetInvoiceForReport(startReport, endReport, smartCard);
-                        SetReport();
+            SetReport();
         }
         public Report(SqlServerDbContext sqliteDbContext,
             DateTime startReport,
@@ -83,31 +83,40 @@ namespace ClickBar_Report
         public DateTime StartReport { get; set; }
         public DateTime EndReport { get; set; }
         public CashierDB Cashier { get; set; }
-        //public Dictionary<string, ReportTax> ReportTaxes { get; set; }
+        public Dictionary<string, ReportTax> ReportTaxes { get; set; }
         public List<Payment> Payments { get; set; }
         public Dictionary<string, Dictionary<string, ReportItem>> ReportItems { get; set; }
         public Dictionary<string, decimal> ReportCashiers { get; set; }
         //public Dictionary<InvoiceTypeEenumeration, List<ReportInvoiceType>> InvoiceTypes { get; set; }
         public decimal CashInHand { get; set; }
         public decimal TotalTraffic { get; set; }
+        public decimal NormalSale { get; set; }
+        public decimal NormalRefund { get; set; }
+        public decimal NormalSalePDV { get; set; }
+        public decimal NormalRefundPDV { get; set; }
         #endregion Properties
 
         #region Private method
         private async void SetReport()
         {
-            //ReportTaxes = new Dictionary<string, ReportTax>();
+            ReportTaxes = new Dictionary<string, ReportTax>();
             Payments = new List<Payment>();
             ReportItems = new Dictionary<string, Dictionary<string, ReportItem>>();
             ReportCashiers = new Dictionary<string, decimal>();
             //InvoiceTypes = new Dictionary<InvoiceTypeEenumeration, List<ReportInvoiceType>>();
             CashInHand = 0;
             TotalTraffic = 0;
+            NormalSale = 0;
+            NormalRefund = 0;
+            NormalSalePDV = 0;
+            NormalRefundPDV = 0;
 
-            _invoices.ForEach(async invoice =>
+            foreach(var invoice in _invoices)
             {
                 if (invoice.SdcDateTime.HasValue)
                 {
-                    //await SetReportTaxes(invoice);
+                    await SetReportTaxes(invoice);
+                    
                     await SetPayments(invoice);
                     if (_includeItems)
                     {
@@ -122,7 +131,7 @@ namespace ClickBar_Report
                     }
                     await SetReportCashiers(invoice);
                 }
-            });
+            }
         }
         private async Task SetReportCashiers(InvoiceDB invoice)
         {
@@ -155,110 +164,142 @@ namespace ClickBar_Report
             decimal gross = ((100 + rate) * amountRate) / rate;
             return Decimal.Round(gross, 2);
         }
-        //private async Task SetReportTaxes(InvoiceDB invoice)
-        //{
-        //    if (invoice.TotalAmount.HasValue)
-        //    {
-        //        SqlServerDbContext sqliteDbContext = new SqlServerDbContext();
+        private async Task SetReportTaxes(InvoiceDB invoice)
+        {
+            if (invoice.TotalAmount.HasValue)
+            {
+                decimal totalGross = 0;
+                List<string> zeroTaxes = new List<string>();
 
-        //        var taxes = await sqliteDbContext.GetAllTaxFromInvoice(invoice.Id);
+                if (invoice.TaxItemInvoices.Any())
+                {
+                    foreach(var tax in invoice.TaxItemInvoices)
+                    {
+                        if (tax.Rate > 0)
+                        {
+                            ReportTax reportTax = new ReportTax()
+                            {
+                                Pdv = tax.Amount.Value,
+                                Gross = CalculateGross(tax.Rate.Value, tax.Amount.Value),
+                                Rate = tax.Rate.Value
+                            };
+                            reportTax.Net = reportTax.Gross - reportTax.Pdv;
 
-        //        decimal totalGross = 0;
-        //        List<string> zeroTaxes = new List<string>();
+                            totalGross += reportTax.Gross;
 
-        //        if (taxes.Any())
-        //        {
-        //            taxes.ForEach(tax =>
-        //            {
-        //                if (tax.Rate > 0)
-        //                {
-        //                    ReportTax reportTax = new ReportTax()
-        //                    {
-        //                        Pdv = tax.Amount,
-        //                        Gross = CalculateGross(tax.Rate, tax.Amount),
-        //                        Rate = tax.Rate
-        //                    };
-        //                    reportTax.Net = reportTax.Gross - reportTax.Pdv;
+                            if (ReportTaxes.ContainsKey(tax.Label))
+                            {
+                                if (invoice.TransactionType.HasValue &&
+                                    invoice.TransactionType.Value == (int)TransactionTypeEnumeration.Refund)
+                                {
+                                    reportTax.Net *= -1;
+                                    reportTax.Pdv *= -1;
+                                    reportTax.Gross *= -1;
 
-        //                    totalGross += reportTax.Gross;
+                                    NormalRefundPDV += reportTax.Pdv;
+                                    NormalRefund += reportTax.Gross;
+                                }
+                                else
+                                {
+                                    NormalSalePDV += reportTax.Pdv;
+                                    NormalSale += reportTax.Gross;
+                                }
 
-        //                    if (ReportTaxes.ContainsKey(tax.Label))
-        //                    {
-        //                        if (invoice.TransactionType == TransactionTypeEnumeration.Refund)
-        //                        {
-        //                            reportTax.Net *= -1;
-        //                            reportTax.Pdv *= -1;
-        //                            reportTax.Gross *= -1;
-        //                        }
+                                ReportTaxes[tax.Label].Net += reportTax.Net;
+                                ReportTaxes[tax.Label].Pdv += reportTax.Pdv;
+                                ReportTaxes[tax.Label].Gross += reportTax.Gross;
+                            }
+                            else
+                            {
+                                if (invoice.TransactionType.HasValue && 
+                                    invoice.TransactionType.Value == (int)TransactionTypeEnumeration.Refund)
+                                {
+                                    reportTax.Net *= -1;
+                                    reportTax.Pdv *= -1;
+                                    reportTax.Gross *= -1;
 
-        //                        ReportTaxes[tax.Label].Net += reportTax.Net;
-        //                        ReportTaxes[tax.Label].Pdv += reportTax.Pdv;
-        //                        ReportTaxes[tax.Label].Gross += reportTax.Gross;
-        //                    }
-        //                    else
-        //                    {
-        //                        if (invoice.TransactionType == TransactionTypeEnumeration.Refund)
-        //                        {
-        //                            reportTax.Net *= -1;
-        //                            reportTax.Pdv *= -1;
-        //                            reportTax.Gross *= -1;
-        //                        }
+                                    NormalRefundPDV += reportTax.Pdv;
+                                    NormalRefund += reportTax.Gross;
+                                }
+                                else
+                                {
+                                    NormalSalePDV += reportTax.Pdv;
+                                    NormalSale += reportTax.Gross;
+                                }
 
-        //                        ReportTaxes.Add(tax.Label, reportTax);
-        //                    }
-        //                }
-        //                else
-        //                {
-        //                    if (!zeroTaxes.Contains(tax.Label))
-        //                    {
-        //                        zeroTaxes.Add(tax.Label);
-        //                    }
-        //                }
-        //            });
+                                ReportTaxes.Add(tax.Label, reportTax);
+                            }
+                        }
+                        else
+                        {
+                            if (!zeroTaxes.Contains(tax.Label))
+                            {
+                                zeroTaxes.Add(tax.Label);
+                            }
+                        }
+                    }
 
-        //            if (zeroTaxes.Any())
-        //            {
-        //                decimal gross = (invoice.TotalAmount.Value - totalGross) / zeroTaxes.Count;
+                    if (zeroTaxes.Any())
+                    {
+                        decimal gross = (invoice.TotalAmount.Value - totalGross) / zeroTaxes.Count;
 
-        //                zeroTaxes.ForEach(tax =>
-        //                {
-        //                    ReportTax reportTax = new ReportTax()
-        //                    {
-        //                        Pdv = 0,
-        //                        Gross = gross,
-        //                        Rate = 0,
-        //                        Net = gross
-        //                    };
+                        zeroTaxes.ForEach(tax =>
+                        {
+                            ReportTax reportTax = new ReportTax()
+                            {
+                                Pdv = 0,
+                                Gross = gross,
+                                Rate = 0,
+                                Net = gross
+                            };
 
-        //                    if (ReportTaxes.ContainsKey(tax))
-        //                    {
-        //                        if (invoice.TransactionType == TransactionTypeEnumeration.Refund)
-        //                        {
-        //                            reportTax.Net *= -1;
-        //                            reportTax.Pdv *= -1;
-        //                            reportTax.Gross *= -1;
-        //                        }
+                            if (ReportTaxes.ContainsKey(tax))
+                            {
+                                if (invoice.TransactionType.HasValue &&
+                                invoice.TransactionType.Value == (int)TransactionTypeEnumeration.Refund)
+                                {
+                                    reportTax.Net *= -1;
+                                    reportTax.Pdv *= -1;
+                                    reportTax.Gross *= -1;
 
-        //                        ReportTaxes[tax].Net += reportTax.Net;
-        //                        ReportTaxes[tax].Pdv += reportTax.Pdv;
-        //                        ReportTaxes[tax].Gross += reportTax.Gross;
-        //                    }
-        //                    else
-        //                    {
-        //                        if (invoice.TransactionType == TransactionTypeEnumeration.Refund)
-        //                        {
-        //                            reportTax.Net *= -1;
-        //                            reportTax.Pdv *= -1;
-        //                            reportTax.Gross *= -1;
-        //                        }
+                                    NormalRefundPDV += reportTax.Pdv;
+                                    NormalRefund += reportTax.Gross;
+                                }
+                                else
+                                {
+                                    NormalSalePDV += reportTax.Pdv;
+                                    NormalSale += reportTax.Gross;
+                                }
 
-        //                        ReportTaxes.Add(tax, reportTax);
-        //                    }
-        //                });
-        //            }
-        //        }
-        //    }
-        //}
+                                ReportTaxes[tax].Net += reportTax.Net;
+                                ReportTaxes[tax].Pdv += reportTax.Pdv;
+                                ReportTaxes[tax].Gross += reportTax.Gross;
+                            }
+                            else
+                            {
+                                if (invoice.TransactionType.HasValue &&
+                                invoice.TransactionType.Value == (int)TransactionTypeEnumeration.Refund)
+                                {
+                                    reportTax.Net *= -1;
+                                    reportTax.Pdv *= -1;
+                                    reportTax.Gross *= -1;
+
+                                    NormalRefundPDV += reportTax.Pdv;
+                                    NormalRefund += reportTax.Gross;
+                                }
+                                else
+                                {
+                                    NormalSalePDV += reportTax.Pdv;
+                                    NormalSale += reportTax.Gross;
+                                }
+
+                                ReportTaxes.Add(tax, reportTax);
+                            }
+                        });
+                    }
+                }
+            }
+        }
         private async Task SetPayments(InvoiceDB invoice)
         {
             var payments = await _sqliteDbContext.GetAllPaymentFromInvoice(invoice.Id);

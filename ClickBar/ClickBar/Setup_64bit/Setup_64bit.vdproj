@@ -15,12 +15,6 @@
     {
         "Entry"
         {
-        "MsmKey" = "8:_35BE3070E8E148A4A2586F92096ED5E2"
-        "OwnerKey" = "8:_UNDEFINED"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
         "MsmKey" = "8:_92FC58126C294642ACAE82FDA663A919"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -28,18 +22,6 @@
         "Entry"
         {
         "MsmKey" = "8:_AA533B978805474EB5631ABEE7694CF0"
-        "OwnerKey" = "8:_UNDEFINED"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_C8AE7CD5FCEC45809324E4C48A1E731D"
-        "OwnerKey" = "8:_UNDEFINED"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_CF94587CB5EC4341B9BCCB768A3DE95F"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -68,6 +50,14 @@
             "PrerequisitesLocation" = "2:1"
             "Url" = "8:"
             "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.7.2"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.7.2 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.7.2"
+                    }
+                }
             }
         }
         "Release"
@@ -107,20 +97,6 @@
     {
         "CustomAction"
         {
-            "{4AA51A2D-7D85-4A59-BA75-B0809FC8B380}:_7B6F28009F274DF3B6F8F5A2A16A30E3"
-            {
-            "Name" = "8:Publish Items from ClickBar_SqlServerInstaller (Active)"
-            "Condition" = "8:"
-            "Object" = "8:_C8AE7CD5FCEC45809324E4C48A1E731D"
-            "FileType" = "3:2"
-            "InstallAction" = "3:1"
-            "Arguments" = "8:/Install"
-            "EntryPoint" = "8:"
-            "Sequence" = "3:1"
-            "Identifier" = "8:_3764D438_CA53_4AB1_8ED5_57C07DAB85B3"
-            "InstallerClass" = "11:FALSE"
-            "CustomActionData" = "8:"
-            }
         }
         "DefaultFeature"
         {
@@ -154,50 +130,10 @@
         }
         "File"
         {
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_35BE3070E8E148A4A2586F92096ED5E2"
-            {
-            "SourcePath" = "8:C:\\Users\\Babic\\Downloads\\ConfigurationFile.ini"
-            "TargetName" = "8:ConfigurationFile.ini"
-            "Tag" = "8:"
-            "Folder" = "8:_F61887ADC0BA420886EA29B5D5FBF31E"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:FALSE"
-            "IsolateTo" = "8:"
-            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_AA533B978805474EB5631ABEE7694CF0"
             {
             "SourcePath" = "8:..\\ClickBar\\icon.ico"
             "TargetName" = "8:icon.ico"
-            "Tag" = "8:"
-            "Folder" = "8:_F61887ADC0BA420886EA29B5D5FBF31E"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:FALSE"
-            "IsolateTo" = "8:"
-            }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_CF94587CB5EC4341B9BCCB768A3DE95F"
-            {
-            "SourcePath" = "8:C:\\Users\\Babic\\Downloads\\SQLEXPRADV_x64_ENU.exe"
-            "TargetName" = "8:SQLEXPRADV_x64_ENU.exe"
             "Tag" = "8:"
             "Folder" = "8:_F61887ADC0BA420886EA29B5D5FBF31E"
             "Condition" = "8:"
@@ -282,7 +218,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:CCS ClickBar Setup_x64"
         "ProductCode" = "8:{C8A3FEF4-91A1-478A-A1E6-1365B34E8A83}"
-        "PackageCode" = "8:{990BDEB5-A400-47BB-B98E-F274C14B6C34}"
+        "PackageCode" = "8:{B2F720FF-5D89-4BDE-B8A2-4523C15F4E03}"
         "UpgradeCode" = "8:{F8AA9CDC-6CB4-43A8-8EC1-5BA7E2331C97}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
@@ -852,34 +788,6 @@
             "OutputConfiguration" = "8:"
             "OutputGroupCanonicalName" = "8:PublishItems"
             "OutputProjectGuid" = "8:{3692A169-C834-424A-A8D7-DEF2A3DCAE1B}"
-            "ShowKeyOutput" = "11:TRUE"
-                "ExcludeFilters"
-                {
-                }
-            }
-            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_C8AE7CD5FCEC45809324E4C48A1E731D"
-            {
-            "SourcePath" = "8:..\\ClickBar_SqlServerInstaller\\obj\\Release\\net9.0\\apphost.exe"
-            "TargetName" = "8:"
-            "Tag" = "8:"
-            "Folder" = "8:_F61887ADC0BA420886EA29B5D5FBF31E"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:FALSE"
-            "IsolateTo" = "8:"
-            "ProjectOutputGroupRegister" = "3:1"
-            "OutputConfiguration" = "8:"
-            "OutputGroupCanonicalName" = "8:PublishItems"
-            "OutputProjectGuid" = "8:{BF4785E4-AA23-4E2A-BA11-3E685192CE0D}"
             "ShowKeyOutput" = "11:TRUE"
                 "ExcludeFilters"
                 {

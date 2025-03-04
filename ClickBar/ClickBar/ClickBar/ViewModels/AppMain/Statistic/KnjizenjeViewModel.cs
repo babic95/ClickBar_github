@@ -87,6 +87,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #region Commands
         public ICommand SearchInvoicesCommand => new SearchInvoicesCommand(this);
         public ICommand OpenItemsInInvoicesCommand => new OpenItemsInInvoicesCommand(this);
+        public ICommand PrintInvoiceCommand => new PrintInvoiceCommand(this);
         public ICommand KnjizenjeCommand => new KnjizenjeCommand(this);
         public ICommand CloseWindowCommand => new CloseWindowCommand(this);
         public ICommand PrintDnevniPazarCommand => new PrintDnevniPazarCommand(this);

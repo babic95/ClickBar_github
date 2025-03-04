@@ -33,7 +33,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
             return true;
         }
 
-        public async void Execute(object parameter)
+        public void Execute(object parameter)
         {
             try
             {
@@ -64,114 +64,228 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
 
                 var invoices = _currentViewModel.DbContext.Invoices.Where(invoice => invoice.SdcDateTime >= _currentViewModel.FromDate.Value &&
                     invoice.SdcDateTime <= _currentViewModel.ToDate.Value &&
-                    invoice.InvoiceType == 0);
+                    invoice.InvoiceType == 0).ToList();
 
-                if (invoices != null &&
-                    invoices.Any())
+                if (invoices != null && invoices.Any())
                 {
-                    foreach(var invoice in invoices)
+                    using (var transaction = _currentViewModel.DbContext.Database.BeginTransaction())
                     {
-                        List<ItemInNormForChange> itemInNormForChanges = new List<ItemInNormForChange>();
-
-                        var itemsInInvoiceSirovine = _currentViewModel.DbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoice.Id &&
-                        itemInvoice.IsSirovina == 1);
-
-                        if (itemsInInvoiceSirovine != null &&
-                        itemsInInvoiceSirovine.Any())
+                        try
                         {
-                            foreach (var itemInInvoice in itemsInInvoiceSirovine)
+                            foreach (var invoice in invoices)
                             {
-                                var itemDB = _currentViewModel.DbContext.Items.Find(itemInInvoice.ItemCode);
-
-                                if (itemDB != null)
+                                // Prvo uklonite sve normative iz InvoiceItems za dati invoice gde je IsSirovina == 1
+                                var existingItems = _currentViewModel.DbContext.ItemInvoices.Where(itemInvoice =>
+                                itemInvoice.InvoiceId == invoice.Id && itemInvoice.IsSirovina == 1).ToList();
+                                if (supergroupDB == null)
                                 {
-                                    if (supergroupDB != null)
+                                    _currentViewModel.DbContext.ItemInvoices.RemoveRange(existingItems);
+                                }
+                                else
+                                {
+                                    foreach (var item in existingItems)
                                     {
-                                        var itemSuperGroup = _currentViewModel.DbContext.Items.Join(_currentViewModel.DbContext.ItemGroups,
-                                            i => i.IdItemGroup,
-                                            g => g.Id,
-                                            (i, g) => new { I = i, G = g })
-                                        .Join(_currentViewModel.DbContext.Supergroups,
-                                        g => g.G.IdSupergroup,
-                                        s => s.Id,
-                                        (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
-                                        i.G.I.Id == itemDB.Id);
-
-                                        if (itemSuperGroup == null)
+                                        var itemDB = _currentViewModel.DbContext.Items.Find(item.ItemCode);
+                                        if (itemDB != null)
                                         {
-                                            continue;
+                                            var itemSuperGroup = _currentViewModel.DbContext.Items.Join(_currentViewModel.DbContext.ItemGroups,
+                                                i => i.IdItemGroup,
+                                                g => g.Id,
+                                                (i, g) => new { I = i, G = g })
+                                            .Join(_currentViewModel.DbContext.Supergroups,
+                                            g => g.G.IdSupergroup,
+                                            s => s.Id,
+                                            (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
+                                            i.G.I.Id == itemDB.Id);
+                                            if (itemSuperGroup == null)
+                                            {
+                                                _currentViewModel.DbContext.ItemInvoices.Remove(item);
+                                            }
                                         }
                                     }
-
-                                    ReduceNormHasNorm(invoice,
-                                        itemDB,
-                                        itemInInvoice,
-                                        itemInNormForChanges);
                                 }
-                            }
-                        }
-                        else
-                        {
-                            var itemsInInvoiceNotSirovina = _currentViewModel.DbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoice.Id);
+                                _currentViewModel.DbContext.SaveChanges();
 
-                            if (itemsInInvoiceNotSirovina != null &&
-                                itemsInInvoiceNotSirovina.Any())
-                            {
-                                foreach(var itemInvoice in itemsInInvoiceNotSirovina)
+                                // Ponovo prolazimo kroz sve ItemInvoices gde je IsSirovina == 0 i dodajemo nove normative
+                                var itemsInInvoice = _currentViewModel.DbContext.ItemInvoices.Where(itemInvoice =>
+                                itemInvoice.InvoiceId == invoice.Id &&
+                                (itemInvoice.IsSirovina == null || itemInvoice.IsSirovina == 0)).ToList();
+
+                                foreach (var glavniItem in itemsInInvoice)
                                 {
-                                    var itemDB = _currentViewModel.DbContext.Items.Find(itemInvoice.ItemCode);
+                                    var itemDB = _currentViewModel.DbContext.Items.Find(glavniItem.ItemCode);
 
                                     if (itemDB != null)
                                     {
+                                        decimal quantity = 0;
+                                        if (glavniItem.Quantity.HasValue)
+                                        {
+                                            quantity = glavniItem.Quantity.Value;
+                                        }
                                         if (itemDB.IdNorm != null)
                                         {
-                                            var norms2 = _currentViewModel.DbContext.ItemsInNorm.Where(itemInNorm => itemInNorm.IdNorm == itemDB.IdNorm);
+                                            var norms1 = _currentViewModel.DbContext.ItemsInNorm.Where(itemInNorm => itemInNorm.IdNorm == itemDB.IdNorm).ToList();
 
-                                            if (norms2 != null &&
-                                            norms2.Any())
+                                            if (norms1 != null && norms1.Any())
                                             {
-                                                foreach (var itemInNorm2 in norms2)
+                                                foreach (var itemInNorm1 in norms1)
                                                 {
-                                                    var itemDB2 = _currentViewModel.DbContext.Items.Find(itemInNorm2.IdItem);
+                                                    decimal quantity1 = quantity * itemInNorm1.Quantity;
+                                                    var itemDB2 = _currentViewModel.DbContext.Items.Find(itemInNorm1.IdItem);
 
                                                     if (itemDB2 != null)
                                                     {
                                                         if (itemDB2.IdNorm != null)
                                                         {
-                                                            var norms3 = _currentViewModel.DbContext.ItemsInNorm.Where(itemInNorm =>
-                                                            itemInNorm.IdNorm == itemDB2.IdNorm);
+                                                            var norms2 = _currentViewModel.DbContext.ItemsInNorm.Where(itemInNorm =>
+                                                            itemInNorm.IdNorm == itemDB2.IdNorm).ToList();
 
-                                                            if (norms3 != null &&
-                                                            norms3.Any())
+                                                            if (norms2 != null && norms2.Any())
                                                             {
-                                                                foreach (var itemInNorm3 in norms3)
+                                                                foreach (var itemInNorm2 in norms2)
                                                                 {
-                                                                    var itemDB3 = _currentViewModel.DbContext.Items.Find(itemInNorm3.IdItem);
+                                                                    decimal quantity2 = quantity1 * itemInNorm2.Quantity;
+                                                                    var itemDB3 = _currentViewModel.DbContext.Items.Find(itemInNorm2.IdItem);
 
                                                                     if (itemDB3 != null)
                                                                     {
-                                                                        if (supergroupDB != null)
+                                                                        if (itemDB3.IdNorm != null)
                                                                         {
-                                                                            var itemSuperGroup = _currentViewModel.DbContext.Items.Join(_currentViewModel.DbContext.ItemGroups,
-                                                                                i => i.IdItemGroup,
-                                                                                g => g.Id,
-                                                                                (i, g) => new { I = i, G = g })
-                                                                            .Join(_currentViewModel.DbContext.Supergroups,
-                                                                            g => g.G.IdSupergroup,
-                                                                            s => s.Id,
-                                                                            (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
-                                                                            i.G.I.Id == itemDB3.Id);
+                                                                            var norms3 = _currentViewModel.DbContext.ItemsInNorm.Where(itemInNorm =>
+                                                                            itemInNorm.IdNorm == itemDB3.IdNorm).ToList();
 
-                                                                            if (itemSuperGroup == null)
+                                                                            if (norms3 != null && norms3.Any())
                                                                             {
-                                                                                continue;
+                                                                                foreach (var itemInNorm3 in norms3)
+                                                                                {
+                                                                                    decimal quantity3 = quantity2 * itemInNorm3.Quantity;
+                                                                                    var itemDB4 = _currentViewModel.DbContext.Items.Find(itemInNorm3.IdItem);
+
+                                                                                    if (itemDB4 != null)
+                                                                                    {
+                                                                                        if (supergroupDB != null)
+                                                                                        {
+                                                                                            var itemSuperGroup = _currentViewModel.DbContext.Items.Join(_currentViewModel.DbContext.ItemGroups,
+                                                                                                i => i.IdItemGroup,
+                                                                                                g => g.Id,
+                                                                                                (i, g) => new { I = i, G = g })
+                                                                                            .Join(_currentViewModel.DbContext.Supergroups,
+                                                                                            g => g.G.IdSupergroup,
+                                                                                            s => s.Id,
+                                                                                            (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
+                                                                                            i.G.I.Id == itemDB4.Id);
+
+                                                                                            if (itemSuperGroup == null)
+                                                                                            {
+                                                                                                continue;
+                                                                                            }
+                                                                                        }
+                                                                                        int index = _currentViewModel.DbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoice.Id).Max(i => i.Id) + 1;
+
+                                                                                        var itemInvoiceSirovina = _currentViewModel.DbContext.ItemInvoices.FirstOrDefault(i => i.InvoiceId == invoice.Id &&
+                                                                                        i.ItemCode == itemDB4.Id &&
+                                                                                        i.IsSirovina == 1 &&
+                                                                                        i.Id == index);
+
+                                                                                        if (itemInvoiceSirovina == null)
+                                                                                        {
+                                                                                            itemInvoiceSirovina = new ItemInvoiceDB()
+                                                                                            {
+                                                                                                Id = index,
+                                                                                                IsSirovina = 1,
+                                                                                                InvoiceId = invoice.Id,
+                                                                                                ItemCode = itemDB4.Id,
+                                                                                                Quantity = quantity3,
+                                                                                                InputUnitPrice = itemDB4.InputUnitPrice.HasValue ? itemDB4.InputUnitPrice.Value : 0,
+                                                                                                Label = itemDB4.Label,
+                                                                                                Name = itemDB4.Name,
+                                                                                                UnitPrice = itemDB4.InputUnitPrice.HasValue ? itemDB4.InputUnitPrice.Value : 0,
+                                                                                                OriginalUnitPrice = itemDB4.InputUnitPrice.HasValue ? itemDB4.InputUnitPrice.Value : 0,
+                                                                                                TotalAmout = Decimal.Round(
+                                                                                                    quantity3 * (itemDB4.InputUnitPrice.HasValue ? itemDB4.InputUnitPrice.Value : 0), 2),
+                                                                                            };
+
+                                                                                            _currentViewModel.DbContext.ItemInvoices.Add(itemInvoiceSirovina);
+                                                                                        }
+                                                                                        else
+                                                                                        {
+                                                                                            itemInvoiceSirovina.Quantity += quantity3;
+                                                                                            itemInvoiceSirovina.TotalAmout = Decimal.Round(
+                                                                                                itemInvoiceSirovina.Quantity.Value * (itemDB4.InputUnitPrice.HasValue ? itemDB4.InputUnitPrice.Value : 0), 2);
+
+                                                                                            _currentViewModel.DbContext.ItemInvoices.Update(itemInvoiceSirovina);
+                                                                                        }
+                                                                                        // Privremeno čuvanje u bazu
+                                                                                        _currentViewModel.DbContext.SaveChanges();
+
+                                                                                        // Odvojite entitet iz konteksta
+                                                                                        _currentViewModel.DbContext.Entry(itemInvoiceSirovina).State = EntityState.Detached;
+                                                                                        _currentViewModel.DbContext.Entry(itemDB4).State = EntityState.Detached;
+                                                                                    }
+                                                                                }
                                                                             }
                                                                         }
+                                                                        else
+                                                                        {
+                                                                            if (supergroupDB != null)
+                                                                            {
+                                                                                var itemSuperGroup = _currentViewModel.DbContext.Items.Join(_currentViewModel.DbContext.ItemGroups,
+                                                                                    i => i.IdItemGroup,
+                                                                                    g => g.Id,
+                                                                                    (i, g) => new { I = i, G = g })
+                                                                                .Join(_currentViewModel.DbContext.Supergroups,
+                                                                                g => g.G.IdSupergroup,
+                                                                                s => s.Id,
+                                                                                (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
+                                                                                i.G.I.Id == itemDB3.Id);
 
-                                                                        ReduceNormNoNorm(invoice,
-                                                                            itemDB3,
-                                                                            itemInNorm3.Quantity,
-                                                                            itemInNormForChanges);
+                                                                                if (itemSuperGroup == null)
+                                                                                {
+                                                                                    continue;
+                                                                                }
+                                                                            }
+                                                                            int index = _currentViewModel.DbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoice.Id).Max(i => i.Id) + 1;
+
+                                                                            var itemInvoiceSirovina = _currentViewModel.DbContext.ItemInvoices.FirstOrDefault(i => i.InvoiceId == invoice.Id &&
+                                                                                    i.ItemCode == itemDB3.Id &&
+                                                                                    i.IsSirovina == 1 &&
+                                                                                    i.Id == index);
+
+                                                                            if (itemInvoiceSirovina == null)
+                                                                            {
+                                                                                itemInvoiceSirovina = new ItemInvoiceDB()
+                                                                                {
+                                                                                    Id = index,
+                                                                                    IsSirovina = 1,
+                                                                                    InvoiceId = invoice.Id,
+                                                                                    ItemCode = itemDB3.Id,
+                                                                                    Quantity = quantity2,
+                                                                                    InputUnitPrice = itemDB3.InputUnitPrice.HasValue ? itemDB3.InputUnitPrice.Value : 0,
+                                                                                    Label = itemDB3.Label,
+                                                                                    Name = itemDB3.Name,
+                                                                                    UnitPrice = itemDB3.InputUnitPrice.HasValue ? itemDB3.InputUnitPrice.Value : 0,
+                                                                                    OriginalUnitPrice = itemDB3.InputUnitPrice.HasValue ? itemDB3.InputUnitPrice.Value : 0,
+                                                                                    TotalAmout = Decimal.Round(
+                                                                                    quantity2 * (itemDB3.InputUnitPrice.HasValue ? itemDB3.InputUnitPrice.Value : 0), 2),
+                                                                                };
+
+                                                                                _currentViewModel.DbContext.ItemInvoices.Add(itemInvoiceSirovina);
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                itemInvoiceSirovina.Quantity += quantity2;
+                                                                                itemInvoiceSirovina.TotalAmout = Decimal.Round(
+                                                                                itemInvoiceSirovina.Quantity.Value * (itemDB3.InputUnitPrice.HasValue ? itemDB3.InputUnitPrice.Value : 0), 2);
+
+                                                                                _currentViewModel.DbContext.ItemInvoices.Update(itemInvoiceSirovina);
+                                                                            }
+                                                                            // Privremeno čuvanje u bazu
+                                                                            _currentViewModel.DbContext.SaveChanges();
+
+                                                                            // Odvojite entitet iz konteksta
+                                                                            _currentViewModel.DbContext.Entry(itemInvoiceSirovina).State = EntityState.Detached;
+                                                                            _currentViewModel.DbContext.Entry(itemDB3).State = EntityState.Detached;
+                                                                        }
                                                                     }
                                                                 }
                                                             }
@@ -195,184 +309,64 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                                                                     continue;
                                                                 }
                                                             }
-                                                            ReduceNormNoNorm(invoice,
-                                                                itemDB2,
-                                                                itemInNorm2.Quantity,
-                                                                itemInNormForChanges);
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        //else
-                                        //{
-                                        //    ReduceNormNoNorm(sqliteDbContext,
-                                        //                    invoice,
-                                        //                    itemDB,
-                                        //                    itemInvoice.Quantity.Value,
-                                        //                    itemInNormForChanges);
-                                        //}
-                                    }
-                                }
-                            }
-                        }
-                        _currentViewModel.DbContext.SaveChanges();
+                                                            int index = _currentViewModel.DbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoice.Id).Max(i => i.Id) + 1;
 
-                        var itemsInInvoice = _currentViewModel.DbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoice.Id &&
-                        (itemInvoice.IsSirovina == null || itemInvoice.IsSirovina == 0));
+                                                            var itemInvoiceSirovina = _currentViewModel.DbContext.ItemInvoices.FirstOrDefault(i => i.InvoiceId == invoice.Id &&
+                                                                                            i.ItemCode == itemDB2.Id &&
+                                                                                            i.IsSirovina == 1 &&
+                                                                                            i.Id == index);
 
-                        if (itemsInInvoice != null &&
-                        itemsInInvoice.Any())
-                        {
-                            foreach (var itemInvoice in itemsInInvoice)
-                            {
-                                var itemDB = _currentViewModel.DbContext.Items.Find(itemInvoice.ItemCode);
-
-                                if (itemDB != null)
-                                {
-                                    decimal quantity = 0;
-                                    if (itemInvoice.Quantity.HasValue)
-                                    {
-                                        quantity = itemInvoice.Quantity.Value;
-                                    }
-                                    if (itemDB.IdNorm != null)
-                                    {
-                                        var norms1 = _currentViewModel.DbContext.ItemsInNorm.Where(itemInNorm => itemInNorm.IdNorm == itemDB.IdNorm);
-
-                                        if (norms1 != null &&
-                                        norms1.Any())
-                                        {
-                                            foreach (var itemInNorm1 in norms1)
-                                            {
-                                                decimal quantity1 = quantity * itemInNorm1.Quantity;
-                                                var itemDB2 = _currentViewModel.DbContext.Items.Find(itemInNorm1.IdItem);
-
-                                                if (itemDB2 != null)
-                                                {
-                                                    if (itemDB2.IdNorm != null)
-                                                    {
-                                                        var norms2 = _currentViewModel.DbContext.ItemsInNorm.Where(itemInNorm =>
-                                                        itemInNorm.IdNorm == itemDB2.IdNorm);
-
-                                                        if (norms2 != null &&
-                                                        norms2.Any())
-                                                        {
-                                                            foreach (var itemInNorm2 in norms2)
+                                                            if (itemInvoiceSirovina == null)
                                                             {
-                                                                decimal quantity2 = quantity1 * itemInNorm2.Quantity;
-                                                                var itemDB3 = _currentViewModel.DbContext.Items.Find(itemInNorm2.IdItem);
-
-                                                                if (itemDB3 != null)
+                                                                itemInvoiceSirovina = new ItemInvoiceDB()
                                                                 {
-                                                                    if (itemDB3.IdNorm != null)
-                                                                    {
-                                                                        var norms3 = _currentViewModel.DbContext.ItemsInNorm.Where(itemInNorm =>
-                                                                        itemInNorm.IdNorm == itemDB3.IdNorm);
+                                                                    Id = index,
+                                                                    IsSirovina = 1,
+                                                                    InvoiceId = invoice.Id,
+                                                                    ItemCode = itemDB2.Id,
+                                                                    Quantity = quantity1,
+                                                                    InputUnitPrice = itemDB2.InputUnitPrice.HasValue ? itemDB2.InputUnitPrice.Value : 0,
+                                                                    Label = itemDB2.Label,
+                                                                    Name = itemDB2.Name,
+                                                                    UnitPrice = itemDB2.InputUnitPrice.HasValue ? itemDB2.InputUnitPrice.Value : 0,
+                                                                    OriginalUnitPrice = itemDB2.InputUnitPrice.HasValue ? itemDB2.InputUnitPrice.Value : 0,
+                                                                    TotalAmout = Decimal.Round(
+                                                                        quantity1 * (itemDB2.InputUnitPrice.HasValue ? itemDB2.InputUnitPrice.Value : 0), 2),
+                                                                };
 
-                                                                        if (norms3 != null &&
-                                                                        norms3.Any())
-                                                                        {
-                                                                            foreach (var itemInNorm3 in norms3)
-                                                                            {
-                                                                                decimal quantity3 = quantity2 * itemInNorm3.Quantity;
-                                                                                var itemDB4 = _currentViewModel.DbContext.Items.Find(itemInNorm3.IdItem);
-
-                                                                                if (itemDB4 != null)
-                                                                                {
-                                                                                    if (supergroupDB != null)
-                                                                                    {
-                                                                                        var itemSuperGroup = _currentViewModel.DbContext.Items.Join(_currentViewModel.DbContext.ItemGroups,
-                                                                                            i => i.IdItemGroup,
-                                                                                            g => g.Id,
-                                                                                            (i, g) => new { I = i, G = g })
-                                                                                        .Join(_currentViewModel.DbContext.Supergroups,
-                                                                                        g => g.G.IdSupergroup,
-                                                                                        s => s.Id,
-                                                                                        (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
-                                                                                        i.G.I.Id == itemDB4.Id);
-
-                                                                                        if (itemSuperGroup == null)
-                                                                                        {
-                                                                                            continue;
-                                                                                        }
-                                                                                    }
-                                                                                    IncreaseNorm(invoice,
-                                                                                        itemDB4,
-                                                                                        quantity3,
-                                                                                        itemInNormForChanges);
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        if (supergroupDB != null)
-                                                                        {
-                                                                            var itemSuperGroup = _currentViewModel.DbContext.Items.Join(_currentViewModel.DbContext.ItemGroups,
-                                                                                i => i.IdItemGroup,
-                                                                                g => g.Id,
-                                                                                (i, g) => new { I = i, G = g })
-                                                                            .Join(_currentViewModel.DbContext.Supergroups,
-                                                                            g => g.G.IdSupergroup,
-                                                                            s => s.Id,
-                                                                            (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
-                                                                            i.G.I.Id == itemDB3.Id);
-
-                                                                            if (itemSuperGroup == null)
-                                                                            {
-                                                                                continue;
-                                                                            }
-                                                                        }
-                                                                        IncreaseNorm(invoice,
-                                                                            itemDB3,
-                                                                            quantity2,
-                                                                            itemInNormForChanges);
-                                                                    }
-                                                                }
+                                                                _currentViewModel.DbContext.ItemInvoices.Add(itemInvoiceSirovina);
                                                             }
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        if (supergroupDB != null)
-                                                        {
-                                                            var itemSuperGroup = _currentViewModel.DbContext.Items.Join(_currentViewModel.DbContext.ItemGroups,
-                                                                i => i.IdItemGroup,
-                                                                g => g.Id,
-                                                                (i, g) => new { I = i, G = g })
-                                                            .Join(_currentViewModel.DbContext.Supergroups,
-                                                            g => g.G.IdSupergroup,
-                                                            s => s.Id,
-                                                            (g, s) => new { G = g, S = s }).FirstOrDefault(i => i.S.Id == supergroupDB.Id &&
-                                                            i.G.I.Id == itemDB2.Id);
-
-                                                            if (itemSuperGroup == null)
+                                                            else
                                                             {
-                                                                continue;
+                                                                itemInvoiceSirovina.Quantity += quantity1;
+                                                                itemInvoiceSirovina.TotalAmout = Decimal.Round(
+                                                                    itemInvoiceSirovina.Quantity.Value * (itemDB2.InputUnitPrice.HasValue ? itemDB2.InputUnitPrice.Value : 0), 2);
+
+                                                                _currentViewModel.DbContext.ItemInvoices.Update(itemInvoiceSirovina);
                                                             }
+                                                            // Privremeno čuvanje u bazu
+                                                            _currentViewModel.DbContext.SaveChanges();
+
+                                                            // Odvojite entitet iz konteksta
+                                                            _currentViewModel.DbContext.Entry(itemInvoiceSirovina).State = EntityState.Detached;
+                                                            _currentViewModel.DbContext.Entry(itemDB2).State = EntityState.Detached;
                                                         }
-                                                        IncreaseNorm(invoice,
-                                                            itemDB2,
-                                                            quantity1,
-                                                            itemInNormForChanges);
                                                     }
                                                 }
                                             }
                                         }
                                     }
-                                    //else
-                                    //{
-                                    //    IncreaseNormNotNorm(sqliteDbContext,
-                                    //                invoice,
-                                    //                itemDB,
-                                    //                quantity);
-                                    //}
                                 }
                             }
+                            transaction.Commit();
+                        }
+                        catch
+                        {
+                            transaction.Rollback();
+                            throw;
                         }
                     }
                 }
-                _currentViewModel.DbContext.SaveChanges();
 
                 MessageBox.Show("Uspešno ste sredili stanje sirovina za zadati period!", "Uspešno",
                         MessageBoxButton.OK,
@@ -386,236 +380,5 @@ namespace ClickBar.Commands.AppMain.Statistic.Norm
                 Log.Error("FixNormCommand -> Greska prilikom sredjivanja normativa -> ", ex);
             }
         }
-        private void UpdateNorm(ItemInNormDB normDB,
-            InvoiceDB invoiceDB,
-            ItemDB itemDB,
-            int lastSalsItemIndex,
-            int currentSalsItemIndex,
-            decimal quantity)
-        {
-            if (invoiceDB.Id == "9b8c0fad-d499-4705-bad3-0a0cc0f9a925")
-            {
-                int a = 2;
-            }
-            var itemInvoiceDB = _currentViewModel.DbContext.ItemInvoices.FirstOrDefault(itemInvoice =>
-            itemInvoice.ItemCode == normDB.IdItem && itemInvoice.InvoiceId == invoiceDB.Id &&
-            itemInvoice.Id > lastSalsItemIndex && itemInvoice.Id < currentSalsItemIndex);
-
-            if (itemInvoiceDB != null)
-            {
-                decimal price = itemInvoiceDB.UnitPrice.HasValue ? itemInvoiceDB.UnitPrice.Value : 0;
-                decimal oldQuantity = itemInvoiceDB.Quantity.HasValue ? itemInvoiceDB.Quantity.Value : 0;
-
-                if (quantity != oldQuantity)
-                {
-                    if (invoiceDB.TransactionType == 0)
-                    {
-                        itemDB.TotalQuantity -= (quantity - oldQuantity);
-                    }
-                    else
-                    {
-                        itemDB.TotalQuantity += (quantity - oldQuantity);
-                    }
-
-                    itemInvoiceDB.Quantity = quantity;
-                    itemInvoiceDB.TotalAmout = quantity * price;
-                    _currentViewModel.DbContext.Items.Update(itemDB);
-                    _currentViewModel.DbContext.ItemInvoices.Update(itemInvoiceDB);
-                }
-            }
-            else
-            {
-                var itemsInvoice = _currentViewModel.DbContext.ItemInvoices.Where(itemInvoice =>
-                itemInvoice.InvoiceId == invoiceDB.Id &&
-                itemInvoice.Id >= currentSalsItemIndex);
-
-                if (itemsInvoice != null &&
-                itemsInvoice.Any())
-                {
-                    itemsInvoice = itemsInvoice.OrderByDescending(i => i.Id);
-
-                    foreach(var i in itemsInvoice)
-                    {
-                        var itemInvoice = new ItemInvoiceDB()
-                        {
-                            Id = i.Id + 1,
-                            InvoiceId = i.InvoiceId,
-                            IsSirovina = i.IsSirovina,
-                            ItemCode = i.ItemCode,
-                            Label = i.Label,
-                            Name = i.Name,
-                            OriginalUnitPrice = i.OriginalUnitPrice,
-                            Quantity = i.Quantity,
-                            TotalAmout = i.TotalAmout,
-                            UnitPrice = i.UnitPrice,
-                        };
-
-                        _currentViewModel.DbContext.ItemInvoices.Remove(i);
-                        _currentViewModel.DbContext.ItemInvoices.Add(itemInvoice);
-                        _currentViewModel.DbContext.SaveChanges();
-                    }
-                }
-
-                itemInvoiceDB = new ItemInvoiceDB()
-                {
-                    Id = currentSalsItemIndex,
-                    InvoiceId = invoiceDB.Id,
-                    IsSirovina = 1,
-                    ItemCode = itemDB.Id,
-                    Label = itemDB.Label,
-                    Name = itemDB.Name,
-                    Quantity = quantity,
-                    OriginalUnitPrice = itemDB.SellingUnitPrice,
-                    UnitPrice = itemDB.SellingUnitPrice,
-                    TotalAmout = itemDB.SellingUnitPrice * quantity
-                };
-
-                _currentViewModel.DbContext.ItemInvoices.Add(itemInvoiceDB);
-            }
-            _currentViewModel.DbContext.SaveChanges();
-        }
-        private void ReduceNormHasNorm(InvoiceDB invoice,
-            ItemDB itemDB,
-            ItemInvoiceDB itemInInvoice,
-            List<ItemInNormForChange> itemInNormForChanges)
-        {
-
-            if (itemInInvoice.UnitPrice != null &&
-                itemInInvoice.UnitPrice.HasValue &&
-                itemInInvoice.Quantity != null &&
-                itemInInvoice.Quantity.HasValue)
-            {
-                if (invoice.TransactionType == 0)
-                {
-                    itemDB.TotalQuantity += itemInInvoice.Quantity.Value;
-                }
-                else
-                {
-                    itemDB.TotalQuantity -= itemInInvoice.Quantity.Value;
-                }
-                _currentViewModel.DbContext.Items.Update(itemDB);
-
-                if (itemInNormForChanges.FirstOrDefault(i => i.ItemId == itemInInvoice.ItemCode &&
-                i.InvoiceId == invoice.Id) == null)
-                {
-                    itemInNormForChanges.Add(new ItemInNormForChange()
-                    {
-                        ItemId = itemDB.Id,
-                        UnitPrice = itemInInvoice.UnitPrice.Value,
-                        InvoiceId = invoice.Id
-                    });
-                }
-                _currentViewModel.DbContext.Remove(itemInInvoice);
-                _currentViewModel.DbContext.SaveChanges();
-            }
-        }
-        private void ReduceNormNoNorm(InvoiceDB invoice,
-            ItemDB itemDB,
-            decimal quantity,
-            List<ItemInNormForChange> itemInNormForChanges)
-        {
-            if (invoice.TransactionType == 0)
-            {
-                itemDB.TotalQuantity += quantity;
-            }
-            else
-            {
-                itemDB.TotalQuantity -= quantity;
-            }
-            _currentViewModel.DbContext.Items.Update(itemDB);
-
-            if (itemInNormForChanges.FirstOrDefault(i => i.ItemId == itemDB.Id &&
-            i.InvoiceId == invoice.Id) == null)
-            {
-                itemInNormForChanges.Add(new ItemInNormForChange()
-                {
-                    ItemId = itemDB.Id,
-                    UnitPrice = itemDB.SellingUnitPrice,
-                    InvoiceId = invoice.Id
-                });
-            }
-            _currentViewModel.DbContext.SaveChanges();
-        }
-        private void IncreaseNorm(InvoiceDB invoice,
-        ItemDB itemDB,
-        decimal quantity,
-        List<ItemInNormForChange> itemInNormForChanges)
-        {
-            if (invoice.TransactionType == 0)
-            {
-                itemDB.TotalQuantity -= quantity;
-            }
-            else
-            {
-                itemDB.TotalQuantity += quantity;
-            }
-            _currentViewModel.DbContext.Items.Update(itemDB);
-
-            var itemForChange = itemInNormForChanges.FirstOrDefault(i => i.ItemId == itemDB.Id &&
-            i.InvoiceId == invoice.Id);
-
-            int index = _currentViewModel.DbContext.ItemInvoices.Where(itemInvoice => itemInvoice.InvoiceId == invoice.Id).Max(i => i.Id) + 1;
-
-            ItemInvoiceDB? itemInvoiceDB = null;
-            if (itemForChange != null)
-            {
-                itemInvoiceDB = new ItemInvoiceDB()
-                {
-                    Id = index,
-                    InvoiceId = invoice.Id,
-                    IsSirovina = 1,
-                    ItemCode = itemDB.Id,
-                    Label = itemDB.Label,
-                    Name = itemDB.Name,
-                    Quantity = quantity,
-                    OriginalUnitPrice = itemForChange.UnitPrice,
-                    UnitPrice = itemForChange.UnitPrice,
-                    TotalAmout = itemForChange.UnitPrice * quantity
-                };
-            }
-            else
-            {
-                itemInvoiceDB = new ItemInvoiceDB()
-                {
-                    Id = index,
-                    InvoiceId = invoice.Id,
-                    IsSirovina = 1,
-                    ItemCode = itemDB.Id,
-                    Label = itemDB.Label,
-                    Name = itemDB.Name,
-                    Quantity = quantity,
-                    OriginalUnitPrice = itemDB.SellingUnitPrice,
-                    UnitPrice = itemDB.SellingUnitPrice,
-                    TotalAmout = itemDB.SellingUnitPrice * quantity
-                };
-            }
-            _currentViewModel.DbContext.ItemInvoices.Add(itemInvoiceDB);
-            _currentViewModel.DbContext.SaveChanges();
-        }
-        private void IncreaseNormNotNorm(SqlServerDbContext sqliteDbContext,
-        InvoiceDB invoice,
-        ItemDB itemDB,
-        decimal quantity)
-        {
-            if (invoice.TransactionType == 0)
-            {
-                itemDB.TotalQuantity -= quantity;
-            }
-            else
-            {
-                itemDB.TotalQuantity += quantity;
-            }
-            sqliteDbContext.Items.Update(itemDB);
-
-            sqliteDbContext.Items.Update(itemDB);
-            sqliteDbContext.SaveChanges();
-        }
-
-    }
-    internal class ItemInNormForChange
-    {
-        public string? InvoiceId { get; set; }
-        public string? ItemId { get; set; }
-        public decimal? UnitPrice { get; set; }
     }
 }

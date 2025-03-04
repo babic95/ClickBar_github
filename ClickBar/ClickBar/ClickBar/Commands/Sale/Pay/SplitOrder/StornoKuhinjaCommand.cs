@@ -15,6 +15,7 @@ using ClickBar_Settings;
 using Newtonsoft.Json;
 using System.Net.Http;
 using ClickBar.Enums;
+using ClickBar_DatabaseSQLManager.Models;
 
 namespace ClickBar.Commands.Sale.Pay.SplitOrder
 {
@@ -23,18 +24,24 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder
         public event EventHandler CanExecuteChanged;
 
         private SplitOrderViewModel _viewModel;
+        private bool _isExecuted;
 
         public StornoKuhinjaCommand(SplitOrderViewModel viewModel)
         {
             _viewModel = viewModel;
+            _isExecuted = false;
         }
 
         public bool CanExecute(object? parameter)
         {
-            return true;
+            return !_isExecuted;
         }
-        public async void Execute(object parameter)
+        public void Execute(object parameter)
         {
+            if(_isExecuted)
+            {
+                return;
+            }
             try
             {
                 if (_viewModel.ItemsInvoiceForPay != null &&
@@ -61,6 +68,43 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder
                                         StoBr = unprocessedOrderDB.PaymentPlaceId.ToString()
                                     };
                                 }
+
+                                int orderStornoCounter = 1;
+                                int orderTotalCounter = 1;
+
+                                var ordersTodayBrisanjeDB = _viewModel.DbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
+                                !string.IsNullOrEmpty(o.Name) &&
+                                o.Name.ToLower().Contains("storno"));
+
+                                var ordersTodayDB = _viewModel.DbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date);
+
+                                if (ordersTodayBrisanjeDB != null &&
+                                    ordersTodayBrisanjeDB.Any())
+                                {
+                                    orderStornoCounter = ordersTodayBrisanjeDB.Max(o => o.CounterType);
+                                    orderStornoCounter++;
+                                }
+
+                                if (ordersTodayDB != null &&
+                                    ordersTodayDB.Any())
+                                {
+                                    orderTotalCounter = ordersTodayDB.Max(o => o.Counter);
+                                    orderTotalCounter++;
+                                }
+
+                                OrderTodayDB orderTodayDB = new OrderTodayDB()
+                                {
+                                    CashierId = unprocessedOrderDB.CashierId,
+                                    UnprocessedOrderId = unprocessedOrderDB.Id,
+                                    Id = Guid.NewGuid().ToString(),
+                                    Name = $"STORNO{orderStornoCounter}__{orderTotalCounter}",
+                                    OrderDateTime = DateTime.Now,
+                                    TableId = unprocessedOrderDB.PaymentPlaceId,
+                                    TotalPrice = 0,
+                                    Counter = orderTotalCounter,
+                                    CounterType = orderStornoCounter,
+                                    OrderTodayItems = new List<OrderTodayItemDB>(),
+                                };
 
                                 _viewModel.ItemsInvoiceForPay.ToList().ForEach(item =>
                                 {
@@ -98,10 +142,22 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder
                                             Jm = item.Item.Jm
                                         });
                                     }
+
+                                    orderTodayDB.OrderTodayItems.Add(new OrderTodayItemDB()
+                                    {
+                                        ItemId = item.Item.Id,
+                                        OrderTodayId = orderTodayDB.Id,
+                                        Quantity = -1 * item.Quantity,
+                                        TotalPrice = item.TotalAmout
+                                    });
                                 });
+
+                                _viewModel.DbContext.OrdersToday.Add(orderTodayDB);
+                                _viewModel.DbContext.SaveChanges();
+
                                 if (porudzbinaDrlja != null)
                                 {
-                                    var result = await PostStornoPorudzbinaAsync(porudzbinaDrlja);
+                                    var result = PostStornoPorudzbinaAsync(porudzbinaDrlja).Result;
 
                                     if (result != 200)
                                     {

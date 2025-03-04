@@ -10,7 +10,10 @@ namespace ClickBar_Printer.Models
     {
         Items = 0,
         Sirovine = 1,
-        End = 2
+        End = 2,
+        ItemsFix = 3,
+        Copy = 4,
+        EndFiscal = 5,
     }
 
     internal class MorePage

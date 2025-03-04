@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace ClickBar_Printer.Documents
 {
-    public class PorudzbinaDocument
+    internal class PorudzbinaDocument
     {
         private static readonly float _fontSize80mm = 3.90f;
         private static readonly float _fontSize58mm = 2.90f;

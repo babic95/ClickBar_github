@@ -398,7 +398,8 @@ namespace ClickBar.Commands.AppMain.Statistic
 
                         inventoryStatusViewModel.Norma.ToList().ForEach(item =>
                         {
-                            var norms = inventoryStatusViewModel.DbContext.ItemsInNorm.Where(it => it.IdNorm == itemDB.IdNorm && it.IdItem == item.Item.Id);
+                            var norms = inventoryStatusViewModel.DbContext.ItemsInNorm.Where(it => it.IdNorm == itemDB.IdNorm && 
+                            it.IdItem == item.Item.Id);
 
                             if (norms.Any())
                             {

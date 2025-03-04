@@ -10,6 +10,7 @@ using ClickBar_Printer.Documents;
 using ClickBar_Printer.Enums;
 using ClickBar_Printer.Models.DPU;
 using ClickBar_Printer.Models.DrljaKuhinja;
+using ClickBar_Printer.Models.Otpremnice;
 using ClickBar_Printer.PaperFormat;
 using ClickBar_Report;
 using ClickBar_Report.Models;
@@ -52,6 +53,10 @@ namespace ClickBar_Printer
         #endregion Constructors
 
         #region Public methods
+        public void PrintOtpremnica(OtpremnicaPrint otpremnicaPrint, FirmaDB firmaDB)
+        {
+            OtpremnicaDocument.PrintJournal(otpremnicaPrint, firmaDB);
+        }
         public MemoryStream PrintDPU(List<DPU_Print> podaci)
         {
             return DPU_Document.PrintDPU(podaci);

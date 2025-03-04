@@ -65,26 +65,32 @@ namespace ClickBar.Commands.Sale
         {
             if (_viewModel is SaleViewModel saleViewModel)
             {
-                if (saleViewModel.OldItemsInvoice.Any() ||
+                if (saleViewModel.OldOrders.Any() ||
                     saleViewModel.ItemsInvoice.Any())
                 {
-                    if (saleViewModel.OldItemsInvoice.Any())
+                    if (saleViewModel.OldOrders.Any())
                     {
-                        saleViewModel.OldItemsInvoice.ToList().ForEach(item =>
+                        foreach(var oldOrder in saleViewModel.OldOrders)
                         {
-                            var it = saleViewModel.ItemsInvoice.FirstOrDefault(i => i.Item.Id == item.Item.Id);
+                            if (oldOrder.Items.Any())
+                            {
+                                foreach (var item in oldOrder.Items)
+                                {
+                                    var it = saleViewModel.ItemsInvoice.FirstOrDefault(i => i.Item.Id == item.Item.Id);
 
-                            if (it == null)
-                            {
-                                it = new ItemInvoice(item.Item, item.Quantity);
-                                saleViewModel.ItemsInvoice.Add(it);
+                                    if (it == null)
+                                    {
+                                        it = new ItemInvoice(item.Item, item.Quantity);
+                                        saleViewModel.ItemsInvoice.Add(it);
+                                    }
+                                    else
+                                    {
+                                        it.Quantity += item.Quantity;
+                                        it.TotalAmout += item.TotalAmout;
+                                    }
+                                }
                             }
-                            else
-                            {
-                                it.Quantity += item.Quantity;
-                                it.TotalAmout += item.TotalAmout;
-                            }
-                        });
+                        }
                     }
 
                     PaySaleViewModel paySaleViewModel = new PaySaleViewModel(_serviceProvider, saleViewModel);
@@ -248,12 +254,9 @@ namespace ClickBar.Commands.Sale
                 {
                     splitOrderViewModel.PaySaleViewModel.ItemsInvoice = splitOrderViewModel.ItemsInvoiceForPay;
                     splitOrderViewModel.PaySaleViewModel.TotalAmount = splitOrderViewModel.TotalAmountForPay;
-                }
 
-                if (splitOrderViewModel.ItemsInvoice.Any())
-                {
-                    splitOrderViewModel.PaySaleViewModel.SaleViewModel.ItemsInvoice = splitOrderViewModel.ItemsInvoice;
-                    splitOrderViewModel.PaySaleViewModel.SaleViewModel.TotalAmount = splitOrderViewModel.TotalAmount;
+                    splitOrderViewModel.PaySaleViewModel.SaleViewModel.ItemsInvoice = splitOrderViewModel.ItemsInvoiceForPay;
+                    splitOrderViewModel.PaySaleViewModel.SaleViewModel.TotalAmount = splitOrderViewModel.TotalAmountForPay;
                 }
             }
         }
@@ -482,10 +485,7 @@ namespace ClickBar.Commands.Sale
             Normal(invoiceRequset, paySaleViewModel, total, items, popust, paySaleViewModel.SaleViewModel.LoggedCashier);
 #endif
         }
-        private async Task TakingDownOrder(InvoiceDB invoice,
-            PaySaleViewModel paySaleViewModel,
-            int tableId,
-            ObservableCollection<ItemInvoice> items)
+        private async Task TakingDownOrder(InvoiceDB invoice, PaySaleViewModel paySaleViewModel, int tableId, ObservableCollection<ItemInvoice> items)
         {
             try
             {
@@ -503,61 +503,154 @@ namespace ClickBar.Commands.Sale
                         };
                         dbContext.Orders.Add(orderDB);
 
-                        var itemsInUnprocessedOrder = dbContext.ItemsInUnprocessedOrder.AsNoTracking().Where(item => item.UnprocessedOrderId == unprocessedOrders.Id);
+                        var itemsInUnprocessedOrder = dbContext.ItemsInUnprocessedOrder.Where(item => item.UnprocessedOrderId == unprocessedOrders.Id).ToList();
 
-                        //decimal totalAmount = unprocessedOrders.TotalAmount;
-                        if (itemsInUnprocessedOrder != null &&
-                            itemsInUnprocessedOrder.Any())
+                        if (itemsInUnprocessedOrder != null && itemsInUnprocessedOrder.Any())
                         {
-                            if (itemsInUnprocessedOrder.Sum(a => a.Quantity) == invoice.ItemInvoices.Where(a => a.IsSirovina == null ||
-                            a.IsSirovina == 0).Sum(b => b.Quantity))
+                            if (itemsInUnprocessedOrder.Sum(a => a.Quantity) <= invoice.ItemInvoices.Where(a => a.IsSirovina == null || a.IsSirovina == 0).Sum(b => b.Quantity))
                             {
                                 dbContext.ItemsInUnprocessedOrder.RemoveRange(itemsInUnprocessedOrder);
                                 dbContext.SaveChanges();
                             }
                             else
                             {
-                                foreach(var item in itemsInUnprocessedOrder)
+                                var oldOrders = dbContext.OrdersToday.Where(o => o.UnprocessedOrderId == unprocessedOrders.Id).ToList();
+
+                                foreach (var item in items)
                                 {
-                                    var invoiceItem = invoice.ItemInvoices.FirstOrDefault(itemInvoice => itemInvoice.ItemCode == item.ItemId);
-
-                                    if (invoiceItem != null)
+                                    if (oldOrders != null && oldOrders.Any())
                                     {
-                                        if (invoiceItem.Quantity.HasValue &&
-                                        invoiceItem.TotalAmout.HasValue &&
-                                        invoiceItem.UnitPrice.HasValue)
+                                        decimal quantity = item.Quantity;
+                                        foreach (var oldOrder in oldOrders)
                                         {
-                                            decimal ta = 0;
-                                            if (item.Quantity <= invoiceItem.Quantity.Value)
+                                            var orderTodayDB = dbContext.OrdersToday.Include(o => o.OrderTodayItems).FirstOrDefault(o => o.OrderDateTime == oldOrder.OrderDateTime &&
+                                            o.Counter == oldOrder.Counter &&
+                                            o.CounterType == oldOrder.CounterType &&
+                                            o.UnprocessedOrderId == null);
+
+                                            if (orderTodayDB == null)
                                             {
-                                                ta = item.Quantity * invoiceItem.UnitPrice.Value;
-                                                dbContext.ItemsInUnprocessedOrder.Remove(item);
-
-                                                Log.Debug($"PayCommand -> TakingDownOrder -> obrisan je artikal sa stola_{unprocessedOrders.PaymentPlaceId} - {item.ItemId}: {item.Quantity}  {ta} din");
+                                                orderTodayDB = new OrderTodayDB()
+                                                {
+                                                    Id = Guid.NewGuid().ToString(),
+                                                    CashierId = oldOrder.CashierId,
+                                                    Name = oldOrder.Name,
+                                                    OrderDateTime = oldOrder.OrderDateTime,
+                                                    Counter = oldOrder.Counter,
+                                                    CounterType = oldOrder.CounterType,
+                                                    TableId = oldOrder.TableId,
+                                                    TotalPrice = 0,
+                                                    OrderTodayItems = new List<OrderTodayItemDB>(),
+                                                };
+                                                dbContext.OrdersToday.Add(orderTodayDB);
+                                                dbContext.SaveChanges();
                                             }
-                                            else if (item.Quantity > invoiceItem.Quantity.Value)
+
+                                            var orderTodayItems = dbContext.OrderTodayItems.Where(o => o.ItemId == item.Item.Id &&
+                                            o.OrderTodayId == oldOrder.Id).ToList();
+
+                                            if (orderTodayItems != null && orderTodayItems.Any())
                                             {
-                                                Log.Debug($"PayCommand -> TakingDownOrder -> update artikla {item.ItemId}: stara vrednost: {item.Quantity} -> nova vrednost: {invoiceItem.Quantity.Value}");
-                                                item.Quantity -= invoiceItem.Quantity.Value;
-                                                ta = invoiceItem.TotalAmout.Value;
-                                                dbContext.ItemsInUnprocessedOrder.Update(item);
+                                                foreach (var odlOrderItem in orderTodayItems)
+                                                {
+                                                    if (quantity == 0)
+                                                    {
+                                                        break;
+                                                    }
 
-                                                Log.Debug($"PayCommand -> TakingDownOrder -> update je artikal sa stola_{unprocessedOrders.PaymentPlaceId} - {item.ItemId}: {item.Quantity}  {ta} din");
+                                                    var orderTodayItemDB = dbContext.OrderTodayItems.FirstOrDefault(o => o.OrderTodayId == orderTodayDB.Id &&
+                                                    o.ItemId == item.Item.Id);
+
+                                                    if (orderTodayItemDB == null)
+                                                    {
+                                                        orderTodayItemDB = new OrderTodayItemDB()
+                                                        {
+                                                            OrderTodayId = orderTodayDB.Id,
+                                                            ItemId = item.Item.Id,
+                                                            Quantity = 0,
+                                                            TotalPrice = 0,
+                                                        };
+                                                        dbContext.OrderTodayItems.Add(orderTodayItemDB);
+                                                        dbContext.SaveChanges();
+                                                    }
+
+                                                    decimal unitPrice = Decimal.Round(odlOrderItem.TotalPrice / odlOrderItem.Quantity, 2);
+
+                                                    if (odlOrderItem.Quantity > quantity)
+                                                    {
+                                                        decimal totalPrice = Decimal.Round(quantity * unitPrice, 2);
+
+                                                        orderTodayDB.TotalPrice += totalPrice;
+                                                        dbContext.OrdersToday.Update(orderTodayDB);
+
+                                                        oldOrder.TotalPrice -= totalPrice;
+                                                        dbContext.OrdersToday.Update(oldOrder);
+
+                                                        orderTodayItemDB.Quantity += quantity;
+                                                        orderTodayItemDB.TotalPrice += totalPrice;
+                                                        dbContext.OrderTodayItems.Update(orderTodayItemDB);
+
+                                                        odlOrderItem.Quantity -= quantity;
+                                                        odlOrderItem.TotalPrice -= totalPrice;
+                                                        dbContext.OrderTodayItems.Update(odlOrderItem);
+
+                                                        quantity = 0;
+                                                    }
+                                                    else
+                                                    {
+                                                        decimal totalPrice = Decimal.Round(odlOrderItem.Quantity * unitPrice, 2);
+
+                                                        orderTodayDB.TotalPrice += totalPrice;
+                                                        dbContext.OrdersToday.Update(orderTodayDB);
+
+                                                        oldOrder.TotalPrice -= totalPrice;
+                                                        dbContext.OrdersToday.Update(oldOrder);
+
+                                                        orderTodayItemDB.Quantity += odlOrderItem.Quantity;
+                                                        orderTodayItemDB.TotalPrice += totalPrice;
+                                                        dbContext.OrderTodayItems.Update(orderTodayItemDB);
+
+                                                        dbContext.OrderTodayItems.Remove(odlOrderItem);
+
+                                                        quantity -= odlOrderItem.Quantity;
+                                                    }
+                                                }
                                             }
-                                            unprocessedOrders.TotalAmount -= ta;
-
-                                            dbContext.UnprocessedOrders.Update(unprocessedOrders);
-                                            dbContext.SaveChanges();
                                         }
+                                        dbContext.SaveChanges();
+                                    }
+
+                                    var itemInUnprocessedOrder = itemsInUnprocessedOrder.FirstOrDefault(i => i.ItemId == item.Item.Id);
+
+                                    if (itemInUnprocessedOrder != null)
+                                    {
+                                        if (item.Quantity >= itemInUnprocessedOrder.Quantity)
+                                        {
+                                            dbContext.ItemsInUnprocessedOrder.Remove(itemInUnprocessedOrder);
+
+                                            Log.Debug($"PayCommand -> TakingDownOrder -> obrisan je artikal sa stola_{unprocessedOrders.PaymentPlaceId} - {itemInUnprocessedOrder.ItemId}: {item.Quantity}");
+                                        }
+                                        else
+                                        {
+                                            Log.Debug($"PayCommand -> TakingDownOrder -> update artikla {itemInUnprocessedOrder.ItemId}: stara vrednost: {item.Quantity} -> nova vrednost: {itemInUnprocessedOrder.Quantity}");
+                                            itemInUnprocessedOrder.Quantity -= item.Quantity;
+
+                                            dbContext.ItemsInUnprocessedOrder.Update(itemInUnprocessedOrder);
+
+                                            Log.Debug($"PayCommand -> TakingDownOrder -> update je artikal sa stola_{unprocessedOrders.PaymentPlaceId} - {itemInUnprocessedOrder.ItemId}: {item.Quantity}");
+                                        }
+                                        unprocessedOrders.TotalAmount -= item.TotalAmout;
+
+                                        dbContext.UnprocessedOrders.Update(unprocessedOrders);
+                                        dbContext.SaveChanges();
                                     }
                                 }
                             }
                         }
 
-                        itemsInUnprocessedOrder = dbContext.ItemsInUnprocessedOrder.AsNoTracking().Where(item => item.UnprocessedOrderId == unprocessedOrders.Id);
+                        itemsInUnprocessedOrder = dbContext.ItemsInUnprocessedOrder.Where(item => item.UnprocessedOrderId == unprocessedOrders.Id).ToList();
 
-                        if (itemsInUnprocessedOrder != null &&
-                            itemsInUnprocessedOrder.Any())
+                        if (itemsInUnprocessedOrder != null && itemsInUnprocessedOrder.Any())
                         {
                             Log.Debug($"PayCommand -> TakingDownOrder -> Preostali iznos na stolu {unprocessedOrders.PaymentPlaceId} je: {unprocessedOrders.TotalAmount}");
                         }
@@ -567,13 +660,11 @@ namespace ClickBar.Commands.Sale
 
                             var pathToDrljaDB = SettingsManager.Instance.GetPathToDrljaKuhinjaDB();
 
-                            if (paySaleViewModel.DrljaDbContext != null &&
-                                !string.IsNullOrEmpty(pathToDrljaDB))
+                            if (paySaleViewModel.DrljaDbContext != null && !string.IsNullOrEmpty(pathToDrljaDB))
                             {
                                 var narudzbineDrlja = paySaleViewModel.DrljaDbContext.Narudzbine.AsNoTracking().Where(nar => nar.TR_STO.Contains(tableId.ToString())
                                         && nar.TR_FAZA != 4);
-                                if (narudzbineDrlja != null &&
-                                    narudzbineDrlja.Any())
+                                if (narudzbineDrlja != null && narudzbineDrlja.Any())
                                 {
                                     narudzbineDrlja.ToList().ForEach(narudzbinaDrlja =>
                                     {
@@ -638,6 +729,18 @@ namespace ClickBar.Commands.Sale
                             dbContext.TaxItemInvoices.Add(taxItemInvoiceDB);
                         });
                     }
+
+                    var paymentInvoiceTotal = dbContext.PaymentInvoices.FirstOrDefault(p => p.InvoiceId == invoiceDB.Id);
+
+                    if (paymentInvoiceTotal != null)
+                    {
+                        if (invoiceDB.TotalAmount != paymentInvoiceTotal.Amout)
+                        {
+                            paymentInvoiceTotal.Amout = invoiceDB.TotalAmount;
+                            dbContext.PaymentInvoices.Update(paymentInvoiceTotal);
+                        }
+                    }
+
                     await dbContext.SaveChangesAsync();
                 }
             }
@@ -850,64 +953,59 @@ namespace ClickBar.Commands.Sale
                 List<ItemDB> itemsForCondition = new List<ItemDB>();
                 using (var dbContext = paySaleViewModel.DbContext.CreateDbContext())
                 {
-                    var itemsInInvoice = dbContext.ItemInvoices.AsNoTracking().Where(item => item.IsSirovina == 0);
+                    var itemsInInvoice = dbContext.ItemInvoices.Where(item => item.InvoiceId == invoice.Id &&
+                    item.IsSirovina == 0);
 
-                    if (itemsInInvoice != null &&
-                        itemsInInvoice.Any())
+                    if (itemsInInvoice != null && itemsInInvoice.Any())
                     {
-                        foreach(var item in itemsInInvoice.ToList())
+                        foreach (var item in itemsInInvoice.ToList())
                         {
-                            var it = dbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == item.ItemCode);
-                            if (it != null &&
-                            item.Quantity.HasValue)
+                            var it = dbContext.Items.FirstOrDefault(i => i.Id == item.ItemCode);
+                            if (it != null && item.Quantity.HasValue)
                             {
-                                var itemInNorm = dbContext.ItemsInNorm.AsNoTracking().Where(norm => it.IdNorm == norm.IdNorm);
+                                var itemInNorm = dbContext.ItemsInNorm.Where(norm => it.IdNorm == norm.IdNorm);
 
-                                if (itemInNorm != null &&
-                                itemInNorm.Any())
+                                if (itemInNorm != null && itemInNorm.Any())
                                 {
-                                    foreach(var norm in itemInNorm)
+                                    foreach (var norm in itemInNorm)
                                     {
-                                        var itm = dbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm.IdItem);
+                                        var itm = dbContext.Items.FirstOrDefault(i => i.Id == norm.IdItem);
 
                                         if (itm != null)
                                         {
                                             if (itm.IdNorm == null)
                                             {
                                                 itm.TotalQuantity -= item.Quantity.Value * norm.Quantity;
-                                                dbContext.Items.Update(itm);
                                             }
                                             else
                                             {
-                                                var itemInNorm2 = dbContext.ItemsInNorm.AsNoTracking().Where(norm => itm.IdNorm == norm.IdNorm);
+                                                var itemInNorm2 = dbContext.ItemsInNorm.Where(norm => itm.IdNorm == norm.IdNorm);
                                                 if (itemInNorm2.Any())
                                                 {
-                                                    foreach(var norm2 in itemInNorm2.ToList())
+                                                    foreach (var norm2 in itemInNorm2.ToList())
                                                     {
-                                                        var itm2 = dbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm2.IdItem);
+                                                        var itm2 = dbContext.Items.FirstOrDefault(i => i.Id == norm2.IdItem);
 
                                                         if (itm2 != null)
                                                         {
                                                             if (itm2.IdNorm == null)
                                                             {
                                                                 itm2.TotalQuantity -= item.Quantity.Value * norm.Quantity * norm2.Quantity;
-                                                                dbContext.Items.Update(itm2);
                                                             }
                                                             else
                                                             {
-                                                                var itemInNorm3 = dbContext.ItemsInNorm.AsNoTracking().Where(norm => itm2.IdNorm == norm2.IdNorm);
+                                                                var itemInNorm3 = dbContext.ItemsInNorm.Where(norm => itm2.IdNorm == norm2.IdNorm);
                                                                 if (itemInNorm3.Any())
                                                                 {
-                                                                    foreach(var norm3 in itemInNorm3)
+                                                                    foreach (var norm3 in itemInNorm3)
                                                                     {
-                                                                        var itm3 = dbContext.Items.AsNoTracking().FirstOrDefault(i => i.Id == norm3.IdItem);
+                                                                        var itm3 = dbContext.Items.FirstOrDefault(i => i.Id == norm3.IdItem);
 
                                                                         if (itm3 != null)
                                                                         {
                                                                             if (itm3.IdNorm == null)
                                                                             {
                                                                                 itm3.TotalQuantity -= item.Quantity.Value * norm.Quantity * norm2.Quantity * norm3.Quantity;
-                                                                                dbContext.Items.Update(itm3);
                                                                             }
                                                                         }
                                                                     }
@@ -915,7 +1013,6 @@ namespace ClickBar.Commands.Sale
                                                                 else
                                                                 {
                                                                     itm2.TotalQuantity -= item.Quantity.Value * norm.Quantity * norm2.Quantity;
-                                                                    dbContext.Items.Update(itm2);
                                                                 }
                                                             }
                                                         }
@@ -924,7 +1021,6 @@ namespace ClickBar.Commands.Sale
                                                 else
                                                 {
                                                     itm.TotalQuantity -= item.Quantity.Value * norm.Quantity;
-                                                    dbContext.Items.Update(itm);
                                                 }
                                             }
                                         }
@@ -933,11 +1029,10 @@ namespace ClickBar.Commands.Sale
                                 else
                                 {
                                     it.TotalQuantity -= item.Quantity.Value;
-                                    dbContext.Items.Update(it);
                                 }
+                                dbContext.Items.Update(it);
                             }
                         }
-
                         await dbContext.SaveChangesAsync();
                     }
                 }
@@ -1306,7 +1401,7 @@ namespace ClickBar.Commands.Sale
                         orderCounterType++;
                     }
 
-                    orderSank.OrderName += orderCounterType.ToString() + "_" + orderCounterTotal.ToString();
+                    orderSank.OrderName += orderCounterType.ToString() + "__" + orderCounterTotal.ToString();
 
                     decimal totalAmount = orderSank.Items.Sum(i => i.TotalAmount);
 
@@ -1355,7 +1450,7 @@ namespace ClickBar.Commands.Sale
                         orderCounter++;
                     }
 
-                    orderKuhinja.OrderName += orderCounter.ToString() + "_" + orderCounterTotal.ToString();
+                    orderKuhinja.OrderName += orderCounter.ToString() + "__" + orderCounterTotal.ToString();
 
                     decimal totalAmount = orderKuhinja.Items.Sum(i => i.TotalAmount);
 
@@ -1416,7 +1511,7 @@ namespace ClickBar.Commands.Sale
                         orderCounter++;
                     }
 
-                    orderDrugo.OrderName += orderCounter.ToString() + "_" + orderCounterTotal.ToString();
+                    orderDrugo.OrderName += orderCounter.ToString() + "__" + orderCounterTotal.ToString();
 
                     decimal totalAmount = orderDrugo.Items.Sum(i => i.TotalAmount);
 

@@ -128,7 +128,10 @@ namespace ClickBar_DatabaseSQLManager
 
             var invoices = Invoices.Where(invoice => invoice.SdcDateTime >= fromDateTime && invoice.SdcDateTime <= toDateTime
             && (invoice.InvoiceType == Convert.ToInt32(InvoiceTypeEenumeration.Normal) ||
-            invoice.InvoiceType == Convert.ToInt32(InvoiceTypeEenumeration.Advance))).ToList();
+            invoice.InvoiceType == Convert.ToInt32(InvoiceTypeEenumeration.Advance))).
+            Include(i => i.ItemInvoices).
+            Include(i => i.TaxItemInvoices).
+            Include(i => i.PaymentInvoices).ToList();
 
             return invoices;
         }
@@ -248,9 +251,9 @@ namespace ClickBar_DatabaseSQLManager
 
                 entity.Property(e => e.Address).HasMaxLength(95);
 
-                entity.Property(e => e.BusinessName).HasMaxLength(75);
+                entity.Property(e => e.BusinessName).HasMaxLength(100);
 
-                entity.Property(e => e.BuyerAddress).HasMaxLength(45);
+                entity.Property(e => e.BuyerAddress).HasMaxLength(100);
 
                 entity.Property(e => e.BuyerCostCenterId).HasMaxLength(45);
 
@@ -571,7 +574,7 @@ namespace ClickBar_DatabaseSQLManager
                     .HasMaxLength(36)
                     .HasColumnName("InvoiceId");
 
-                entity.Property(e => e.Amount).HasColumnType("decimal(18, 2)");
+                entity.Property(e => e.Amount).HasColumnType("decimal(18, 4)");
 
                 entity.Property(e => e.CategoryName).HasMaxLength(45);
 
@@ -862,6 +865,8 @@ namespace ClickBar_DatabaseSQLManager
 
                 entity.HasIndex(e => e.CashierId, "fk_OrderToday_Cashier1_idx");
 
+                entity.HasIndex(e => e.UnprocessedOrderId, "fk_OrderToday_UnprocessedOrder1_idx");
+
                 entity.Property(e => e.Id).HasMaxLength(36);
 
                 entity.Property(e => e.OrderDateTime).HasColumnType("datetime");
@@ -879,6 +884,12 @@ namespace ClickBar_DatabaseSQLManager
                     .HasForeignKey(d => d.CashierId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("fk_OrderToday_Cashier1");
+
+                entity.HasOne(d => d.UnprocessedOrder)
+                      .WithMany(p => p.OrdersToday)
+                      .HasForeignKey(d => d.UnprocessedOrderId)
+                      .OnDelete(DeleteBehavior.SetNull)
+                      .HasConstraintName("fk_OrderToday_UnprocessedOrder1");
             });
 
             modelBuilder.Entity<OrderTodayItemDB>(entity =>
@@ -1044,6 +1055,7 @@ namespace ClickBar_DatabaseSQLManager
                 }
                 catch (Exception ex)
                 {
+                    Log.Error($"GRESKA U KONEKCIJI SA BAZOM -> ovo je connectionstring: {_connectionString} ", ex);
                     throw new Exception($"Failed to check/create database: {ex.Message}", ex);
                 }
             }
@@ -1167,8 +1179,8 @@ namespace ClickBar_DatabaseSQLManager
                         "DateAndTimeOfIssue DATETIME," +
                         "Cashier NVARCHAR(45)," +
                         "BuyerId NVARCHAR(45)," +
-                        "BuyerName NVARCHAR(75)," +
-                        "BuyerAddress NVARCHAR(45)," +
+                        "BuyerName NVARCHAR(100)," +
+                        "BuyerAddress NVARCHAR(100)," +
                         "BuyerCostCenterId NVARCHAR(45)," +
                         "InvoiceType INT," +
                         "TransactionType INT," +
@@ -1267,7 +1279,7 @@ namespace ClickBar_DatabaseSQLManager
                         "CategoryName NVARCHAR(45)," +
                         "CategoryType INT," +
                         "Rate DECIMAL(18,2)," +
-                        "Amount DECIMAL(18,2)," +
+                        "Amount DECIMAL(18,4)," +
                         "PRIMARY KEY(InvoiceId, Label), " +
                         "FOREIGN KEY(InvoiceId) REFERENCES Invoice(Id) " +
                         "ON DELETE NO ACTION " +
@@ -1377,9 +1389,6 @@ namespace ClickBar_DatabaseSQLManager
                         "InvoiceId NVARCHAR(36) NOT NULL, " +
                         "CashierId NVARCHAR(4) NOT NULL, " +
                         "PRIMARY KEY(PaymentPlaceId, InvoiceId, CashierId), " +
-                        "FOREIGN KEY(PaymentPlaceId) REFERENCES PaymentPlace(Id) " +
-                        "ON DELETE NO ACTION " +
-                        "ON UPDATE NO ACTION, " +
                         "FOREIGN KEY(InvoiceId) REFERENCES Invoice(Id) " +
                         "ON DELETE NO ACTION " +
                         "ON UPDATE NO ACTION," +
@@ -1388,6 +1397,25 @@ namespace ClickBar_DatabaseSQLManager
                         "ON UPDATE NO ACTION" +
                         "); ", "Orders");
                     CreateTable("Orders", sql);
+                }
+                else
+                {
+                    try
+                    {
+                        // Find the exact foreign key constraint name
+                        string foreignKeyName = GetForeignKeyName("Orders", "PaymentPlaceId");
+
+                        // Drop foreign key constraint on PaymentPlaceId
+                        if (!string.IsNullOrEmpty(foreignKeyName))
+                        {
+                            string dropForeignKeySql = $"ALTER TABLE Orders DROP CONSTRAINT {foreignKeyName}";
+                            ExecuteSql(dropForeignKeySql);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("SqlServerDbContext - CreateTables - Error occurred while dropping foreign key constraint on Orders table.", ex);
+                    }
                 }
                 if (!TableExists("ItemInNorm", _sqlConnection))
                 {
@@ -1613,6 +1641,7 @@ namespace ClickBar_DatabaseSQLManager
                 {
                     sql = string.Format("CREATE TABLE {0} (" +
                         "Id NVARCHAR(36) NOT NULL, " +
+                        "UnprocessedOrderId NVARCHAR(36), " + 
                         "CashierId NVARCHAR(4) NOT NULL, " + // Promena NVARCHAR(36) u NVARCHAR(4)
                         "OrderDateTime DATETIME NOT NULL, " +
                         "Counter INT NOT NULL, " +
@@ -1623,6 +1652,9 @@ namespace ClickBar_DatabaseSQLManager
                         "PRIMARY KEY(Id), " +
                         "FOREIGN KEY(CashierId) REFERENCES Cashier(Id) " +
                         "ON DELETE NO ACTION " +
+                        "ON UPDATE NO ACTION," +
+                        "FOREIGN KEY(UnprocessedOrderId) REFERENCES UnprocessedOrder(Id) " +
+                        "ON DELETE SET NULL " +
                         "ON UPDATE NO ACTION" +
                         "); ", "OrderToday");
                     CreateTable("OrderToday", sql);
@@ -1631,8 +1663,11 @@ namespace ClickBar_DatabaseSQLManager
                 {
                     try
                     {
+                        AddColumnIfNotExists("OrderToday", "UnprocessedOrderId NVARCHAR(36)", _sqlConnection);
                         AddColumnIfNotExists("OrderToday", "CounterType INT NOT NULL DEFAULT 0", _sqlConnection);
                         AddColumnIfNotExists("OrderToday", "TableId INT", _sqlConnection);
+
+                        AddForeignKeyIfNotExists("OrderToday", "UnprocessedOrderId", "UnprocessedOrder", "Id", "SET NULL", "NO ACTION", _sqlConnection);
                     }
                     catch (Exception ex)
                     {
@@ -1751,6 +1786,53 @@ namespace ClickBar_DatabaseSQLManager
             catch (Exception ex)
             {
                 Log.Error($"SqlServerDbContext - AddColumnIfNotExists - Error occurred while adding column {columnDefinition} to table {tableName}.", ex);
+            }
+        }
+        private void AddForeignKeyIfNotExists(string tableName, string columnName, string referencedTableName, string referencedColumnName, string onDelete, string onUpdate, SqlConnection sqlConnection)
+        {
+            // Check if foreign key already exists
+            string checkForeignKeyQuery = $"SELECT COUNT(*) FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_NAME = 'FK_{tableName}_{columnName}'";
+            using (SqlCommand cmd = new SqlCommand(checkForeignKeyQuery, sqlConnection))
+            {
+                sqlConnection.Open();
+                int count = (int)cmd.ExecuteScalar();
+                if (count == 0)
+                {
+                    // Add foreign key
+                    string addForeignKeyQuery = $"ALTER TABLE {tableName} ADD CONSTRAINT FK_{tableName}_{columnName} FOREIGN KEY ({columnName}) REFERENCES {referencedTableName}({referencedColumnName}) ON DELETE {onDelete} ON UPDATE {onUpdate}";
+                    using (SqlCommand alterCmd = new SqlCommand(addForeignKeyQuery, sqlConnection))
+                    {
+                        alterCmd.ExecuteNonQuery();
+                    }
+                }
+                sqlConnection.Close();
+            }
+        }
+        private string GetForeignKeyName(string tableName, string columnName)
+        {
+            string foreignKeyName = null;
+            string query = $"SELECT OBJECT_NAME(f.object_id) AS ConstraintName " +
+                           $"FROM sys.foreign_keys AS f " +
+                           $"INNER JOIN sys.foreign_key_columns AS fc ON f.object_id = fc.constraint_object_id " +
+                           $"WHERE OBJECT_NAME(f.parent_object_id) = '{tableName}' " +
+                           $"AND COL_NAME(fc.parent_object_id, fc.parent_column_id) = '{columnName}'";
+            using (SqlCommand command = new SqlCommand(query, _sqlConnection))
+            {
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        foreignKeyName = reader["ConstraintName"].ToString();
+                    }
+                }
+            }
+            return foreignKeyName;
+        }
+        private void ExecuteSql(string sql)
+        {
+            using (SqlCommand command = new SqlCommand(sql, _sqlConnection))
+            {
+                command.ExecuteNonQuery();
             }
         }
 

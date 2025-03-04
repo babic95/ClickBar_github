@@ -544,7 +544,7 @@ namespace ClickBar_Printer.PaperFormat
 
             return reportText;
         }
-        public static string CreateReport(Report report)
+        public static string CreateReport(Report report, bool withTax = true)
         {
             string reportText = "====================================\r\n";
             if (report.StartReport.Day == report.EndReport.Day)
@@ -586,14 +586,12 @@ namespace ClickBar_Printer.PaperFormat
             reportText += "                            \r\n";
             reportText += "                            \r\n";
 
-            //reportText += "=================TAKSE==================\r\n";
-            //reportText += ReportReportTaxes(report.ReportTaxes);
-            //reportText += "========================================\r\n";
-
-
-            reportText += "===============KASIRI===============\r\n";
-            reportText += ReportCashiers(report.ReportCashiers);
-            reportText += "====================================\r\n";
+            if (withTax)
+            {
+                reportText += "===============TAKSE================\r\n";
+                reportText += ReportReportTaxes(report.ReportTaxes);
+                reportText += "====================================\r\n";
+            }
 
 #if CRNO
 #else
@@ -601,6 +599,24 @@ namespace ClickBar_Printer.PaperFormat
             reportText += ReportPayments(report.Payments);
             reportText += "====================================\r\n";
 #endif
+
+            reportText += "===============KASIRI===============\r\n";
+            reportText += ReportCashiers(report.ReportCashiers);
+            reportText += "====================================\r\n";
+
+            if (withTax)
+            {
+                reportText += "==========REKAPITULACIJA============\r\n";
+                reportText += SplitInParts($"{string.Format("{0:#,##0.00}", report.NormalSale).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "PROMET PRODAJA:", 36);
+                reportText += SplitInParts($"{string.Format("{0:#,##0.00}", report.NormalRefund).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "PROMET REFUNDACIJA:", 36);
+                reportText += SplitInParts($"{string.Format("{0:#,##0.00}", (report.NormalSale + report.NormalRefund)).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "UKUPAN PROMET:", 36);
+
+                reportText += SplitInParts($"{string.Format("{0:#,##0.00}", report.NormalSalePDV).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "PDV PROMET PRODAJA:", 36);
+                reportText += SplitInParts($"{string.Format("{0:#,##0.00}", report.NormalRefundPDV).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "PDV PROMET REFUNDACIJA:", 36);
+                reportText += SplitInParts($"{string.Format("{0:#,##0.00}", (report.NormalSalePDV + report.NormalRefundPDV)).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "UKUPAN PDV PROMET:", 36);
+                reportText += "====================================\r\n";
+            }
+
             if (report.ReportItems.Any())
             {
                 reportText += "==============ARTIKLI===============\r\n";
@@ -858,35 +874,35 @@ namespace ClickBar_Printer.PaperFormat
 
             }
         }
-        //private static string ReportReportTaxes(Dictionary<string, ReportTax> reportTaxes)
-        //{
-        //    string result = string.Empty;
+        private static string ReportReportTaxes(Dictionary<string, ReportTax> reportTaxes)
+        {
+            string result = string.Empty;
 
-        //    decimal totalGross = 0;
-        //    decimal totalPdv = 0;
-        //    decimal totalNet = 0;
+            decimal totalGross = 0;
+            decimal totalPdv = 0;
+            decimal totalNet = 0;
 
-        //    foreach (KeyValuePair<string, ReportTax> item in reportTaxes)
-        //    {
-        //        result += SplitInParts($"{item.Key} ({item.Value.Rate}%)", "PDV grupa:", 40);
-        //        result += SplitInParts($"{item.Value.Gross.ToString("00.00")} din", "Bruto:", 40);
-        //        result += SplitInParts($"{item.Value.Pdv.ToString("00.00")} din", "PDV:", 40);
-        //        result += SplitInParts($"{item.Value.Net.ToString("00.00")} din", "Neto:", 40);
+            foreach (KeyValuePair<string, ReportTax> item in reportTaxes)
+            {
+                result += SplitInParts($"{item.Key} ({item.Value.Rate}%)", "PDV grupa:", 36);
+                result += SplitInParts($"{item.Value.Gross.ToString("00.00")} din", "Bruto:", 36);
+                result += SplitInParts($"{item.Value.Pdv.ToString("00.00")} din", "PDV:", 36);
+                result += SplitInParts($"{item.Value.Net.ToString("00.00")} din", "Neto:", 36);
 
-        //        result += "                                        \r\n";
+                result += "                                        \r\n";
 
-        //        totalGross += item.Value.Gross;
-        //        totalPdv += item.Value.Pdv;
-        //        totalNet += item.Value.Net;
-        //    }
+                totalGross += item.Value.Gross;
+                totalPdv += item.Value.Pdv;
+                totalNet += item.Value.Net;
+            }
 
-        //    result += "---------------- Ukupno ----------------\r\n";
-        //    result += SplitInParts($"{totalGross.ToString("00.00")} din", "Bruto:", 40);
-        //    result += SplitInParts($"{totalPdv.ToString("00.00")} din", "PDV:", 40);
-        //    result += SplitInParts($"{totalNet.ToString("00.00")} din", "Neto:", 40);
+            result += "-------------- Ukupno --------------\r\n";
+            result += SplitInParts($"{totalGross.ToString("00.00")} din", "Bruto:", 36);
+            result += SplitInParts($"{totalPdv.ToString("00.00")} din", "PDV:", 36);
+            result += SplitInParts($"{totalNet.ToString("00.00")} din", "Neto:", 36);
 
-        //    return result;
-        //}
+            return result;
+        }
         private static string ReportPayments(List<Payment> payments)
         {
             string result = string.Empty;

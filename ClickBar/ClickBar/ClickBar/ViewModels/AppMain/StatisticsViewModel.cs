@@ -28,7 +28,8 @@ namespace ClickBar.ViewModels.AppMain
         private bool _isCheckedKEP;
         private bool _isCheckedRefaund;
         private bool _isCheckedInventoryStatus;
-        private bool _isCheckedLagerLista; 
+        private bool _isCheckedLagerLista;
+        private bool _isCheckedDPU;
         private bool _isCheckedAddEditSupplier;
         private bool _isCheckedCalculation;
         private bool _isCheckedViewCalculation; 
@@ -139,6 +140,15 @@ namespace ClickBar.ViewModels.AppMain
             {
                 _isCheckedLagerLista = value;
                 OnPropertyChange(nameof(IsCheckedLagerLista));
+            }
+        }
+        public bool IsCheckedDPU
+        {
+            get { return _isCheckedDPU; }
+            set
+            {
+                _isCheckedDPU = value;
+                OnPropertyChange(nameof(IsCheckedDPU));
             }
         }
         public bool IsCheckedViewCalculation
@@ -276,8 +286,9 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedPocetnoStanje = false;
             IsCheckedNorm = false;
             IsCheckedFirma = false;
-            IsCheckedPartner = false; 
+            IsCheckedPartner = false;
             IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
@@ -301,6 +312,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedFirma = false;
             IsCheckedPartner = false;
             IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
@@ -324,6 +336,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedFirma = false;
             IsCheckedPartner = false;
             IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
@@ -347,6 +360,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedFirma = false;
             IsCheckedPartner = false;
             IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
@@ -370,6 +384,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedFirma = false;
             IsCheckedPartner = false;
             IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
@@ -393,6 +408,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedFirma = false;
             IsCheckedPartner = false;
             IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
@@ -416,6 +432,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedFirma = false;
             IsCheckedPartner = false;
             IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
@@ -439,6 +456,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedFirma = false;
             IsCheckedPartner = false;
             IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
@@ -462,6 +480,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedFirma = false;
             IsCheckedPartner = false;
             IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
@@ -485,6 +504,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedFirma = false;
             IsCheckedPartner = false;
             IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
@@ -508,6 +528,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedFirma = false;
             IsCheckedPartner = false;
             IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
@@ -531,6 +552,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedFirma = false;
             IsCheckedPartner = false;
             IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
@@ -554,6 +576,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedFirma = false;
             IsCheckedPartner = false;
             IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
@@ -577,6 +600,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedFirma = true;
             IsCheckedPartner = false;
             IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
@@ -600,6 +624,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedFirma = false;
             IsCheckedPartner = true;
             IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
@@ -623,6 +648,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedFirma = false;
             IsCheckedPartner = false;
             IsCheckedLagerLista = true;
+            IsCheckedDPU = false;
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
@@ -646,6 +672,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedFirma = false;
             IsCheckedPartner = false;
             IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
             IsCheckedRadnici = true;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
@@ -669,6 +696,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedFirma = false;
             IsCheckedPartner = false;
             IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
             IsCheckedRadnici = false;
             IsCheckedOtpis = true;
             IsCheckedOtpisPreview = false;
@@ -692,9 +720,34 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedFirma = false;
             IsCheckedPartner = false;
             IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = true;
+        }
+        public void CheckedDPU()
+        {
+            CurrentViewModel = new DPU_PeriodicniViewModel(_serviceProvider);
+            IsCheckedInventoryStatus = false;
+            IsCheckedAddEditSupplier = false;
+            IsCheckedCalculation = false;
+            IsCheckedViewCalculation = false;
+            IsCheckedPriceIncrease = false;
+            IsCheckedNivelacija = false;
+            IsCheckedNivelacijaView = false;
+            IsCheckedKnjizenje = false;
+            IsCheckedKEP = false;
+            IsCheckedViewKnjizenje = false;
+            IsCheckedRefaund = false;
+            IsCheckedPocetnoStanje = false;
+            IsCheckedNorm = false;
+            IsCheckedFirma = false;
+            IsCheckedPartner = false;
+            IsCheckedLagerLista = false;
+            IsCheckedDPU = true;
+            IsCheckedRadnici = false;
+            IsCheckedOtpis = false;
+            IsCheckedOtpisPreview = false;
         }
 
         #endregion Public methods

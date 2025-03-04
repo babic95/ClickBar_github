@@ -1890,7 +1890,7 @@ namespace ClickBar_Printer.PaperFormat
                 //float xL = 18.346456693F;
                 float xL = 30F;
                 float xR = 0;
-                float yL = 18.346456693F;
+                float yL = 28.346456693F;
                 float yR = 28.346456693F;
                 float width = 0; // max width I found through trial and error
                 float height = 0F;

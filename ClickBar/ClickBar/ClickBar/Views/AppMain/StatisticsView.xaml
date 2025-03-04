@@ -81,6 +81,12 @@
                              CommandParameter="{x:Static state:StatisticStateEnumerable.LagerLista}"
                              Content="LAGER LISTA PO DANU"/>
 
+                    <RadioButton x:Name="dpu"
+                             IsChecked="{Binding IsCheckedDPU}"
+                             Command="{Binding UpdateCurrentStatisticViewModelCommand}"
+                             CommandParameter="{x:Static state:StatisticStateEnumerable.DPU}"
+                             Content="DPU"/>
+
                     <RadioButton x:Name="partner"
                              IsChecked="{Binding IsCheckedPartner}"
                              Command="{Binding UpdateCurrentStatisticViewModelCommand}"
@@ -248,6 +254,9 @@
                     </DataTemplate>
                     <DataTemplate DataType="{x:Type statisticMainViewModels:OtpisPreviewViewModel}">
                         <local:OtpisPreviewView/>
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type statisticMainViewModels:DPU_PeriodicniViewModel}">
+                        <local:DPU_PeriodicniView/>
                     </DataTemplate>
                 </ResourceDictionary>
             </Grid.Resources>

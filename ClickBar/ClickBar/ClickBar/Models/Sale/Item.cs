@@ -22,7 +22,8 @@ namespace ClickBar.Models.Sale
         private string _label;
         private string _jm;
         private bool _isCheckedDesableItem;
-        private bool _isCheckedZabraniPopust; 
+        private bool _isCheckedZabraniPopust;
+        private ObservableCollection<ItemZelja> _zelje;
 
         public Item() { }
         public Item(ItemDB itemDB)
@@ -40,20 +41,20 @@ namespace ClickBar.Models.Sale
             IsCheckedDesableItem = itemDB.DisableItem == 0 ? false : true;
             IsCheckedZabraniPopust = itemDB.IsCheckedZabraniPopust == 0 ? false : true;
 
-            //Zelje = new ObservableCollection<ItemZelja>();
-            //if (zeljeDB != null &&
-            //    zeljeDB.Any())
-            //{
-            //    zeljeDB.ToList().ForEach(zeljaDB =>
-            //    {
-            //        Zelje.Add(new ItemZelja()
-            //        {
-            //            Id = zeljaDB.Id,
-            //            ItemId = zeljaDB.ItemId,
-            //            Zelja = zeljaDB.Zelja
-            //        });
-            //    });
-            //}
+            Zelje = new ObservableCollection<ItemZelja>();
+            if (itemDB.Zelje != null &&
+                itemDB.Zelje.Any())
+            {
+                foreach(var zeljaDB in itemDB.Zelje)
+                {
+                    Zelje.Add(new ItemZelja()
+                    {
+                        Id = zeljaDB.Id,
+                        ItemId = zeljaDB.ItemId,
+                        Zelja = zeljaDB.Zelja
+                    });
+                }
+            }
         }
         public string Id
         {
@@ -169,6 +170,15 @@ namespace ClickBar.Models.Sale
             {
                 _isCheckedZabraniPopust = value;
                 OnPropertyChange(nameof(IsCheckedZabraniPopust));
+            }
+        }
+        public ObservableCollection<ItemZelja> Zelje
+        {
+            get { return _zelje; }
+            set
+            {
+                _zelje = value;
+                OnPropertyChange(nameof(Zelje));
             }
         }
     }

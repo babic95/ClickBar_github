@@ -133,6 +133,7 @@ namespace ClickBar
             services.AddTransient<RefaundViewModel>();
             services.AddTransient<ViewCalculationViewModel>();
             services.AddTransient<ViewNivelacijaViewModel>();
+            services.AddTransient<DPU_PeriodicniViewModel>(); 
 
             // Registracija prozora
             services.AddSingleton<MainWindow>();

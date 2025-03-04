@@ -5,6 +5,7 @@ using ClickBar.ViewModels.AppMain.Statistic;
 using ClickBar_Common.Enums;
 using ClickBar_DatabaseSQLManager;
 using ClickBar_DatabaseSQLManager.Models;
+using ClickBar_Logging;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -233,6 +234,42 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
 
             knjizenjePazara.Total = knjizenjePazara.NormalSaleCash + knjizenjePazara.NormalSaleCard + knjizenjePazara.NormalSaleWireTransfer -
                 knjizenjePazara.NormalRefundCash - knjizenjePazara.NormalRefundCard - knjizenjePazara.NormalRefundWireTransfer;
+
+            var ukupnoIzRacunaPromet  = invoicesDB
+                .Join(paymentInvoices,
+                    invoice => invoice.Id,
+                    payment => payment.InvoiceId,
+                    (invoice, payment) => new { I = invoice, P = payment })
+                .Where(p => p.I.TotalAmount.HasValue &&
+                            p.I.TransactionType.HasValue &&
+                            p.I.TransactionType.Value == (int)ClickBar_Common.Enums.TransactionTypeEnumeration.Sale)
+                .Sum(p => p.I.TotalAmount.Value);
+
+            var ukupnoIzRacunaRef = invoicesDB
+                .Join(paymentInvoices,
+                    invoice => invoice.Id,
+                    payment => payment.InvoiceId,
+                    (invoice, payment) => new { I = invoice, P = payment })
+                .Where(p => p.I.TotalAmount.HasValue &&
+                            p.I.TransactionType.HasValue &&
+                            p.I.TransactionType.Value == (int)ClickBar_Common.Enums.TransactionTypeEnumeration.Refund)
+                .Sum(p => p.I.TotalAmount.Value);
+
+
+            var uk = ukupnoIzRacunaPromet - ukupnoIzRacunaRef;
+
+            foreach (var invoiceDB in invoicesDB)
+            {
+                var paymentInvoiceTotal = paymentInvoices.Where(p => p.InvoiceId == invoiceDB.Id).Sum(p => p.Amout);
+
+                if(invoiceDB.TotalAmount != paymentInvoiceTotal)
+                {
+                    int a = 2;
+                    Log.Debug($"NE SLAZE SE PAZAR I UPLATA: {invoiceDB.Id} -> ukupan pazar {invoiceDB.TotalAmount} uplaceno {paymentInvoiceTotal}");
+
+                    MessageBox.Show($"Ne slaze se pazar i uplata za račun {invoiceDB.InvoiceNumberResult}", "Greska", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
         }
     }
 }

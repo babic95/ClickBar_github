@@ -43,19 +43,19 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
 
                     if (result == MessageBoxResult.Yes)
                     {
-                        var zeljaDB = _currentViewModel.DbContext.Zelje.Find(idZelje);
+                        var zeljaDB = _currentViewModel.DbContext.Zelje.FirstOrDefault(z => z.Id == idZelje);
 
                         if (zeljaDB != null)
                         {
                             _currentViewModel.DbContext.Zelje.Remove(zeljaDB);
                             _currentViewModel.DbContext.SaveChanges();
+                        }
 
-                            var zeljaZaBrisanje = _currentViewModel.Zelje.FirstOrDefault(z => z.Id == idZelje);
+                        var zeljaZaBrisanje = _currentViewModel.Zelje.FirstOrDefault(z => z.Id == idZelje);
 
-                            if (zeljaZaBrisanje != null)
-                            {
-                                _currentViewModel.Zelje.Remove(zeljaZaBrisanje);
-                            }
+                        if (zeljaZaBrisanje != null)
+                        {
+                            _currentViewModel.Zelje.Remove(zeljaZaBrisanje);
                         }
                     }
                 }

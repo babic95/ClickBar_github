@@ -18,12 +18,23 @@ try
     }
 
     // Konfiguracija servisa
-    string connectionString = SettingsManager.Instance.GetConnectionString();
-    builder.Services.AddDbContext<SqlServerDbContext>(options =>
-        options.UseSqlServer(connectionString));
+    string databaseConnectionString = SettingsManager.Instance.GetConnectionString();
 
-    builder.Services.AddDbContext<SqliteDrljaDbContext>(options =>
-        options.UseSqlite($"Data Source={pathToDrljaDB}"));
+    builder.Services.AddDbContext<SqlServerDbContext>(options =>
+        options.UseSqlServer(databaseConnectionString, sqlOptions =>
+        {
+            sqlOptions.EnableRetryOnFailure();
+        }));
+
+    try
+    {
+        builder.Services.AddDbContext<SqliteDrljaDbContext>(options =>
+            options.UseSqlite($"Data Source={pathToDrljaDB}"));
+    }
+    catch(Exception ex)
+    {
+        Log.Error("Main - Main -> greska prilikom dodavanja SqliteDrljaDbContext: ", ex);
+    }
 
     builder.Services.AddControllers();
     builder.Services.AddEndpointsApiExplorer();

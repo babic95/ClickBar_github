@@ -52,6 +52,9 @@
     <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\Radnici\WhatDidWorkerSellWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Views\AppMain\Statistic\DPU_PeriodicniView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Views\AppMain\Statistic\LagerListaView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -241,6 +244,9 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\Radnici\WhatDidWorkerSellWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\Statistic\DPU_PeriodicniView.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Views\AppMain\Statistic\LagerListaView.xaml">

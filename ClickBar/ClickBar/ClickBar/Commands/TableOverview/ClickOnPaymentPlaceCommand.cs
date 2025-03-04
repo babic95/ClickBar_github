@@ -173,7 +173,33 @@ namespace ClickBar.Commands.TableOverview
                         paymentPlace.Order.Items.Any())
                     {
                         //_viewModel.SaleViewModel.ItemsInvoice = new ObservableCollection<ItemInvoice>(paymentPlace.Order.Items);
-                        _viewModel.SaleViewModel.OldItemsInvoice = new ObservableCollection<ItemInvoice>(paymentPlace.Order.Items);
+
+                        var ordersToday = _viewModel.DbContext.UnprocessedOrders.Include(u => u.Cashier).Join(_viewModel.DbContext.OrdersToday.Include(o => o.OrderTodayItems),
+                            order => order.Id,
+                            orderToday => orderToday.UnprocessedOrderId,
+                            (order, orderToday) => new {Order = order, OrderToday = orderToday}).Where(ord => ord.Order.PaymentPlaceId == order.TableId && 
+                            ord.OrderToday.OrderTodayItems.Any());
+
+                        if(ordersToday != null && ordersToday.Any())
+                        {
+                            List<OldOrder> oldOrders = new List<OldOrder>();
+                            foreach (var orderToday in ordersToday)
+                            {
+                                OldOrder oldOrder = new OldOrder(orderToday.OrderToday.OrderDateTime,
+                                    orderToday.Order.Cashier.Name,
+                                    orderToday.OrderToday.Name,
+                                    new ObservableCollection<ItemInvoice>(orderToday.OrderToday.OrderTodayItems.Select(oti => new ItemInvoice(
+                                        new Item(_viewModel.DbContext.Items.FirstOrDefault(i => i.Id == oti.ItemId)),
+                                        oti.Quantity
+                                    ))));
+
+                                oldOrders.Add(oldOrder);
+                            }
+
+                            _viewModel.SaleViewModel.OldOrders = oldOrders.Any() ? new ObservableCollection<OldOrder>(oldOrders.OrderBy(o => o.OrderDateTime)) : 
+                                new ObservableCollection<OldOrder>();
+                        }
+
                         _viewModel.SaleViewModel.TotalAmount = paymentPlace.Total;
                         _viewModel.SaleViewModel.CurrentOrder = new Order(paymentPlace.Id, paymentPlace.PartHallId)
                         {
@@ -186,7 +212,7 @@ namespace ClickBar.Commands.TableOverview
                     }
                     else
                     {
-                        _viewModel.SaleViewModel.OldItemsInvoice = new ObservableCollection<ItemInvoice>();
+                        _viewModel.SaleViewModel.OldOrders = new ObservableCollection<OldOrder>();
                         _viewModel.SaleViewModel.ItemsInvoice = new ObservableCollection<ItemInvoice>();
                         _viewModel.SaleViewModel.TotalAmount = 0;
 
@@ -552,13 +578,14 @@ namespace ClickBar.Commands.TableOverview
                         orderCounterType++;
                     }
 
-                    orderSank.OrderName += orderCounterType.ToString() + "_" + orderCounter.ToString();
+                    orderSank.OrderName += orderCounterType.ToString() + "__" + orderCounter.ToString();
 
                     decimal totalAmount = orderSank.Items.Sum(i => i.TotalAmount);
 
                     OrderTodayDB orderTodayDB = new OrderTodayDB()
                     {
                         Id = Guid.NewGuid().ToString(),
+                        UnprocessedOrderId = unprocessedOrderDB.Id,
                         CashierId = cashierDB.Id,
                         Counter = orderCounter,
                         CounterType = orderCounterType,
@@ -603,13 +630,14 @@ namespace ClickBar.Commands.TableOverview
                         orderCounterType++;
                     }
 
-                    orderKuhinja.OrderName += orderCounterType.ToString() + "_" + orderCounter.ToString();
+                    orderKuhinja.OrderName += orderCounterType.ToString() + "__" + orderCounter.ToString();
 
                     decimal totalAmount = orderKuhinja.Items.Sum(i => i.TotalAmount);
 
                     OrderTodayDB orderTodayDB = new OrderTodayDB()
                     {
                         Id = Guid.NewGuid().ToString(),
+                        UnprocessedOrderId = unprocessedOrderDB.Id,
                         CashierId = cashierDB.Id,
                         Counter = orderCounter,
                         CounterType = orderCounterType,
@@ -683,13 +711,14 @@ namespace ClickBar.Commands.TableOverview
                         orderCounterType++;
                     }
 
-                    orderDrugo.OrderName += orderCounterType.ToString() + "_" + orderCounter.ToString();
+                    orderDrugo.OrderName += orderCounterType.ToString() + "__" + orderCounter.ToString();
 
                     decimal totalAmount = orderDrugo.Items.Sum(i => i.TotalAmount);
 
                     OrderTodayDB orderTodayDB = new OrderTodayDB()
                     {
                         Id = Guid.NewGuid().ToString(),
+                        UnprocessedOrderId = unprocessedOrderDB.Id,
                         CashierId = cashierDB.Id,
                         Counter = orderCounter,
                         CounterType = orderCounterType,
