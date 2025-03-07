@@ -48,8 +48,8 @@ namespace ClickBar.Commands.AppMain.Statistic.DPU
 
                 var itemsInvoice = _currentViewModel.DbContext.ItemInvoices.Include(i => i.Invoice)
                     .Where(x => x.Invoice.SdcDateTime.HasValue &&
-                    x.Invoice.SdcDateTime.Value >= _currentViewModel.FromDate &&
-                    x.Invoice.SdcDateTime.Value <= _currentViewModel.ToDate)
+                    x.Invoice.SdcDateTime.Value.Date >= _currentViewModel.FromDate.Date &&
+                    x.Invoice.SdcDateTime.Value.Date <= _currentViewModel.ToDate.Date)
                     .GroupBy(x => new { x.ItemCode, x.Name })
                     .Select(g => new DPU_Item
                     {
@@ -62,11 +62,23 @@ namespace ClickBar.Commands.AppMain.Statistic.DPU
                     })
                     .ToList();
 
+                var a = _currentViewModel.DbContext.CalculationItems.Include(i => i.Calculation)
+                    .Where(c => c.Calculation.CalculationDate >= _currentViewModel.FromDate &&
+                    c.Calculation.CalculationDate <= _currentViewModel.ToDate);
+
+                var a2 = _currentViewModel.DbContext.CalculationItems.Include(i => i.Calculation)
+                    .Where(c => c.Calculation.CalculationDate <= _currentViewModel.FromDate &&
+                    c.Calculation.CalculationDate >= _currentViewModel.ToDate);
+
+                var a1 = _currentViewModel.DbContext.Calculations
+                    .Where(c => c.CalculationDate >= _currentViewModel.FromDate &&
+                    c.CalculationDate <= _currentViewModel.ToDate);
+
                 var itemsCalculation = _currentViewModel.DbContext.CalculationItems.Include(i => i.Calculation)
                     .Join(_currentViewModel.DbContext.Items,
                     ci => ci.ItemId, i => i.Id, (ci, i) => new { Calculation = ci, Item = i })
-                    .Where(x => x.Calculation.Calculation.CalculationDate >= _currentViewModel.FromDate &&
-                    x.Calculation.Calculation.CalculationDate <= _currentViewModel.ToDate)
+                    .Where(x => x.Calculation.Calculation.CalculationDate.Date >= _currentViewModel.FromDate.Date &&
+                    x.Calculation.Calculation.CalculationDate.Date <= _currentViewModel.ToDate.Date)
                     .GroupBy(x => new { x.Calculation.ItemId, x.Item.Name })
                     .Select(g => new DPU_Item
                     {
@@ -89,7 +101,8 @@ namespace ClickBar.Commands.AppMain.Statistic.DPU
                 // Kombinovanje svih stavki i izračunavanje EndQuantity
                 var combinedItems = started.Select(s =>
                 {
-                    if(s.Id == "000332")
+                    if(s.Id == "000039" ||
+                            s.Id == "000358")
                     {
                         int a = 2;
                     }
@@ -145,7 +158,7 @@ namespace ClickBar.Commands.AppMain.Statistic.DPU
                     calculation => calculation.Id,
                     calculationItem => calculationItem.CalculationId,
                     (calculation, calculationItem) => new { Calculation = calculation, CalculationItem = calculationItem })
-                    .Where(cal => cal.Calculation.CalculationDate.Date > pocetnoStanjeDate.Date &&
+                    .Where(cal => cal.Calculation.CalculationDate.Date >= pocetnoStanjeDate.Date &&
                     cal.Calculation.CalculationDate.Date < _currentViewModel.FromDate);
 
                 var pazar = _currentViewModel.DbContext.Invoices.Join(_currentViewModel.DbContext.ItemInvoices,
@@ -153,7 +166,7 @@ namespace ClickBar.Commands.AppMain.Statistic.DPU
                     invoiceItem => invoiceItem.InvoiceId,
                     (invoice, invoiceItem) => new { Invoice = invoice, InvoiceItem = invoiceItem })
                     .Where(inv => inv.Invoice.SdcDateTime != null &&
-                    inv.Invoice.SdcDateTime.Value.Date > pocetnoStanjeDate.Date &&
+                    inv.Invoice.SdcDateTime.Value.Date >= pocetnoStanjeDate.Date &&
                     inv.Invoice.SdcDateTime.Value.Date < _currentViewModel.FromDate);
 
                 if (_currentViewModel.DbContext.Items != null &&
@@ -161,7 +174,8 @@ namespace ClickBar.Commands.AppMain.Statistic.DPU
                 {
                     foreach (var x in _currentViewModel.DbContext.Items.Where(i => i.IdNorm == null))
                     {
-                        if (x.Id == "000332")
+                        if (x.Id == "000039" ||
+                            x.Id == "000358")
                         {
                             int a = 2;
                         }

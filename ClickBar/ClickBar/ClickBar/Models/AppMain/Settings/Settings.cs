@@ -32,6 +32,7 @@ namespace ClickBar.Models.AppMain.Settings
         private string? _pathToMainDB;
         private string? _hostPC_IP;
         private bool _runPorudzbineServis;
+        private TypeAppEnumeration _typeApp;
 
         public Settings(SettingsFile settingsFile)
         {
@@ -46,6 +47,7 @@ namespace ClickBar.Models.AppMain.Settings
             PathToDrljaKuhinjaDB = settingsFile.PathToDrljaKuhinjaDB;
             PathToMainDB = settingsFile.PathToMainDB;
             HostPC_IP = settingsFile.HostPC_IP;
+            TypeApp = settingsFile.TypeApp;
 
             switch (settingsFile.PrinterFormat)
             {
@@ -76,6 +78,15 @@ namespace ClickBar.Models.AppMain.Settings
             {
                 _runPorudzbineServis = value;
                 OnPropertyChange(nameof(RunPorudzbineServis));
+            }
+        }
+        public TypeAppEnumeration TypeApp
+        {
+            get { return _typeApp; }
+            set
+            {
+                _typeApp = value;
+                OnPropertyChange(nameof(TypeApp));
             }
         }
         public Visibility CancelOrderFromTableVisibility

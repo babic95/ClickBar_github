@@ -39,13 +39,22 @@ namespace ClickBar.ViewModels
             }
             else
             {
-                if (SettingsManager.Instance.EnableSmartCard())
+                var typeApp = SettingsManager.Instance.GetTypeApp();
+
+                if (typeApp == ClickBar_Common.Enums.TypeAppEnumeration.Kuhinja)
                 {
-                    CurrentViewModel = _serviceProvider.GetRequiredService<LoginCardViewModel>();
+
                 }
                 else
                 {
-                    CurrentViewModel = _serviceProvider.GetRequiredService<LoginViewModel>();
+                    if (SettingsManager.Instance.EnableSmartCard())
+                    {
+                        CurrentViewModel = _serviceProvider.GetRequiredService<LoginCardViewModel>();
+                    }
+                    else
+                    {
+                        CurrentViewModel = _serviceProvider.GetRequiredService<LoginViewModel>();
+                    }
                 }
             }
 

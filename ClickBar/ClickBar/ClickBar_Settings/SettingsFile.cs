@@ -33,5 +33,6 @@ namespace ClickBar_Settings
         public string? PathToMainDB { get; set; }
         public string? HostPC_IP { get; set; }
         public bool RunPorudzbineServis { get; set; }
+        public TypeAppEnumeration TypeApp { get; set; }
     }
 }

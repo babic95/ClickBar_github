@@ -4,10 +4,20 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ClickBar.Views.AppMain"
+             xmlns:enums="clr-namespace:ClickBar_Common.Enums;assembly=ClickBar_Common"
              xmlns:nav="clr-namespace:ClickBar.State.Navigators"
+             xmlns:System="clr-namespace:System;assembly=mscorlib"
              xmlns:appmain="clr-namespace:ClickBar.ViewModels.AppMain"
              d:DataContext="{d:DesignInstance Type=appmain:SettingsViewModel}"
              mc:Ignorable="d">
+    <UserControl.Resources>
+        <ObjectDataProvider x:Key="typesApp" MethodName="GetValues"
+                    ObjectType="{x:Type System:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="enums:TypeAppEnumeration"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </UserControl.Resources>
     <UserControl.InputBindings>
         <KeyBinding Key="F2" 
                     Command="{Binding UpdateCurrentViewModelCommand}"
@@ -116,6 +126,13 @@
                                    VerticalContentAlignment="Center"
                                    Height="40"
                                    Margin="0 5 0 5"/>
+                            <Label Content="Tip aplikacije pri pokretanju:"
+                                   FontSize="18"
+                                   Foreground="White"
+                                   HorizontalContentAlignment="Right"
+                                   VerticalContentAlignment="Center"
+                                   Height="40"
+                                   Margin="0 2.5 0 2.5"/>
                             <Label Content="Pokreni servis za porucivanje:"
                                    FontSize="18"
                                    Foreground="White"
@@ -275,8 +292,17 @@
                                       Width="300"
                                       Height="40"
                                       Margin="0 5 0 5"/>
-                            <ComboBox ItemsSource="{Binding AllPrinters}"
+                            <ComboBox ItemsSource="{Binding Source={StaticResource typesApp}}"
                                       SelectedItem="{Binding Settings.PrinterNameSank1}"
+                                      FontSize="18"
+                                      HorizontalAlignment="Center"
+                                      HorizontalContentAlignment="Center"
+                                      VerticalContentAlignment="Center"
+                                      Width="300"
+                                      Height="40"
+                                      Margin="0 5 0 5"/>
+                            <ComboBox ItemsSource="{Binding AllTypesApp}"
+                                      SelectedItem="{Binding Settings.TypeApp, Mode=TwoWay}"
                                       FontSize="18"
                                       HorizontalAlignment="Center"
                                       HorizontalContentAlignment="Center"

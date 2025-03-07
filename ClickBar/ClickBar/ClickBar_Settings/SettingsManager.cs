@@ -110,6 +110,7 @@ namespace ClickBar_Settings
                 _settingsFile.PathToMainDB = settingsFile.PathToMainDB;
                 _settingsFile.HostPC_IP = settingsFile.HostPC_IP;
                 _settingsFile.RunPorudzbineServis = settingsFile.RunPorudzbineServis;
+                _settingsFile.TypeApp = settingsFile.TypeApp;
 
                 SaveSettingsFile();
             }
@@ -143,6 +144,10 @@ namespace ClickBar_Settings
             }
 
             return dataSource + _masterDatabaseConnectionString;
+        }
+        public TypeAppEnumeration GetTypeApp()
+        {
+            return _settingsFile.TypeApp == null ? TypeAppEnumeration.Table : _settingsFile.TypeApp;
         }
         public bool GetRunPorudzbineServis()
         {
@@ -448,6 +453,7 @@ namespace ClickBar_Settings
                 PathToMainDB = null,
                 HostPC_IP = null,
                 RunPorudzbineServis = false,
+                TypeApp = TypeAppEnumeration.Table
             };
 #else
             _settingsFile = new SettingsFile()
@@ -476,6 +482,7 @@ namespace ClickBar_Settings
                 PathToMainDB = null,
                 HostPC_IP = null,
                 RunPorudzbineServis = false,
+                TypeApp = TypeAppEnumeration.Table
             };
 
 #endif

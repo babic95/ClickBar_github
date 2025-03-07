@@ -52,7 +52,8 @@ namespace ClickBar.Commands.AppMain.Settings
                     PathToMainDB = _currentViewModel.Settings.PathToMainDB,
                     HostPC_IP = _currentViewModel.Settings.HostPC_IP,
                     RunPorudzbineServis = _currentViewModel.Settings.RunPorudzbineServis,
-                    //UrlToLPFR = _currentViewModel.Settings.UrlToLPFR
+                    //UrlToLPFR = _currentViewModel.Settings.UrlToLPFR,
+                    TypeApp = _currentViewModel.Settings.TypeApp
                 };
 
                 if (_currentViewModel.Settings.Pos80mmFormat)
