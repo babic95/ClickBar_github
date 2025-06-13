@@ -26,7 +26,8 @@ namespace ClickBar_Report
             EndReport = endReport;
 
             _includeItems = includeItems;
-            _invoices = sqliteDbContext.GetInvoiceForReport(startReport, endReport);
+
+            _invoices = _sqliteDbContext.GetInvoiceForReport(startReport, endReport);
             
             SetReport();
         }
@@ -41,7 +42,9 @@ namespace ClickBar_Report
             EndReport = endReport;
 
             _includeItems = includeItems;
-            _invoices = sqliteDbContext.GetInvoiceForReport(startReport, endReport, smartCard);
+
+            _invoices = _sqliteDbContext.GetInvoiceForReport(startReport, endReport, smartCard);
+            
             SetReport();
         }
         public Report(SqlServerDbContext sqliteDbContext,
@@ -55,26 +58,27 @@ namespace ClickBar_Report
             Cashier = cashier;
 
             _includeItems = false;
-            _invoices = sqliteDbContext.GetInvoiceForReport(startReport, endReport, cashier);
 
-            var refundInvoices = sqliteDbContext.Invoices.Where(invoice => invoice.TransactionType == 1 &&
-            invoice.InvoiceType == 0 &&
-            invoice.SdcDateTime >= startReport &&
-            invoice.SdcDateTime <= endReport);
+                _invoices = _sqliteDbContext.GetInvoiceForReport(startReport, endReport, cashier);
 
-            if (refundInvoices != null &&
-                refundInvoices.Any())
-            {
-                foreach(var refundInvoiceDB in refundInvoices )
+                var refundInvoices = _sqliteDbContext.Invoices.Where(invoice => invoice.TransactionType == 1 &&
+                invoice.InvoiceType == 0 &&
+                invoice.SdcDateTime >= startReport &&
+                invoice.SdcDateTime <= endReport);
+
+                if (refundInvoices != null &&
+                    refundInvoices.Any())
                 {
-                    var invoice = _invoices.FirstOrDefault(i => i.InvoiceNumberResult == refundInvoiceDB.ReferentDocumentNumber);
-
-                    if (invoice != null)
+                    foreach (var refundInvoiceDB in refundInvoices)
                     {
-                        _invoices.Remove(invoice);
+                        var invoice = _invoices.FirstOrDefault(i => i.InvoiceNumberResult == refundInvoiceDB.ReferentDocumentNumber);
+
+                        if (invoice != null)
+                        {
+                            _invoices.Remove(invoice);
+                        }
                     }
                 }
-            }
             SetReport();
         }
         #endregion Constructors
@@ -111,12 +115,12 @@ namespace ClickBar_Report
             NormalSalePDV = 0;
             NormalRefundPDV = 0;
 
-            foreach(var invoice in _invoices)
+            foreach (var invoice in _invoices)
             {
                 if (invoice.SdcDateTime.HasValue)
                 {
                     await SetReportTaxes(invoice);
-                    
+
                     await SetPayments(invoice);
                     if (_includeItems)
                     {
@@ -156,7 +160,6 @@ namespace ClickBar_Report
                         ReportCashiers.Add(cashier.Name, total);
                     }
                 }
-
             }
         }
         private decimal CalculateGross(decimal rate, decimal amountRate)
@@ -394,11 +397,11 @@ namespace ClickBar_Report
         }
         private async Task SetReportItems(InvoiceDB invoice)
         {
-            var items = await _sqliteDbContext.GetAllItemsFromInvoice(invoice.Id);
+            var items = _sqliteDbContext.ItemInvoices.Where(i => i.InvoiceId == invoice.Id);//.GetAllItemsFromInvoice(invoice.Id);
 
             if (items.Any())
             {
-                items.ForEach(item =>
+                foreach (var item in items)
                 {
                     var itemDB = _sqliteDbContext.Items.Find(item.ItemCode);
 
@@ -406,81 +409,87 @@ namespace ClickBar_Report
                     {
                         var groupDB = _sqliteDbContext.ItemGroups.Find(itemDB.IdItemGroup);
 
-                        IEnumerable<ItemInNormDB>? norms;
-                        if (itemDB.IdNorm != null &&
-                        itemDB.IdNorm.HasValue &&
-                        itemDB.IdNorm.Value > 0)
-                        {
-                            norms = _sqliteDbContext.ItemsInNorm.Where(it => it.IdNorm == itemDB.IdNorm);
+                        //IEnumerable<ItemInNormDB>? norms;
+                        //if (itemDB.IdNorm != null &&
+                        //itemDB.IdNorm.HasValue &&
+                        //itemDB.IdNorm.Value > 0)
+                        //{
+                        //    norms = _sqliteDbContext.ItemsInNorm.Where(it => it.IdNorm == itemDB.IdNorm);
 
-                            if (norms != null &&
-                            norms.Any())
-                            {
-                                norms.ToList().ForEach(norm =>
-                                {
-                                    var itemNormDB = _sqliteDbContext.Items.Find(norm.IdItem);
+                        //    if (norms != null &&
+                        //    norms.Any())
+                        //    {
+                        //        foreach (var norm in norms)
+                        //        {
+                        //            var itemNormDB = _sqliteDbContext.Items.Find(norm.IdItem);
 
-                                    if (itemNormDB != null)
-                                    {
-                                        var itemNormGroupDB = _sqliteDbContext.ItemGroups.Find(itemNormDB.IdItemGroup);
+                        //            if (itemNormDB != null)
+                        //            {
+                        //                if(itemNormDB.Id == "000088")
+                        //                {
+                        //                    var aa = norm.Quantity;
+                        //                    int a = 2;
+                        //                }
 
-                                        if (itemNormGroupDB != null)
-                                        {
-                                            if (ReportItems.ContainsKey(itemNormGroupDB.Name))
-                                            {
-                                                if (ReportItems[itemNormGroupDB.Name].ContainsKey(itemNormDB.Id))
-                                                {
-                                                    if (invoice.TransactionType == (int)TransactionTypeEnumeration.Sale)
-                                                    {
-                                                        ReportItems[itemNormGroupDB.Name][itemNormDB.Id].Quantity += (decimal)norm.Quantity;
-                                                        ReportItems[itemNormGroupDB.Name][itemNormDB.Id].Gross += 0;
-                                                    }
-                                                    else
-                                                    {
-                                                        ReportItems[itemNormGroupDB.Name][itemNormDB.Id].Quantity -= (decimal)norm.Quantity;
-                                                        ReportItems[itemNormGroupDB.Name][itemNormDB.Id].Gross -= 0;
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    ReportItem reportItem = new ReportItem()
-                                                    {
-                                                        Name = itemNormDB.Name,
-                                                        Quantity = (decimal)norm.Quantity,
-                                                        Gross = 0
-                                                    };
+                        //                var itemNormGroupDB = _sqliteDbContext.ItemGroups.Find(itemNormDB.IdItemGroup);
 
-                                                    if (invoice.TransactionType == (int)TransactionTypeEnumeration.Refund)
-                                                    {
-                                                        reportItem.Quantity *= -1;
-                                                    }
+                        //                if (itemNormGroupDB != null)
+                        //                {
+                        //                    if (ReportItems.ContainsKey(itemNormGroupDB.Name))
+                        //                    {
+                        //                        if (ReportItems[itemNormGroupDB.Name].ContainsKey(itemNormDB.Id))
+                        //                        {
+                        //                            if (invoice.TransactionType == (int)TransactionTypeEnumeration.Sale)
+                        //                            {
+                        //                                ReportItems[itemNormGroupDB.Name][itemNormDB.Id].Quantity += (decimal)norm.Quantity;
+                        //                                ReportItems[itemNormGroupDB.Name][itemNormDB.Id].Gross += 0;
+                        //                            }
+                        //                            else
+                        //                            {
+                        //                                ReportItems[itemNormGroupDB.Name][itemNormDB.Id].Quantity -= (decimal)norm.Quantity;
+                        //                                ReportItems[itemNormGroupDB.Name][itemNormDB.Id].Gross -= 0;
+                        //                            }
+                        //                        }
+                        //                        else
+                        //                        {
+                        //                            ReportItem reportItem = new ReportItem()
+                        //                            {
+                        //                                Name = itemNormDB.Name,
+                        //                                Quantity = (decimal)norm.Quantity,
+                        //                                Gross = 0
+                        //                            };
 
-                                                    ReportItems[itemNormGroupDB.Name].Add(itemNormDB.Id, reportItem);
-                                                }
-                                            }
-                                            else
-                                            {
-                                                Dictionary<string, ReportItem> pairs = new Dictionary<string, ReportItem>();
-                                                ReportItem reportItem = new ReportItem()
-                                                {
-                                                    Name = itemNormDB.Name,
-                                                    Quantity = (decimal)norm.Quantity,
-                                                    Gross = 0
-                                                };
+                        //                            if (invoice.TransactionType == (int)TransactionTypeEnumeration.Refund)
+                        //                            {
+                        //                                reportItem.Quantity *= -1;
+                        //                            }
 
-                                                if (invoice.TransactionType == (int)TransactionTypeEnumeration.Refund)
-                                                {
-                                                    reportItem.Quantity *= -1;
-                                                }
+                        //                            ReportItems[itemNormGroupDB.Name].Add(itemNormDB.Id, reportItem);
+                        //                        }
+                        //                    }
+                        //                    else
+                        //                    {
+                        //                        Dictionary<string, ReportItem> pairs = new Dictionary<string, ReportItem>();
+                        //                        ReportItem reportItem = new ReportItem()
+                        //                        {
+                        //                            Name = itemNormDB.Name,
+                        //                            Quantity = (decimal)norm.Quantity,
+                        //                            Gross = 0
+                        //                        };
 
-                                                pairs.Add(itemNormDB.Id, reportItem);
-                                                ReportItems.Add(itemNormGroupDB.Name, pairs);
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-                        }
+                        //                        if (invoice.TransactionType == (int)TransactionTypeEnumeration.Refund)
+                        //                        {
+                        //                            reportItem.Quantity *= -1;
+                        //                        }
+
+                        //                        pairs.Add(itemNormDB.Id, reportItem);
+                        //                        ReportItems.Add(itemNormGroupDB.Name, pairs);
+                        //                    }
+                        //                }
+                        //            }
+                        //        }
+                        //    }
+                        //}
 
                         if (ReportItems.ContainsKey(groupDB.Name))
                         {
@@ -535,7 +544,7 @@ namespace ClickBar_Report
                             ReportItems.Add(groupDB.Name, pairs);
                         }
                     }
-                });
+                }
             }
         }
         //private async Task SetInvoiceTypes(InvoiceDB invoice)

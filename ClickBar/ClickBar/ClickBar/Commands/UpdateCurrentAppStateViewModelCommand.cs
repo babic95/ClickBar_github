@@ -29,7 +29,7 @@ namespace ClickBar.Commands
             return true;
         }
 
-        public void Execute(object parameter)
+        public async void Execute(object parameter)
         {
             if (parameter is AppStateParameter appState)
             {
@@ -56,6 +56,8 @@ namespace ClickBar.Commands
                         {
                             var appMainViewModel = _serviceProvider.GetRequiredService<AppMainViewModel>();
                             // Set additional properties if needed
+
+                            appMainViewModel.SetCashier();
                             _navigator.CurrentViewModel = appMainViewModel;
                         }
                         break;
@@ -64,6 +66,7 @@ namespace ClickBar.Commands
                         {
                             if (!(_navigator.CurrentViewModel is SaleViewModel))
                             {
+                                saleViewModel.SetCashier();
                                 _navigator.CurrentViewModel = saleViewModel;
                             }
                         }
@@ -73,6 +76,7 @@ namespace ClickBar.Commands
                             {
                                 var newSaleViewModel = _serviceProvider.GetRequiredService<SaleViewModel>();
                                 // Set additional properties if needed
+                                newSaleViewModel.SetCashier();
                                 _navigator.CurrentViewModel = newSaleViewModel;
                             }
                         }
@@ -82,15 +86,45 @@ namespace ClickBar.Commands
                         {
                             if (!(_navigator.CurrentViewModel is TableOverviewViewModel))
                             {
-                                _navigator.CurrentViewModel = tableOverviewSaleViewModel.TableOverviewViewModel;
+
+                                var tableOverviewViewModel = _serviceProvider.GetRequiredService<TableOverviewViewModel>();
+
+                                if(appState.TableId > 0)
+                                {
+                                    await tableOverviewViewModel.UpdateTableNoTask(appState.TableId);
+
+                                    if (appState.SecondTableId.HasValue &&
+                                        appState.SecondTableId.Value > 0)
+                                    {
+                                        await tableOverviewViewModel.UpdateTableNoTask(appState.SecondTableId.Value);
+                                    }
+                                }
+
+                                tableOverviewViewModel.SaleViewModel.SetCashier();
+                                _navigator.CurrentViewModel = tableOverviewViewModel;// tableOverviewSaleViewModel.TableOverviewViewModel;
                             }
                         }
                         else
                         {
                             if (!(_navigator.CurrentViewModel is TableOverviewViewModel))
                             {
-                                var newTableOverviewSaleViewModel = _serviceProvider.GetRequiredService<SaleViewModel>();
-                                _navigator.CurrentViewModel = newTableOverviewSaleViewModel.TableOverviewViewModel;
+                                //var newTableOverviewSaleViewModel = _serviceProvider.GetRequiredService<SaleViewModel>();
+                                var tableOverviewViewModel = _serviceProvider.GetRequiredService<TableOverviewViewModel>();
+
+                                if (appState.TableId > 0)
+                                {
+                                    await tableOverviewViewModel.UpdateTableNoTask(appState.TableId);
+
+                                    if (appState.SecondTableId.HasValue &&
+                                        appState.SecondTableId.Value > 0)
+                                    {
+                                        await tableOverviewViewModel.UpdateTableNoTask(appState.SecondTableId.Value);
+                                    }
+                                }
+
+                                //tableOverviewViewModel.CheckDatabaseStatusStolovaNoTask();
+                                tableOverviewViewModel.SaleViewModel.SetCashier();
+                                _navigator.CurrentViewModel = tableOverviewViewModel;// newTableOverviewSaleViewModel.TableOverviewViewModel;
                             }
                         }
                         break;

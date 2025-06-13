@@ -16,6 +16,7 @@ namespace ClickBar_Database
         {
             _dbContext = dbContext;
             string pathToDB = SettingsManager.Instance.GetPathToDB();
+            Log.Debug("ovo je connection string do stare baze - " + pathToDB);
             using (SqliteDbContext sqliteDbContext = new SqliteDbContext())
             {
                 var isConnected = sqliteDbContext.ConfigureDatabase(pathToDB).Result;
@@ -27,7 +28,7 @@ namespace ClickBar_Database
             }
         }
 
-        public void MigrateData()
+        public bool MigrateData()
         {
             try
             {
@@ -199,24 +200,28 @@ namespace ClickBar_Database
                         catch (Exception ex)
                         {
                             transaction.Rollback();
-                            Console.WriteLine("An error occurred while saving the entity changes.");
-                            Console.WriteLine("Error Message: " + ex.Message);
+                            Log.Error("An error occurred while saving the entity changes.");
+                            Log.Error("Error Message: " + ex.Message);
                             if (ex.InnerException != null)
                             {
-                                Console.WriteLine("Inner Exception Message: " + ex.InnerException.Message);
+                                Log.Error("Inner Exception Message: " + ex.InnerException.Message);
                             }
+
+                            return false;
                         }
                     }
                 }
+                return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("An error occurred while saving the entity changes.");
-                Console.WriteLine("Error Message: " + ex.Message);
+                Log.Error("An error occurred while saving the entity changes.");
+                Log.Error("Error Message: " + ex.Message);
                 if (ex.InnerException != null)
                 {
-                    Console.WriteLine("Inner Exception Message: " + ex.InnerException.Message);
+                    Log.Error("Inner Exception Message: " + ex.InnerException.Message);
                 }
+                return false;
             }
         }
 

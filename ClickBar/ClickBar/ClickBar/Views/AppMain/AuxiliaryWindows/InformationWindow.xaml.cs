@@ -1,6 +1,12 @@
-﻿using ClickBar_Settings;
+﻿using ClickBar.ViewModels;
+using ClickBar_Common.Enums;
+using ClickBar_Database;
+using ClickBar_Logging;
+using ClickBar_Settings;
+using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
+using System.Data.SQLite;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,9 +26,11 @@ namespace ClickBar.Views.AppMain.AuxiliaryWindows
     /// </summary>
     public partial class InformationWindow : Window
     {
-        public InformationWindow()
+        public InformationWindow(AppMainViewModel appMainViewModel)
         {
             InitializeComponent();
+
+            DataContext = appMainViewModel;
 
             SerialNumber.Text = SettingsManager.Instance.GetPosNumber();
             Version.Text = SettingsManager.Instance.GetPosVersion();

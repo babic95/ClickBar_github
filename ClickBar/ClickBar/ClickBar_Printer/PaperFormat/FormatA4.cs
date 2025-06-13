@@ -1070,7 +1070,7 @@ namespace ClickBar_Printer.PaperFormat
 
                 _nivelacijaItems = GetNivelacijaItems(nivelacija);
                 _end = $"UKUPNO:" +
-                    $"{string.Format("{0:#,##0.00}", _totalQuantity).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(30)}" +
+                    $"{string.Format("{0:#,##0.000}", _totalQuantity).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(30)}" +
                     $"{string.Format("{0:#,##0.00}", _totalOldValue).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(37)}" +
                     $"{string.Format("{0:#,##0.00}", _totalNewValue).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(14)}" +
                     $"{string.Format("{0:#,##0.00}", _totalNivelacija).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(14)}" +
@@ -2736,7 +2736,7 @@ namespace ClickBar_Printer.PaperFormat
 
                             string counter = CenterString(_dnevniPazarCounter++.ToString(), 4, false).PadRight(8);
                             string jm = item.JM.PadLeft(6);
-                            string quantity = string.Format("{0:#,##0.00}", item.Quantity).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(13);
+                            string quantity = string.Format("{0:#,##0.000}", item.Quantity).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(13);
                             string MPC = string.Format("{0:#,##0.00}", item.MPC_Original).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(16);
                             string MPC_Average = string.Format("{0:#,##0.00}", item.MPC_Average).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(16);
                             string totalAmount = string.Format("{0:#,##0.00}", item.TotalAmount).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(16);
@@ -2815,7 +2815,7 @@ namespace ClickBar_Printer.PaperFormat
 
                 string counter = CenterString(_dnevniPazarCounter++.ToString(), 4, false).PadRight(8);
                 string inputPrice = string.Format("{0:#,##0.00}", item.InputUnitPrice).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(13);
-                string quantity = string.Format("{0:#,##0.00}", item.Quantity).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(21);
+                string quantity = string.Format("{0:#,##0.000}", item.Quantity).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(21);
                 string jm = item.Jm.PadLeft(11);
                 string sellingPrice = string.Format("{0:#,##0.00}", item.SellingUnitPrice).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(15);
                 string totalAmount = string.Format("{0:#,##0.00}", item.TotalAmout).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(22);
@@ -3056,7 +3056,7 @@ namespace ClickBar_Printer.PaperFormat
                 }
 
                 string jm = item.Jm.PadLeft(6);
-                string quantity = string.Format("{0:#,##0.00}", item.Quantity).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(13);
+                string quantity = string.Format("{0:#,##0.000}", item.Quantity).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(13);
                 string staraCena = string.Format("{0:#,##0.00}", item.OldPrice).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(12);
                 string novaCena = string.Format("{0:#,##0.00}", item.NewPrice).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(12);
                 string staraVrednost = string.Format("{0:#,##0.00}", item.OldTotalValue).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(13);

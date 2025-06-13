@@ -32,6 +32,7 @@ namespace ClickBar_DatabaseSQLManager.Models
         public decimal AlarmQuantity { get; set; }
         public int DisableItem { get; set; }
         public int IsCheckedZabraniPopust { get; set; }
+        public int Rb { get; set; }
 
         public virtual ItemGroupDB ItemGroupNavigation { get; set; } = null!;
         public virtual NormDB Norm { get; set; } = null!;

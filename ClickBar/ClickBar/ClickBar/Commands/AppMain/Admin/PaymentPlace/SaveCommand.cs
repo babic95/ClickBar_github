@@ -39,58 +39,64 @@ namespace ClickBar.Commands.AppMain.Admin
                     {
                         await Task.Run(() =>
                         {
-                            _currentViewModel.NormalPaymentPlaces.ToList().ForEach(p =>
+                            using (var dbContext = _currentViewModel.DbContextFactory.CreateDbContext())
                             {
-                                var paymentPlace = _currentViewModel.DbContext.PaymentPlaces.Find(p.Id);
+                                foreach (var p in _currentViewModel.NormalPaymentPlaces)
+                                {
+                                    var paymentPlace = dbContext.PaymentPlaces.Find(p.Id);
 
-                                if (paymentPlace != null)
-                                {
-                                    paymentPlace.TopCanvas = p.Top;
-                                    paymentPlace.LeftCanvas = p.Left;
-                                }
-                                else
-                                {
-                                    PaymentPlaceDB paymentPlaceDB = new PaymentPlaceDB()
+                                    if (paymentPlace != null)
                                     {
-                                        LeftCanvas = p.Left,
-                                        TopCanvas = p.Top,
-                                        Height = p.Height,
-                                        Width = p.Width,
-                                        PartHallId = p.PartHallId,
-                                        Type = (int)p.Type
-                                    };
-                                    _currentViewModel.DbContext.PaymentPlaces.Add(paymentPlaceDB);
+                                        paymentPlace.TopCanvas = p.Top;
+                                        paymentPlace.LeftCanvas = p.Left;
+                                    }
+                                    else
+                                    {
+                                        PaymentPlaceDB paymentPlaceDB = new PaymentPlaceDB()
+                                        {
+                                            LeftCanvas = p.Left,
+                                            TopCanvas = p.Top,
+                                            Height = p.Height,
+                                            Width = p.Width,
+                                            PartHallId = p.PartHallId,
+                                            Type = (int)p.Type
+                                        };
+                                        dbContext.PaymentPlaces.Add(paymentPlaceDB);
+                                    }
+                                    dbContext.SaveChanges();
                                 }
-                                _currentViewModel.DbContext.SaveChanges();
-                            });
+                            }
 
                         });
                         await Task.Run(() =>
                         {
-                            _currentViewModel.RoundPaymentPlaces.ToList().ForEach(p =>
+                            using (var dbContext = _currentViewModel.DbContextFactory.CreateDbContext())
                             {
-                                var paymentPlace = _currentViewModel.DbContext.PaymentPlaces.Find(p.Id);
+                                foreach (var p in _currentViewModel.RoundPaymentPlaces)
+                                {
+                                    var paymentPlace = dbContext.PaymentPlaces.Find(p.Id);
 
-                                if (paymentPlace != null)
-                                {
-                                    paymentPlace.TopCanvas = p.Top;
-                                    paymentPlace.LeftCanvas = p.Left;
-                                }
-                                else
-                                {
-                                    PaymentPlaceDB paymentPlaceDB = new PaymentPlaceDB()
+                                    if (paymentPlace != null)
                                     {
-                                        LeftCanvas = p.Left,
-                                        TopCanvas = p.Top,
-                                        Height = p.Height,
-                                        Width = p.Width,
-                                        PartHallId = p.PartHallId,
-                                        Type = (int)p.Type
-                                    };
-                                    _currentViewModel.DbContext.PaymentPlaces.Add(paymentPlaceDB);
+                                        paymentPlace.TopCanvas = p.Top;
+                                        paymentPlace.LeftCanvas = p.Left;
+                                    }
+                                    else
+                                    {
+                                        PaymentPlaceDB paymentPlaceDB = new PaymentPlaceDB()
+                                        {
+                                            LeftCanvas = p.Left,
+                                            TopCanvas = p.Top,
+                                            Height = p.Height,
+                                            Width = p.Width,
+                                            PartHallId = p.PartHallId,
+                                            Type = (int)p.Type
+                                        };
+                                        dbContext.PaymentPlaces.Add(paymentPlaceDB);
+                                    }
+                                    dbContext.SaveChanges();
                                 }
-                                _currentViewModel.DbContext.SaveChanges();
-                            });
+                            }
                         });
                         MessageBox.Show("Uspešno ste sačuvali izmene?", "Uspešno čuvanje", MessageBoxButton.OK, MessageBoxImage.Information);
                         _currentViewModel.Change = false;

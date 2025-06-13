@@ -2,7 +2,6 @@
 using ClickBar.ViewModels.AppMain.Statistic;
 using ClickBar.ViewModels.Login;
 using ClickBar.ViewModels;
-using ClickBar_Database_Drlja;
 using ClickBar_DatabaseSQLManager;
 using ClickBar_Settings;
 using Microsoft.EntityFrameworkCore;
@@ -47,65 +46,55 @@ namespace ClickBar
             string? pathToDrljaDB = SettingsManager.Instance.GetPathToDrljaKuhinjaDB();
             if (!string.IsNullOrEmpty(pathToDrljaDB))
             {
-                string drljaConnectionString = new SqliteDrljaDbContext().CreateConnectionString(pathToDrljaDB);
-                services.AddDbContext<SqliteDrljaDbContext>(options =>
-                    options.UseSqlite(drljaConnectionString), ServiceLifetime.Scoped);
-                services.AddDbContextFactory<SqliteDrljaDbContext>(options =>
-                    options.UseSqlite(drljaConnectionString), ServiceLifetime.Scoped);
-
                 services.AddScoped<DatabaseInitializer>(provider =>
                     new DatabaseInitializer(
-                        provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>(),
-                        provider.GetRequiredService<IDbContextFactory<SqliteDrljaDbContext>>()
+                        provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>()
                     ));
             }
             else
             {
                 services.AddScoped<DatabaseInitializer>(provider =>
                     new DatabaseInitializer(
-                        provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>(),
-                        null
+                        provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>()
                     ));
             }
 
             // Registracija INavigator sa MainViewModel
             services.AddSingleton<INavigator, MainViewModel>();
-            //services.AddSingleton<MainViewModel>();
 
             // Registracija ViewModel-a sa odgovarajućim DbContext-om
-            services.AddTransient<ActivationViewModel>();
             services.AddTransient<LoginCardViewModel>(provider =>
             {
                 var dbContextFactory = provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
-                var drljaDbContextFactory = provider.GetService<IDbContextFactory<SqliteDrljaDbContext>>();
-                return new LoginCardViewModel(provider, dbContextFactory, drljaDbContextFactory);
+                return new LoginCardViewModel(provider, dbContextFactory);
             });
             services.AddTransient<LoginViewModel>(provider =>
             {
                 var dbContextFactory = provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
-                var drljaDbContextFactory = provider.GetService<IDbContextFactory<SqliteDrljaDbContext>>();
-                return new LoginViewModel(provider, dbContextFactory, drljaDbContextFactory);
+                return new LoginViewModel(provider, dbContextFactory);
             });
-            //services.AddTransient<TableOverviewViewModel>(provider =>
-            //{
-            //    var dbContextFactory = provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
-            //    var drljaDbContextFactory = provider.GetService<IDbContextFactory<SqliteDrljaDbContext>>();
-            //    var saleViewModel = provider.GetRequiredService<SaleViewModel>();
-            //    return new TableOverviewViewModel(provider, dbContextFactory, drljaDbContextFactory, saleViewModel);
-            //});
-            services.AddTransient<SaleViewModel>(provider =>
+            services.AddSingleton<SaleViewModel>(provider =>
             {
                 var dbContextFactory = provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
-                var drljaDbContextFactory = provider.GetService<IDbContextFactory<SqliteDrljaDbContext>>();
-                return new SaleViewModel(provider, dbContextFactory, drljaDbContextFactory);
+                return new SaleViewModel(provider, dbContextFactory);
+            });
+            services.AddTransient<KuhinjaViewModel>(provider =>
+            {
+                var dbContextFactory = provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
+                return new KuhinjaViewModel(provider, dbContextFactory);
             });
             services.AddTransient<AppMainViewModel>(provider =>
             {
                 var dbContextFactory = provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
-                var drljaDbContextFactory = provider.GetService<IDbContextFactory<SqliteDrljaDbContext>>();
-                return new AppMainViewModel(provider, dbContextFactory, drljaDbContextFactory);
+                return new AppMainViewModel(provider, dbContextFactory);
             });
-            //services.AddTransient<TableOverviewViewModel>();
+            services.AddSingleton<TableOverviewViewModel>(provider =>
+            {
+                var dbContextFactory = provider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
+                var saleViewModel = provider.GetRequiredService<SaleViewModel>();
+                return new TableOverviewViewModel(provider, dbContextFactory);
+            });
+            services.AddTransient<ActivationViewModel>();
             services.AddTransient<SplitOrderViewModel>();
             services.AddTransient<PaySaleViewModel>();
             services.AddTransient<ChangePaymentPlaceViewModel>();
@@ -133,22 +122,14 @@ namespace ClickBar
             services.AddTransient<RefaundViewModel>();
             services.AddTransient<ViewCalculationViewModel>();
             services.AddTransient<ViewNivelacijaViewModel>();
-            services.AddTransient<DPU_PeriodicniViewModel>(); 
+            services.AddTransient<DPU_PeriodicniViewModel>();
 
             // Registracija prozora
             services.AddSingleton<MainWindow>();
-            //services.AddTransient<SplitOrderWindow>();
-            //services.AddTransient<PaySaleWindow>();
 
             // Registracija komandi
             services.AddTransient<UpdateCurrentAppStateViewModelCommand>(); // Registracija specifične komande
-            //services.AddTransient<TableOverviewCommand>();
-            //services.AddTransient<HookOrderOnTableCommand>();
-            services.AddTransient<ActivationCommand>();
-            //services.AddTransient<RefaundCommand>();
-            //services.AddTransient<ChangePaymentPlaceCommand>();
-
-            // Registracija generičke komande
+            //services.AddTransient<ActivationCommand>();
             services.AddTransient(typeof(PayCommand<>));
 
             // Registracija ulogovanog korisnika (ako je potrebno)

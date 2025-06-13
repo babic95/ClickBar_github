@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ClickBar.Views.AppMain.AuxiliaryWindows.Statistic" xmlns:statistic="clr-namespace:ClickBar.ViewModels.AppMain.Statistic" d:DataContext="{d:DesignInstance Type=statistic:InventoryStatusViewModel}"
         mc:Ignorable="d"
         Height="650" Width="800"
-             xmlns:converters="clr-namespace:ClickBar.Converters"
+        xmlns:converters="clr-namespace:ClickBar.Converters"
         Background="{StaticResource BrushLogo2}"
         WindowStartupLocation="CenterScreen">
 

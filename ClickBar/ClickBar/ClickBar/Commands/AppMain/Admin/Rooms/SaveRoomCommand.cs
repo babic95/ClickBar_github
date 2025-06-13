@@ -37,44 +37,47 @@ namespace ClickBar.Commands.AppMain.Admin.Rooms
                 {
                     if (_currentViewModel.NewRoom != null)
                     {
-                        if (_currentViewModel.Rooms.Any(room => room.Id == _currentViewModel.NewRoom.Id))
+                        using (var dbContext = _currentViewModel.DbContextFactory.CreateDbContext())
                         {
-                            var room = _currentViewModel.DbContext.PartHalls.Find(_currentViewModel.NewRoom.Id);
-
-                            if (room != null)
+                            if (_currentViewModel.Rooms.Any(room => room.Id == _currentViewModel.NewRoom.Id))
                             {
-                                room.Image = _currentViewModel.NewRoom.Image;
-                                room.Name = _currentViewModel.NewRoom.Name;
+                                var room = dbContext.PartHalls.Find(_currentViewModel.NewRoom.Id);
 
-                                _currentViewModel.DbContext.PartHalls.Update(room);
-                                _currentViewModel.DbContext.SaveChanges();
+                                if (room != null)
+                                {
+                                    room.Image = _currentViewModel.NewRoom.Image;
+                                    room.Name = _currentViewModel.NewRoom.Name;
+
+                                    dbContext.PartHalls.Update(room);
+                                    dbContext.SaveChanges();
+                                }
+                                else
+                                {
+                                    room = new PartHallDB()
+                                    {
+                                        Image = _currentViewModel.NewRoom.Image,
+                                        Name = _currentViewModel.NewRoom.Name,
+                                    };
+                                    dbContext.PartHalls.Add(room);
+                                    dbContext.SaveChanges();
+
+                                    _currentViewModel.NewRoom.Id = room.Id;
+                                    _currentViewModel.Rooms.Add(_currentViewModel.NewRoom);
+                                }
                             }
                             else
                             {
-                                room = new PartHallDB()
+                                PartHallDB room = new PartHallDB()
                                 {
                                     Image = _currentViewModel.NewRoom.Image,
                                     Name = _currentViewModel.NewRoom.Name,
                                 };
-                                _currentViewModel.DbContext.PartHalls.Add(room);
-                                _currentViewModel.DbContext.SaveChanges();
+                                dbContext.PartHalls.Add(room);
+                                dbContext.SaveChanges();
 
                                 _currentViewModel.NewRoom.Id = room.Id;
                                 _currentViewModel.Rooms.Add(_currentViewModel.NewRoom);
                             }
-                        }
-                        else
-                        {
-                            PartHallDB room = new PartHallDB()
-                            {
-                                Image = _currentViewModel.NewRoom.Image,
-                                Name = _currentViewModel.NewRoom.Name,
-                            };
-                            _currentViewModel.DbContext.PartHalls.Add(room);
-                            _currentViewModel.DbContext.SaveChanges();
-
-                            _currentViewModel.NewRoom.Id = room.Id;
-                            _currentViewModel.Rooms.Add(_currentViewModel.NewRoom);
                         }
                     }
                     MessageBox.Show("Uspešno ste sačuvali izmene?", "Uspešno čuvanje", MessageBoxButton.OK, MessageBoxImage.Information);

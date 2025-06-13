@@ -1,6 +1,8 @@
-﻿using ClickBar.ViewModels.AppMain;
+﻿using ClickBar.ViewModels;
+using ClickBar.ViewModels.AppMain;
 using ClickBar_Common.Enums;
 using ClickBar_Settings;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -53,7 +55,8 @@ namespace ClickBar.Commands.AppMain.Settings
                     HostPC_IP = _currentViewModel.Settings.HostPC_IP,
                     RunPorudzbineServis = _currentViewModel.Settings.RunPorudzbineServis,
                     //UrlToLPFR = _currentViewModel.Settings.UrlToLPFR,
-                    TypeApp = _currentViewModel.Settings.TypeApp
+                    TypeApp = _currentViewModel.Settings.TypeApp,
+                    EnableKartica = _currentViewModel.Settings.EnabledKartica
                 };
 
                 if (_currentViewModel.Settings.Pos80mmFormat)
@@ -78,6 +81,8 @@ namespace ClickBar.Commands.AppMain.Settings
                 //        _ = FileSystemWatcherManager.Instance.CloseFileSystemWatcher();
                 //    }
                 //});
+                var saleViewModel = _currentViewModel.ServiceProvider.GetRequiredService<SaleViewModel>();
+                saleViewModel.UpdateSaleViewModel();
 
                 MessageBox.Show("Uspešno ste sačuvali podešavanja!", "Uspešno!", MessageBoxButton.OK, MessageBoxImage.Information);
             }

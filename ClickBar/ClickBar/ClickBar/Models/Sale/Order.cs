@@ -14,18 +14,15 @@ namespace ClickBar.Models.Sale
         private int _tableId;
         private CashierDB _cashier;
         private string _cashierName;
-        private ObservableCollection<ItemInvoice> _items;
 
         public Order(int tableId, int partHall)
         {
             TableId = tableId;
             PartHall = partHall;
         }
-        public Order(CashierDB cashier,
-            ObservableCollection<ItemInvoice> items)
+        public Order(CashierDB cashier)
         {
             Cashier = cashier;
-            Items = items;
         }
 
         public int PartHall
@@ -63,15 +60,6 @@ namespace ClickBar.Models.Sale
             {
                 _cashierName = value;
                 OnPropertyChange(nameof(CashierName));
-            }
-        }
-        public ObservableCollection<ItemInvoice> Items
-        {
-            get { return _items; }
-            set
-            {
-                _items = value;
-                OnPropertyChange(nameof(Items));
             }
         }
     }

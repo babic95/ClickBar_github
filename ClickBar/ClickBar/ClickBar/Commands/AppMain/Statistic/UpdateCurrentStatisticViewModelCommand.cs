@@ -41,203 +41,203 @@ namespace ClickBar.Commands.AppMain.Statistic
                         }
                         break;
                     case StatisticStateEnumerable.AddEditSupplier:
-#if CRNO
-                        MessageBox.Show("Nemate pravo na korišćenja ove komande!", 
-                            "Nemate pravo korišćenja", 
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
-#else
+//#if CRNO
+//                        MessageBox.Show("Nemate pravo na korišćenja ove komande!", 
+//                            "Nemate pravo korišćenja", 
+//                            MessageBoxButton.OK,
+//                            MessageBoxImage.Information);
+//#else
                         if (_currentViewModel.CurrentViewModel is not AddEditSupplierViewModel)
                         {
                             _currentViewModel.CheckedAddEditSupplier();
                         }
-#endif
+//#endif
                         break;
                     case StatisticStateEnumerable.Calculation:
-#if CRNO
-                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
-                            "Nemate pravo korišćenja",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
-#else
+//#if CRNO
+//                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
+//                            "Nemate pravo korišćenja",
+//                            MessageBoxButton.OK,
+//                            MessageBoxImage.Information);
+//#else
                         if (_currentViewModel.CurrentViewModel is not CalculationViewModel)
                         {
                             _currentViewModel.CheckedCalculation();
                         }
-#endif
+//#endif
                         break;
                     case StatisticStateEnumerable.ViewCalculation:
-#if CRNO
-                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
-                            "Nemate pravo korišćenja",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
-#else
+//#if CRNO
+//                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
+//                            "Nemate pravo korišćenja",
+//                            MessageBoxButton.OK,
+//                            MessageBoxImage.Information);
+//#else
                         if (_currentViewModel.CurrentViewModel is not ViewCalculationViewModel)
                         {
                             _currentViewModel.CheckedViewCalculation();
                         }
-#endif
+//#endif
                         break;
                     case StatisticStateEnumerable.Nivelacija:
-#if CRNO
-                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
-                            "Nemate pravo korišćenja",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
-#else
+//#if CRNO
+//                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
+//                            "Nemate pravo korišćenja",
+//                            MessageBoxButton.OK,
+//                            MessageBoxImage.Information);
+//#else
                         if (_currentViewModel.CurrentViewModel is not NivelacijaViewModel)
                         {
                             _currentViewModel.CheckedNivelacija();
                         }
-#endif
+//#endif
                         break;
                     case StatisticStateEnumerable.ViewNivelacija:
-#if CRNO
-                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
-                            "Nemate pravo korišćenja",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
-#else
+//#if CRNO
+//                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
+//                            "Nemate pravo korišćenja",
+//                            MessageBoxButton.OK,
+//                            MessageBoxImage.Information);
+//#else
                         if (_currentViewModel.CurrentViewModel is not ViewNivelacijaViewModel)
                         {
                             _currentViewModel.CheckedViewNivelacija();
                         }
-#endif
+//#endif
                         break;
                     case StatisticStateEnumerable.Knjizenje:
-#if CRNO
-                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
-                            "Nemate pravo korišćenja",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
-#else
+//#if CRNO
+//                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
+//                            "Nemate pravo korišćenja",
+//                            MessageBoxButton.OK,
+//                            MessageBoxImage.Information);
+//#else
                         if (_currentViewModel.CurrentViewModel is not KnjizenjeViewModel)
                         {
                             _currentViewModel.CheckedKnjizenje();
                         }
-#endif
+//#endif
                         break;
                     case StatisticStateEnumerable.KEP:
-#if CRNO
-                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
-                            "Nemate pravo korišćenja",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
-#else
+//#if CRNO
+//                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
+//                            "Nemate pravo korišćenja",
+//                            MessageBoxButton.OK,
+//                            MessageBoxImage.Information);
+//#else
                         if (_currentViewModel.CurrentViewModel is not KEPViewModel)
                         {
                             _currentViewModel.CheckedKEP();
                         }
-#endif
+//#endif
                         break;
                     case StatisticStateEnumerable.PregledProknjizenogPazara:
-#if CRNO
-                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
-                            "Nemate pravo korišćenja",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
-#else
+//#if CRNO
+//                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
+//                            "Nemate pravo korišćenja",
+//                            MessageBoxButton.OK,
+//                            MessageBoxImage.Information);
+//#else
                         if (_currentViewModel.CurrentViewModel is not PregledPazaraViewModel)
                         {
                             _currentViewModel.CheckedViewKnjizenje();
                         }
-#endif
+//#endif
                         break;
                     case StatisticStateEnumerable.Refaund:
-#if CRNO
-                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
-                            "Nemate pravo korišćenja",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
-#else
+//#if CRNO
+//                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
+//                            "Nemate pravo korišćenja",
+//                            MessageBoxButton.OK,
+//                            MessageBoxImage.Information);
+//#else
                         if (_currentViewModel.CurrentViewModel is not RefaundViewModel)
                         {
                             _currentViewModel.CheckedRefaund();
                         }
-#endif
+//#endif
                         break;
                     case StatisticStateEnumerable.PocetnoStanje:
-#if CRNO
-                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
-                            "Nemate pravo korišćenja",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
-#else
+//#if CRNO
+//                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
+//                            "Nemate pravo korišćenja",
+//                            MessageBoxButton.OK,
+//                            MessageBoxImage.Information);
+//#else
                         if (_currentViewModel.CurrentViewModel is not PocetnoStanjeViewModel)
                         {
                             _currentViewModel.CheckedPocetnoStanje();
                         }
-#endif
+//#endif
                         break;
                     case StatisticStateEnumerable.Norm:
-#if CRNO
-                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
-                            "Nemate pravo korišćenja",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
-#else
+//#if CRNO
+//                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
+//                            "Nemate pravo korišćenja",
+//                            MessageBoxButton.OK,
+//                            MessageBoxImage.Information);
+//#else
                         if (_currentViewModel.CurrentViewModel is not NormViewModel)
                         {
                             _currentViewModel.CheckedNorm();
                         }
-#endif
+//#endif
                         break;
                     case StatisticStateEnumerable.LagerLista:
 
-#if CRNO
-                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
-                            "Nemate pravo korišćenja",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
-#else
+//#if CRNO
+//                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
+//                            "Nemate pravo korišćenja",
+//                            MessageBoxButton.OK,
+//                            MessageBoxImage.Information);
+//#else
                         if (_currentViewModel.CurrentViewModel is not LagerListaViewModel)
                         {
                             _currentViewModel.CheckedLagerLista();
                         }
-#endif
+//#endif
                         break;
                     case StatisticStateEnumerable.Otpis:
 
-#if CRNO
-                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
-                            "Nemate pravo korišćenja",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
-#else
+//#if CRNO
+//                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
+//                            "Nemate pravo korišćenja",
+//                            MessageBoxButton.OK,
+//                            MessageBoxImage.Information);
+//#else
                         if (_currentViewModel.CurrentViewModel is not OtpisViewModel)
                         {
                             _currentViewModel.CheckedOtpis();
                         }
-#endif
+//#endif
                         break;
                     case StatisticStateEnumerable.OtpisPreview:
 
-#if CRNO
-                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
-                            "Nemate pravo korišćenja",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
-#else
+//#if CRNO
+//                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
+//                            "Nemate pravo korišćenja",
+//                            MessageBoxButton.OK,
+//                            MessageBoxImage.Information);
+//#else
                         if (_currentViewModel.CurrentViewModel is not OtpisPreviewViewModel)
                         {
                             _currentViewModel.CheckedOtpisPreview();
                         }
-#endif
+//#endif
                         break;
                     case StatisticStateEnumerable.DPU:
 
-#if CRNO
-                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
-                            "Nemate pravo korišćenja",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
-#else
+//#if CRNO
+//                        MessageBox.Show("Nemate pravo na korišćenja ove komande!",
+//                            "Nemate pravo korišćenja",
+//                            MessageBoxButton.OK,
+//                            MessageBoxImage.Information);
+//#else
                         if (_currentViewModel.CurrentViewModel is not DPU_PeriodicniViewModel)
                         {
                             _currentViewModel.CheckedDPU();
                         }
-#endif
+//#endif
                         break; 
                     case StatisticStateEnumerable.PriceIncrease:
                         if (_currentViewModel.CurrentViewModel is not PriceIncreaseViewModel)
@@ -261,6 +261,12 @@ namespace ClickBar.Commands.AppMain.Statistic
                         if (_currentViewModel.CurrentViewModel is not RadniciViewModel)
                         {
                             _currentViewModel.CheckedRadnici();
+                        }
+                        break;
+                    case StatisticStateEnumerable.PregledPorudzbina:
+                        if (_currentViewModel.CurrentViewModel is not PregledPorudzbinaNaDanViewModel)
+                        {
+                            _currentViewModel.CheckedPregledPorudzbina();
                         }
                         break;
                     default:

@@ -80,23 +80,31 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                                 totalQuantityPocetnoStanje = pocetnoStanjeItemDB.NewQuantity;
                             }
 
-                            if (pocetnoStanjeDB.PopisDate.Date > pocetnoStanjeDate.Date)
+                            if (pocetnoStanjeDB.PopisDate.Date >= pocetnoStanjeDate.Date)
                             {
                                 pocetnoStanjeDate = pocetnoStanjeDB.PopisDate.Date;
                             }
                         }
 
-                        var itemInCal = _viewModel.DbContext.Calculations.Join(_viewModel.DbContext.CalculationItems,
-                            cal => cal.Id,
-                            calItem => calItem.CalculationId,
-                            (cal, calItem) => new { Cal = cal, CalItem = calItem })
-                        .Where(cal => cal.CalItem.ItemId == itemDB.Id &&
-                        cal.Cal.CalculationDate.Date > pocetnoStanjeDate.Date);
+                        //var itemInCal = _viewModel.DbContext.Calculations.Join(_viewModel.DbContext.CalculationItems,
+                        //    cal => cal.Id,
+                        //    calItem => calItem.CalculationId,
+                        //    (cal, calItem) => new { Cal = cal, CalItem = calItem })
+                        //.Where(cal => cal.CalItem.ItemId == itemDB.Id &&
+                        //cal.Cal.CalculationDate.Date > pocetnoStanjeDate.Date);
 
-                        if (itemInCal != null &&
-                        itemInCal.Any())
+                        var itemsCalculation = _viewModel.DbContext.CalculationItems.Include(i => i.Calculation)
+                            .Join(_viewModel.DbContext.Items,
+                            ci => ci.ItemId,
+                            i => i.Id,
+                            (ci, i) => new { CalculationItem = ci, Item = i })
+                            .Where(x => x.CalculationItem.ItemId == itemDB.Id &&
+                            x.CalculationItem.Calculation.CalculationDate.Date >= pocetnoStanjeDate.Date).ToList();
+
+                        if (itemsCalculation != null &&
+                        itemsCalculation.Any())
                         {
-                            totalCalculationQuantity = itemInCal.Select(i => i.CalItem.Quantity).ToList().Sum();
+                            totalCalculationQuantity = itemsCalculation.Select(i => i.CalculationItem.Quantity).ToList().Sum();
                         }
 
                         var itemInOtpis = _viewModel.DbContext.Otpisi.Join(_viewModel.DbContext.OtpisItems,
@@ -112,19 +120,28 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                             totalOtpisQuantity = itemInOtpis.Select(i => i.OtpisItem.Quantity).ToList().Sum();
                         }
 
-                        var pazari = _viewModel.DbContext.Invoices.Join(_viewModel.DbContext.ItemInvoices,
-                            invoice => invoice.Id,
-                            invoiceItem => invoiceItem.InvoiceId,
-                            (invoice, invoiceItem) => new { Inv = invoice, InvItem = invoiceItem })
-                            .Where(pazar => pazar.Inv.SdcDateTime != null &&
-                            pazar.Inv.SdcDateTime.HasValue &&
-                            pazar.InvItem.ItemCode == itemDB.Id &&
-                            pazar.Inv.SdcDateTime.Value.Date >= pocetnoStanjeDate.Date)
-                            .OrderByDescending(item => item.Inv.SdcDateTime);
+                        //var pazari = _viewModel.DbContext.Invoices.Join(_viewModel.DbContext.ItemInvoices,
+                        //    invoice => invoice.Id,
+                        //    invoiceItem => invoiceItem.InvoiceId,
+                        //    (invoice, invoiceItem) => new { Inv = invoice, InvItem = invoiceItem })
+                        //    .Where(pazar => pazar.Inv.SdcDateTime != null &&
+                        //    pazar.Inv.SdcDateTime.HasValue &&
+                        //    pazar.InvItem.ItemCode == itemDB.Id &&
+                        //    pazar.Inv.SdcDateTime.Value.Date >= pocetnoStanjeDate.Date)
+                        //    .OrderByDescending(item => item.Inv.SdcDateTime);
+
+                        var itemsInvoice = _viewModel.DbContext.ItemInvoices.Include(i => i.Invoice).
+                            Join(_viewModel.DbContext.Items,
+                            invoiceItem => invoiceItem.ItemCode,
+                            item => item.Id,
+                            (invoiceItem, item) => new { InvoiceItem = invoiceItem, Item = item })
+                            .Where(x => x.InvoiceItem.ItemCode == itemDB.Id &&
+                            x.InvoiceItem.Invoice.SdcDateTime.HasValue &&
+                            x.InvoiceItem.Invoice.SdcDateTime.Value.Date >= pocetnoStanjeDate.Date).ToList();
 
                         if (itemDB.IdNorm == null &&
-                            pazari != null &&
-                            pazari.Any())
+                            itemsInvoice != null &&
+                            itemsInvoice.Any())
                         {
                             //var listProdaja = pazari.Select(i => i.Inv.TransactionType != null && i.Inv.TransactionType == 0 &&
                             //i.InvItem.Quantity != null && i.InvItem.Quantity.HasValue ?
@@ -136,13 +153,13 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                             //i.InvItem.IsSirovina == 1 ? i.InvItem.Quantity.Value :
                             //itemDB.IdNorm == null ? i.InvItem.Quantity.Value : 0 : 0).ToList();
 
-                            var listProdaja = pazari.Select(i => i.Inv.TransactionType != null && i.Inv.TransactionType == 0 &&
-                            i.InvItem.Quantity != null && i.InvItem.Quantity.HasValue ?
-                            i.InvItem.Quantity.Value : 0).ToList();
+                            var listProdaja = itemsInvoice.Select(i => i.InvoiceItem.Invoice.TransactionType != null && i.InvoiceItem.Invoice.TransactionType == 0 &&
+                            i.InvoiceItem.Quantity != null && i.InvoiceItem.Quantity.HasValue ?
+                            i.InvoiceItem.Quantity.Value : 0).ToList();
 
-                            var listRefundacija = pazari.Select(i => i.Inv.TransactionType != null && i.Inv.TransactionType == 1 &&
-                            i.InvItem.Quantity != null && i.InvItem.Quantity.HasValue ?
-                            i.InvItem.Quantity.Value : 0).ToList();
+                            var listRefundacija = itemsInvoice.Select(i => i.InvoiceItem.Invoice.TransactionType != null && i.InvoiceItem.Invoice.TransactionType == 1 &&
+                            i.InvoiceItem.Quantity != null && i.InvoiceItem.Quantity.HasValue ?
+                            i.InvoiceItem.Quantity.Value : 0).ToList();
 
                             decimal prodaja = listProdaja.Sum();
                             decimal refundacija = listRefundacija.Sum();

@@ -982,7 +982,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         {
             List<ItemDB> itemsForCondition = new List<ItemDB>();
 
-            invoice.ItemInvoices.ToList().ForEach(async item =>
+            foreach(var item in invoice.ItemInvoices)
             {
                 var it = DbContext.Items.Find(item.ItemCode);
                 if (it != null &&
@@ -1001,15 +1001,15 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                             {
                                 if (itm.IdNorm == null)
                                 {
-                                    itm.TotalQuantity += item.Quantity.Value * norm.Quantity;
-                                    DbContext.Items.Update(itm);
+                                    itm.TotalQuantity += Decimal.Round(item.Quantity.Value * norm.Quantity, 3);
+                                    //DbContext.Items.Update(itm);
                                 }
                                 else
                                 {
                                     var itemInNorm2 = DbContext.ItemsInNorm.Where(norm => itm.IdNorm == norm.IdNorm);
                                     if (itemInNorm2.Any())
                                     {
-                                        itemInNorm2.ToList().ForEach(norm2 =>
+                                        foreach(var norm2 in itemInNorm2)
                                         {
                                             var itm2 = DbContext.Items.Find(norm2.IdItem);
 
@@ -1017,15 +1017,15 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                                             {
                                                 if (itm2.IdNorm == null)
                                                 {
-                                                    itm2.TotalQuantity += item.Quantity.Value * norm.Quantity * norm2.Quantity;
-                                                    DbContext.Items.Update(itm2);
+                                                    itm2.TotalQuantity += Decimal.Round(item.Quantity.Value * norm.Quantity * norm2.Quantity, 3);
+                                                    //DbContext.Items.Update(itm2);
                                                 }
                                                 else
                                                 {
-                                                    var itemInNorm3 = DbContext.ItemsInNorm.Where(norm => itm2.IdNorm == norm2.IdNorm);
+                                                    var itemInNorm3 = DbContext.ItemsInNorm.Where(norm => itm2.IdNorm == norm.IdNorm);
                                                     if (itemInNorm3.Any())
                                                     {
-                                                        itemInNorm3.ToList().ForEach(norm3 =>
+                                                        foreach(var norm3 in itemInNorm3)
                                                         {
                                                             var itm3 = DbContext.Items.Find(norm3.IdItem);
 
@@ -1033,25 +1033,25 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                                                             {
                                                                 if (itm3.IdNorm == null)
                                                                 {
-                                                                    itm3.TotalQuantity += item.Quantity.Value * norm.Quantity * norm2.Quantity * norm3.Quantity;
-                                                                    DbContext.Items.Update(itm3);
+                                                                    itm3.TotalQuantity += Decimal.Round(item.Quantity.Value * norm.Quantity * norm2.Quantity * norm3.Quantity, 3);
+                                                                    //DbContext.Items.Update(itm3);
                                                                 }
                                                             }
-                                                        });
+                                                        }
                                                     }
                                                     else
                                                     {
-                                                        itm2.TotalQuantity += item.Quantity.Value * norm.Quantity * norm2.Quantity;
-                                                        DbContext.Items.Update(itm2);
+                                                        itm2.TotalQuantity += Decimal.Round(item.Quantity.Value * norm.Quantity * norm2.Quantity, 3);
+                                                        //DbContext.Items.Update(itm2);
                                                     }
                                                 }
                                             }
-                                        });
+                                        }
                                     }
                                     else
                                     {
-                                        itm.TotalQuantity += item.Quantity.Value * norm.Quantity;
-                                        DbContext.Items.Update(itm);
+                                        itm.TotalQuantity += Decimal.Round(item.Quantity.Value * norm.Quantity, 3);
+                                        //DbContext.Items.Update(itm);
                                     }
                                 }
                             }
@@ -1060,8 +1060,8 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                     else
                     {
                         it.TotalQuantity += item.Quantity.Value;
-                        DbContext.Items.Update(it);
                     }
+                    DbContext.Items.Update(it);
                 }
                 //var it = sqliteDbContext.Items.Find(item.ItemCode);
                 //if (it != null && item.Quantity.HasValue)
@@ -1089,7 +1089,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                 //        sqliteDbContext.Items.Update(it);
                 //    }
                 //}
-            });
+            }
 
             DbContext.SaveChanges();
         }

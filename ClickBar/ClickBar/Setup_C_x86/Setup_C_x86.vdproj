@@ -43,6 +43,14 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+            }
         }
         "Release"
         {
@@ -59,6 +67,14 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+            }
         }
     }
     "Deployable"
@@ -76,6 +92,16 @@
         {
             "LaunchCondition"
             {
+                "{A06ECF26-33A3-4562-8140-9B0E340D4F24}:_1BF881D224334E368796FF4F0D565485"
+                {
+                "Name" = "8:.NET Core"
+                "Message" = "8:[VSDNETCOREMSG]"
+                "AllowLaterVersions" = "11:FALSE"
+                "InstallUrl" = "8:https://dotnet.microsoft.com/download/dotnet-core/[NetCoreVerMajorDotMinor]"
+                "IsNETCore" = "11:TRUE"
+                "Architecture" = "2:0"
+                "Runtime" = "2:0"
+                }
             }
         }
         "File"
@@ -141,7 +167,7 @@
             }
             "{3C67513D-01DD-4637-8A68-80971EB9504F}:_FC0DF8343F4649B1B10D7BD9D24EF1A7"
             {
-            "DefaultLocation" = "8:[ProgramFilesFolder][Manufacturer]\\[ProductName]"
+            "DefaultLocation" = "8:[ProgramFiles64Folder][Manufacturer]\\[ProductName]"
             "Name" = "8:#1925"
             "AlwaysCreate" = "11:FALSE"
             "Condition" = "8:"
@@ -166,7 +192,7 @@
         "Product"
         {
         "Name" = "8:Microsoft Visual Studio"
-        "ProductName" = "8:Setup_C_x86"
+        "ProductName" = "8:Setup_C_x64"
         "ProductCode" = "8:{995CC6B4-2536-4965-8987-85FE42CC98D0}"
         "PackageCode" = "8:{08DCE16A-482D-495D-9395-9C564870B41A}"
         "UpgradeCode" = "8:{2AF83D0F-2F8B-49A1-8739-B24692A41902}"
@@ -179,7 +205,7 @@
         "Manufacturer" = "8:Balbaj"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
-        "Title" = "8:Setup_C_x86"
+        "Title" = "8:Setup_C_x64"
         "Subject" = "8:"
         "ARPCONTACT" = "8:Balbaj"
         "Keywords" = "8:"
@@ -189,7 +215,7 @@
         "ARPIconIndex" = "3:0"
         "SearchPath" = "8:"
         "UseSystemSearchPath" = "11:TRUE"
-        "TargetPlatform" = "3:0"
+        "TargetPlatform" = "3:1"
         "PreBuildEvent" = "8:"
         "PostBuildEvent" = "8:"
         "RunPostBuildEvent" = "3:0"
@@ -717,7 +743,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_2EF9458F31BD4E2C8285911A236966E7"
             {
-            "SourcePath" = "8:..\\ClickBar\\obj\\x86\\Crno\\net6.0-windows\\apphost.exe"
+            "SourcePath" = "8:..\\ClickBar\\obj\\x64\\Crno\\net9.0-windows7.0\\apphost.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_FC0DF8343F4649B1B10D7BD9D24EF1A7"

@@ -12,6 +12,7 @@ using ClickBar_Logging;
 using ClickBar_Printer.PaperFormat;
 using DocumentFormat.OpenXml.Drawing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -175,6 +176,7 @@ namespace ClickBar.Commands.AppMain.Statistic
                     try
                     {
                         int maxItemId = 1;
+                        int max = 0;
                         if (inventoryStatusViewModel.DbContext.Items != null && inventoryStatusViewModel.DbContext.Items.Any())
                         {
                             maxItemId = inventoryStatusViewModel.DbContext.Items.Select(x => Convert.ToInt32(x.Id)).ToList().Max();
@@ -184,11 +186,19 @@ namespace ClickBar.Commands.AppMain.Statistic
                             {
                                 maxItemId++;
                             }
+
+                            if(inventoryStatusViewModel.DbContext.Items.Count() > 0)
+                            {
+                                max = inventoryStatusViewModel.DbContext.Items
+                                    .Max(i => i.Rb);
+                            }
                         }
+
 
                         ItemDB itemDB = new ItemDB()
                         {
                             Id = maxItemId.ToString("000000"),
+                            Rb = max + 1,
                             Name = inventoryStatusViewModel.CurrentInventoryStatus.Item.Name,
                             InputUnitPrice = 0,
                             SellingUnitPrice = inventoryStatusViewModel.CurrentInventoryStatus.Item.SellingUnitPrice,
@@ -500,6 +510,9 @@ namespace ClickBar.Commands.AppMain.Statistic
                     }
                 }
             }
+
+            var saleViewModel = inventoryStatusViewModel.ServiceProvider.GetRequiredService<SaleViewModel>();
+            saleViewModel.UpdateSaleViewModel();
         }
     }
 }

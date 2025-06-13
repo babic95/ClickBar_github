@@ -61,7 +61,7 @@ namespace ClickBar.Commands.AppMain.Report
                     startReport = new DateTime(end.Year, end.Month, end.Day, 5, 0, 0);
                 }
 
-                ClickBar_Report.Report report = new ClickBar_Report.Report(saleViewModel.DbContext,
+                ClickBar_Report.Report report = new ClickBar_Report.Report(saleViewModel.DbContextFactory.CreateDbContext(),
                     startReport,
                     endReport,
                     saleViewModel.LoggedCashier);

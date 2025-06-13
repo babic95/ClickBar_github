@@ -44,8 +44,6 @@ namespace ClickBar.Commands.AppMain.Statistic.DPU
                     return;
                 }
 
-                _currentViewModel.Items = new ObservableCollection<DPU_Item>();
-
                 var itemsInvoice = _currentViewModel.DbContext.ItemInvoices.Include(i => i.Invoice)
                     .Where(x => x.Invoice.SdcDateTime.HasValue &&
                     x.Invoice.SdcDateTime.Value.Date >= _currentViewModel.FromDate.Date &&
@@ -61,18 +59,6 @@ namespace ClickBar.Commands.AppMain.Statistic.DPU
                         StartQuantity = 0
                     })
                     .ToList();
-
-                var a = _currentViewModel.DbContext.CalculationItems.Include(i => i.Calculation)
-                    .Where(c => c.Calculation.CalculationDate >= _currentViewModel.FromDate &&
-                    c.Calculation.CalculationDate <= _currentViewModel.ToDate);
-
-                var a2 = _currentViewModel.DbContext.CalculationItems.Include(i => i.Calculation)
-                    .Where(c => c.Calculation.CalculationDate <= _currentViewModel.FromDate &&
-                    c.Calculation.CalculationDate >= _currentViewModel.ToDate);
-
-                var a1 = _currentViewModel.DbContext.Calculations
-                    .Where(c => c.CalculationDate >= _currentViewModel.FromDate &&
-                    c.CalculationDate <= _currentViewModel.ToDate);
 
                 var itemsCalculation = _currentViewModel.DbContext.CalculationItems.Include(i => i.Calculation)
                     .Join(_currentViewModel.DbContext.Items,
@@ -101,11 +87,6 @@ namespace ClickBar.Commands.AppMain.Statistic.DPU
                 // Kombinovanje svih stavki i izračunavanje EndQuantity
                 var combinedItems = started.Select(s =>
                 {
-                    if(s.Id == "000039" ||
-                            s.Id == "000358")
-                    {
-                        int a = 2;
-                    }
                     var matchingInvoice = itemsInvoice.FirstOrDefault(i => i.Id == s.Id);
                     var matchingCalculation = itemsCalculation.FirstOrDefault(c => c.Id == s.Id);
 
@@ -120,7 +101,8 @@ namespace ClickBar.Commands.AppMain.Statistic.DPU
                     };
                 }).OrderBy(x => x.Id).ToList();
 
-                _currentViewModel.Items = new ObservableCollection<DPU_Item>(combinedItems);
+                _currentViewModel.AllItems = new List<DPU_Item>(combinedItems);
+                _currentViewModel.Items = new ObservableCollection<DPU_Item>(_currentViewModel.AllItems);
             }
             catch (Exception ex)
             {
@@ -140,7 +122,7 @@ namespace ClickBar.Commands.AppMain.Statistic.DPU
                 if (_currentViewModel.DbContext.PocetnaStanja != null &&
                     _currentViewModel.DbContext.PocetnaStanja.Any())
                 {
-                    pocetnoStanjeDB = _currentViewModel.DbContext.PocetnaStanja.Where(p => p.PopisDate.Date < _currentViewModel.FromDate).
+                    pocetnoStanjeDB = _currentViewModel.DbContext.PocetnaStanja.Where(p => p.PopisDate.Date < _currentViewModel.FromDate.Date).
                         OrderByDescending(p => p.PopisDate).FirstOrDefault();
                 }
 
@@ -159,7 +141,7 @@ namespace ClickBar.Commands.AppMain.Statistic.DPU
                     calculationItem => calculationItem.CalculationId,
                     (calculation, calculationItem) => new { Calculation = calculation, CalculationItem = calculationItem })
                     .Where(cal => cal.Calculation.CalculationDate.Date >= pocetnoStanjeDate.Date &&
-                    cal.Calculation.CalculationDate.Date < _currentViewModel.FromDate);
+                    cal.Calculation.CalculationDate.Date < _currentViewModel.FromDate.Date);
 
                 var pazar = _currentViewModel.DbContext.Invoices.Join(_currentViewModel.DbContext.ItemInvoices,
                     invoice => invoice.Id,
@@ -167,19 +149,13 @@ namespace ClickBar.Commands.AppMain.Statistic.DPU
                     (invoice, invoiceItem) => new { Invoice = invoice, InvoiceItem = invoiceItem })
                     .Where(inv => inv.Invoice.SdcDateTime != null &&
                     inv.Invoice.SdcDateTime.Value.Date >= pocetnoStanjeDate.Date &&
-                    inv.Invoice.SdcDateTime.Value.Date < _currentViewModel.FromDate);
+                    inv.Invoice.SdcDateTime.Value.Date < _currentViewModel.FromDate.Date);
 
                 if (_currentViewModel.DbContext.Items != null &&
                     _currentViewModel.DbContext.Items.Any())
                 {
                     foreach (var x in _currentViewModel.DbContext.Items.Where(i => i.IdNorm == null))
                     {
-                        if (x.Id == "000039" ||
-                            x.Id == "000358")
-                        {
-                            int a = 2;
-                        }
-
                         decimal totalQuantityPocetnoStanje = 0;
 
                         if (pocetnoStanjeDB != null)

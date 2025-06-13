@@ -1,26 +1,27 @@
-﻿using ClickBar_Database_Drlja.Models;
+﻿
+using ClickBar_DatabaseSQLManager.Models;
 
 namespace ClickBar_Porudzbine.Server.Models
 {
     public class Zelja
     {
-        public Zelja(ZeljaDB zeljaDB)
+        public Zelja(ItemZeljaDB zeljaDB)
         {
-            Id = zeljaDB.TR_IDZELJA;
-            ArtikalId = zeljaDB.TR_BRART;
-            Name = zeljaDB.TR_ZELJA;
+            Id = zeljaDB.Id;
+            ArtikalId = zeljaDB.ItemId;
+            Name = zeljaDB.Zelja;
             isCheck = false;
 
-            if (Id < 0)
+            if (Convert.ToInt32(Id) < 0)
             {
                 Description = string.Empty;
             }
             else
             {
-                Description = zeljaDB.TR_ZELJA;
+                Description = zeljaDB.Zelja;
             }
         }
-        public int Id { get; set; }
+        public string Id { get; set; }
         public string ArtikalId { get; set; }
         public string Name { get; set; }
         public bool isCheck { get; set; }

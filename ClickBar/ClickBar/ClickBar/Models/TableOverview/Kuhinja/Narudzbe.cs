@@ -12,7 +12,6 @@ namespace ClickBar.Models.TableOverview.Kuhinja
         private string _id;
         private int _brojNarudzbe;
         private DateTime _vremeNarudzbe;
-        private string _narudzneId;
         private string _radnikId;
         private string _stoName;
         private int _smena;
@@ -53,15 +52,6 @@ namespace ClickBar.Models.TableOverview.Kuhinja
             {
                 _vremeNarudzbe = value;
                 OnPropertyChange(nameof(VremeNarudzbe));
-            }
-        }
-        public string NarudzneId
-        {
-            get { return _narudzneId; }
-            set
-            {
-                _narudzneId = value;
-                OnPropertyChange(nameof(NarudzneId));
             }
         }
         public string RadnikId

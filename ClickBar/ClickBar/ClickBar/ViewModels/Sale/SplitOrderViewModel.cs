@@ -2,7 +2,6 @@
 using ClickBar.Commands.Sale.Pay;
 using ClickBar.Commands.Sale.Pay.SplitOrder;
 using ClickBar.Models.Sale;
-using ClickBar_Database_Drlja;
 using ClickBar_DatabaseSQLManager;
 using ClickBar_DatabaseSQLManager.Models;
 using Microsoft.EntityFrameworkCore;
@@ -39,8 +38,7 @@ namespace ClickBar.ViewModels.Sale
         public SplitOrderViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = _serviceProvider.GetRequiredService<SqlServerDbContext>();
-            DrljaDbContext = _serviceProvider.GetRequiredService<SqliteDrljaDbContext>();
+            DbContextFactory = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
             ItemsInvoiceForPay = new ObservableCollection<ItemInvoice>();
             _payCommand = new Lazy<PayCommand<SplitOrderViewModel>>(() => new PayCommand<SplitOrderViewModel>(serviceProvider, this));
             //PayCommand = _serviceProvider.GetRequiredService<PayCommand<SplitOrderViewModel>>();
@@ -51,11 +49,7 @@ namespace ClickBar.ViewModels.Sale
         #endregion Constructors
 
         #region Internal Properties
-        internal SqlServerDbContext DbContext
-        {
-            get; private set;
-        }
-        internal SqliteDrljaDbContext DrljaDbContext
+        internal IDbContextFactory<SqlServerDbContext> DbContextFactory
         {
             get; private set;
         }

@@ -17,21 +17,24 @@ namespace ClickBar_Settings
         #endregion Fields Singleton
 
         #region Fields
+        private static readonly string _esirBaza = @"c:\CCS ESIR\ESIR_Admin\ESIR_DB.db";
 #if CRNO
         private static readonly string _mainFolderPath = @"c:\ClickBar";
         private static readonly string _adminFolderName = @"Admin";
+        private static readonly string _sqlServerDatabaseName = "ClickBar_Crno_DB";
+        private static readonly string _databaseConnectionString = @"Initial Catalog=ClickBar_Crno_DB;User ID=sa;Password=Jajajaja95!;MultipleActiveResultSets=True;TrustServerCertificate=True;Max Pool Size=100;Min Pool Size=10;";
 #else
         private static readonly string _mainFolderPath = @"c:\CCS ClickBar";
         private static readonly string _adminFolderName = @"ClickBar_Admin";
+        private static readonly string _sqlServerDatabaseName = "ClickBar_DB";
+        private static readonly string _databaseConnectionString = @"Initial Catalog=ClickBar_DB;User ID=sa;Password=Jajajaja95!;MultipleActiveResultSets=True;TrustServerCertificate=True;Max Pool Size=100;Min Pool Size=10;";
 #endif
+        private static readonly string _masterDatabaseConnectionString = @"Initial Catalog=master;User ID=sa;Password=Jajajaja95!;MultipleActiveResultSets=True;TrustServerCertificate=True;Max Pool Size=100;Min Pool Size=10;";
         private static readonly string _loggingFolderName = @"Logging";
         private static readonly string _excelFolderName = @"Excel";
         private static readonly string _excelImportFolderName = @"Import";
         private static readonly string _excelExportFolderName = @"Export";
         private static readonly string _databaseName = @"ClickBar_DB.db";
-        private static readonly string _sqlServerDatabaseName = "ClickBar_DB";
-        private static readonly string _masterDatabaseConnectionString = @"Initial Catalog=master;User ID=sa;Password=Jajajaja95!;MultipleActiveResultSets=True;TrustServerCertificate=True;Max Pool Size=100;Min Pool Size=10;";
-        private static readonly string _databaseConnectionString = @"Initial Catalog=ClickBar_DB;User ID=sa;Password=Jajajaja95!;MultipleActiveResultSets=True;TrustServerCertificate=True;Max Pool Size=100;Min Pool Size=10;"; 
         private static readonly string _appFileName = @"app.json";
         private static readonly string _model = "CCS ClickBar";
         private static readonly string _logo = "logo.png";
@@ -111,6 +114,7 @@ namespace ClickBar_Settings
                 _settingsFile.HostPC_IP = settingsFile.HostPC_IP;
                 _settingsFile.RunPorudzbineServis = settingsFile.RunPorudzbineServis;
                 _settingsFile.TypeApp = settingsFile.TypeApp;
+                _settingsFile.EnableKartica = settingsFile.EnableKartica;
 
                 SaveSettingsFile();
             }
@@ -119,6 +123,15 @@ namespace ClickBar_Settings
                 return false;
             }
             return true;
+        }
+
+        public string GetESIRBaza()
+        {
+            return _esirBaza;
+        }
+        public bool GetEnabledKartica()
+        { 
+            return _settingsFile.EnableKartica;
         }
         public string GetSqlServerDatabaseName()
         {
@@ -453,7 +466,8 @@ namespace ClickBar_Settings
                 PathToMainDB = null,
                 HostPC_IP = null,
                 RunPorudzbineServis = false,
-                TypeApp = TypeAppEnumeration.Table
+                TypeApp = TypeAppEnumeration.Table,
+                EnableKartica = true,
             };
 #else
             _settingsFile = new SettingsFile()
@@ -482,7 +496,8 @@ namespace ClickBar_Settings
                 PathToMainDB = null,
                 HostPC_IP = null,
                 RunPorudzbineServis = false,
-                TypeApp = TypeAppEnumeration.Table
+                TypeApp = TypeAppEnumeration.Table,
+                EnableKartica = true,
             };
 
 #endif

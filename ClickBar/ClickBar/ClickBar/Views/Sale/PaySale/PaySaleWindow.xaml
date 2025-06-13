@@ -755,7 +755,7 @@
                                             Style="{StaticResource RoundCorner}"
                                             Margin="0 0 5 0"
                                             Visibility="{Binding VisibilityBlack}"/>
-                                    <!--<Button Content="Kartica"
+                                    <Button Content="Kartica"
                                             FontSize="20"
                                             Height="60"
                                             Width="150"
@@ -763,7 +763,7 @@
                                             CommandParameter="Card"
                                             Style="{StaticResource RoundCorner}"
                                             Margin="0 0 5 0"
-                                            Visibility="{Binding VisibilityBlack}"/>-->
+                                            Visibility="{Binding VisibilityKartica}"/>
                                     <Button Content="Virman"
                                             FontSize="20"
                                             Height="60"

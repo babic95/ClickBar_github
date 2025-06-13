@@ -1,5 +1,6 @@
 ﻿using ClickBar.Enums;
 using ClickBar.ViewModels;
+using ClickBar_Common.Enums;
 using ClickBar_DatabaseSQLManager;
 using ClickBar_Logging;
 using ClickBar_Settings;
@@ -66,15 +67,29 @@ namespace ClickBar.Commands.Sale
 
                     _viewModel.Reset();
 
-                    AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
+                    var typeApp = SettingsManager.Instance.GetTypeApp();
+
+                    if (typeApp == TypeAppEnumeration.Sale)
+                    {
+                        AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.Sale,
                         _viewModel.LoggedCashier,
+                        idStola,
                         _viewModel);
-                    _viewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+                        _viewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+                    }
+                    else
+                    {
+                        AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
+                        _viewModel.LoggedCashier,
+                        idStola,
+                        _viewModel);
+                        _viewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+                    }
                     Log.Debug($"Uspesno ponisten pregled stola {idStola}");
                 }
                 catch (Exception ex) 
                 {
-                    Log.Error($"Greška prilikom poništavanja porudžbine sa stola {_viewModel.TableId}: ", ex);
+                    Log.Error($"ResetAllCommand -> Greška prilikom poništavanja porudžbine sa stola {_viewModel.TableId}: ", ex);
                     MessageBox.Show("Greška prilikom poništavanja porudžbine!", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }

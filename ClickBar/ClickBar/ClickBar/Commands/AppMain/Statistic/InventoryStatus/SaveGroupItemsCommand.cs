@@ -1,8 +1,10 @@
 ﻿using ClickBar.Models.Sale;
+using ClickBar.ViewModels;
 using ClickBar.ViewModels.AppMain.Statistic;
 using ClickBar_DatabaseSQLManager;
 using ClickBar_DatabaseSQLManager.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -72,10 +74,18 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
 
                         if (result == MessageBoxResult.Yes)
                         {
+                            var max = 0;
+
+                            if(_currentViewModel.DbContext.ItemGroups.Count() > 0)
+                            {
+                                max = _currentViewModel.DbContext.ItemGroups.Max(group => group.Id);
+                            }
+
                             ItemGroupDB itemGroupDB = new ItemGroupDB()
                             {
                                 IdSupergroup = _currentViewModel.CurrentSupergroup.Id,
-                                Name = _currentViewModel.CurrentGroupItems.Name
+                                Name = _currentViewModel.CurrentGroupItems.Name,
+                                Rb = max + 1
                             };
                             _currentViewModel.DbContext.ItemGroups.Add(itemGroupDB);
                         }
@@ -87,16 +97,24 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                     _currentViewModel.DbContext.SaveChanges();
 
                     _currentViewModel.AllGroupItems = new ObservableCollection<GroupItems>();
-                    _currentViewModel.AllGroups = new ObservableCollection<GroupItems>() { new GroupItems(-1, -1, "Sve grupe") };
+                    _currentViewModel.AllGroups = new ObservableCollection<GroupItems>() { new GroupItems()
+                    {
+                        Id = -1,
+                        IdSupergroup = -1,
+                        Name = "Sve grupe"
+                    } };
 
                     foreach(var gropu in _currentViewModel.DbContext.ItemGroups)
                     {
-                        _currentViewModel.AllGroupItems.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
-                        _currentViewModel.AllGroups.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
+                        _currentViewModel.AllGroupItems.Add(new GroupItems(gropu));
+                        _currentViewModel.AllGroups.Add(new GroupItems(gropu));
                     }
 
                     _currentViewModel.CurrentGroupItems = _currentViewModel.AllGroupItems.FirstOrDefault();
                     _currentViewModel.CurrentGroup = _currentViewModel.AllGroups.FirstOrDefault();
+
+                    var saleViewModel = _currentViewModel.ServiceProvider.GetRequiredService<SaleViewModel>();
+                    saleViewModel.UpdateSaleViewModel();
 
                     MessageBox.Show("Uspešno obavljeno!",
                             "Uspešno",

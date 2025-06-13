@@ -19,11 +19,12 @@ namespace ClickBar.Models.Sale
         private ObservableCollection<Zelja> _zelje;
         private string? _globalZelja;
 
-        public ItemInvoice(Item item, decimal quantity)
+        public ItemInvoice(Item item, decimal quantity, decimal popust = 0)
         {
+            item.SellingUnitPrice = item.SellingUnitPrice * ((100 - popust) / 100);
             Item = item;
             Quantity = quantity;
-            TotalAmout = item.SellingUnitPrice * quantity;
+            TotalAmout = Decimal.Round(item.SellingUnitPrice * quantity, 2);
         }
         public ItemInvoice(Item item, ItemInvoiceDB itemInvoiceDB)
         {

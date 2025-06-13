@@ -33,7 +33,11 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
             {
                 case "new":
                     _currentViewModel.VisibilityAllSupergroup = Visibility.Hidden;
-                    _currentViewModel.CurrentSupergroup = new Supergroup(-1, string.Empty);
+                    _currentViewModel.CurrentSupergroup = new Supergroup()
+                    {
+                        Id = -1,
+                        Name = string.Empty
+                    };
 
                     _currentViewModel.Window = new AddOrEditSupergroupWindow(_currentViewModel);
                     _currentViewModel.Window.ShowDialog();

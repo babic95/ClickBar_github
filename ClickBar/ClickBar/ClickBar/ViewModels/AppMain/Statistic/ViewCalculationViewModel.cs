@@ -466,6 +466,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         public ICommand SearchCommand => new SearchCommand(this);
         public ICommand ViewItemsInCalculationCommand => new ViewItemsInCalculationCommand(this);
         public ICommand PrintCalculationCommand => new PrintCalculationCommand(this);
+        public ICommand PrintCalculationA4Command => new PrintCalculationA4Command(this); 
         public ICommand SaveCalculationCommand => new SaveCalculationCommand(this);
         public ICommand OpenAllItemsWindowCommand => new OpenAllItemsWindowCommand(this);
         public ICommand OpenCalculationItemEditWindowCommand => new OpenCalculationItemEditWindowCommand(this);

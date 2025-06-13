@@ -6,9 +6,9 @@ using ClickBar.Models.AppMain.Statistic;
 using ClickBar.Models.Sale;
 using ClickBar.Models.Sale.Buyer;
 using ClickBar_Common.Models.Invoice;
-using ClickBar_Database_Drlja;
 using ClickBar_DatabaseSQLManager;
 using ClickBar_DatabaseSQLManager.Models;
+using ClickBar_Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -73,6 +73,7 @@ namespace ClickBar.ViewModels.Sale
 
         private Visibility _visibilityBlack;
         private Visibility _visibilityBlackView;
+        private Visibility _visibilityKartica; 
         #endregion Fields
 
         #region Constructors
@@ -80,31 +81,24 @@ namespace ClickBar.ViewModels.Sale
         {
             _serviceProvider = serviceProvider;
             DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
-            try
-            {
-                var drljaDbContext = serviceProvider.GetRequiredService<IDbContextFactory<SqliteDrljaDbContext>>();
-
-                if (drljaDbContext == null)
-                {
-                    DrljaDbContext = null;
-                }
-                else
-                {
-                    DrljaDbContext = drljaDbContext.CreateDbContext();
-                }
-            }
-            catch
-            {
-                DrljaDbContext = null;
-            }
 
             _payCommand = new Lazy<PayCommand<PaySaleViewModel>>(() => new PayCommand<PaySaleViewModel>(serviceProvider, this));
             //PayCommand = _serviceProvider.GetRequiredService<PayCommand<PaySaleViewModel>>();
             //SplitOrderCommand = _serviceProvider.GetRequiredService<SplitOrderCommand>();
+
+            if (SettingsManager.Instance.GetEnabledKartica())
+            {
+                VisibilityKartica = Visibility.Visible;
+            }
+            else
+            {
+                VisibilityKartica = Visibility.Collapsed;
+            }
+
 #if CRNO
             VisibilityBlack = Visibility.Hidden;
 #else
-            VisibilityBlack = Visibility.Visible;
+                VisibilityBlack = Visibility.Visible;
 #endif
 
             SaleViewModel = saleViewModel;
@@ -151,6 +145,16 @@ namespace ClickBar.ViewModels.Sale
                 OnPropertyChange(nameof(VisibilityBlackView));
             }
         }
+        
+        public Visibility VisibilityKartica
+        {
+            get { return _visibilityKartica; }
+            set
+            {
+                _visibilityKartica = value;
+                OnPropertyChange(nameof(VisibilityKartica));
+            }
+        }
         public Visibility VisibilityBlack
         {
             get { return _visibilityBlack; }
@@ -158,13 +162,14 @@ namespace ClickBar.ViewModels.Sale
             {
                 _visibilityBlack = value;
                 OnPropertyChange(nameof(VisibilityBlack));
-                if(value == Visibility.Visible)
+                if (value == Visibility.Visible)
                 {
                     VisibilityBlackView = Visibility.Collapsed;
                 }
                 else
                 {
                     VisibilityBlackView = Visibility.Visible;
+                    VisibilityKartica = Visibility.Collapsed;
                 }
             }
         }
@@ -706,10 +711,6 @@ namespace ClickBar.ViewModels.Sale
 
         #region Internal Properties
         internal IDbContextFactory<SqlServerDbContext> DbContext
-        {
-            get; private set;
-        }
-        internal SqliteDrljaDbContext DrljaDbContext
         {
             get; private set;
         }

@@ -1,7 +1,9 @@
 ﻿using ClickBar.Enums;
 using ClickBar.ViewModels.Sale;
 using ClickBar.Views.Sale.PaySale;
+using ClickBar_Common.Enums;
 using ClickBar_Logging;
+using ClickBar_Settings;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -34,6 +36,7 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder
         {
             try
             {
+                int tableId1 = _viewModel.PaySaleViewModel.SaleViewModel.TableId;
                 ChangePaymentPlaceViewModel changePaymentPlaceViewModel = _serviceProvider.GetRequiredService<ChangePaymentPlaceViewModel>();
                 changePaymentPlaceViewModel.SplitOrderViewModel = _viewModel;
                 _viewModel.ChangePaymentPlaceWindow = new ChangePaymentPlaceWindow(changePaymentPlaceViewModel);
@@ -41,12 +44,30 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder
 
                 _viewModel.PaySaleViewModel.SplitOrderWindow.Close();
 
+                int tableId2 = changePaymentPlaceViewModel.TableId;
+
                 _viewModel.PaySaleViewModel.SaleViewModel.Reset();
 
-                AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
+                var typeApp = SettingsManager.Instance.GetTypeApp();
+
+                if (typeApp == TypeAppEnumeration.Sale)
+                {
+                    AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.Sale,
                     _viewModel.PaySaleViewModel.SaleViewModel.LoggedCashier,
-                    _viewModel.PaySaleViewModel.SaleViewModel);
-                _viewModel.PaySaleViewModel.SaleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+                    tableId1, //preveri azuriranje stola
+                    _viewModel.PaySaleViewModel.SaleViewModel,
+                    tableId2);
+                    _viewModel.PaySaleViewModel.SaleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+                }
+                else
+                {
+                    AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
+                    _viewModel.PaySaleViewModel.SaleViewModel.LoggedCashier,
+                    tableId1, //preveri azuriranje stola
+                    _viewModel.PaySaleViewModel.SaleViewModel,
+                    tableId2);
+                    _viewModel.PaySaleViewModel.SaleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+                }
             }
             catch (Exception ex)
             {

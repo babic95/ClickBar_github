@@ -37,7 +37,12 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
                 _currentViewModel.EditWindow.Close();
             }
 
-            _currentViewModel.Groups = new List<Models.Sale.GroupItems>() { new Models.Sale.GroupItems(-1, -1, "Sve grupe") };
+            _currentViewModel.Groups = new List<Models.Sale.GroupItems>() { new Models.Sale.GroupItems() 
+            {
+                Id = -1,
+                IdSupergroup = -1,
+                Name = "Sve grupe"
+            } };
             _currentViewModel.DbContext.Items.ToList().ForEach(x =>
             {
                 Models.Sale.Item item = new Models.Sale.Item(x);
@@ -57,7 +62,7 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
             {
                 _currentViewModel.DbContext.ItemGroups.ToList().ForEach(gropu =>
                 {
-                    _currentViewModel.Groups.Add(new Models.Sale.GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
+                    _currentViewModel.Groups.Add(new Models.Sale.GroupItems(gropu));
                 });
             }
             _currentViewModel.AllGroups = new ObservableCollection<Models.Sale.GroupItems>(_currentViewModel.Groups);

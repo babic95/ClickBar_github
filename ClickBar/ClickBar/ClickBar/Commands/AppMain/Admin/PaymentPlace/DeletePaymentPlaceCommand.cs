@@ -50,33 +50,36 @@ namespace ClickBar.Commands.AppMain.Admin
 
                     if (paymentPlace != null)
                     {
-                        PaymentPlaceDB? paymentPlaceDB = _currentViewModel.DbContext.PaymentPlaces.Find(id);
-
-                        if (paymentPlaceDB != null)
+                        using (var dbContext = _currentViewModel.DbContextFactory.CreateDbContext())
                         {
-                            _currentViewModel.DbContext.PaymentPlaces.Remove(paymentPlaceDB);
-                            _currentViewModel.DbContext.SaveChanges();
+                            PaymentPlaceDB? paymentPlaceDB = dbContext.PaymentPlaces.Find(id);
 
-                            MessageBox.Show("Uspešno ste obrisali platno mesto!", "Uspešno brisanje", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                            if (paymentPlace.Type == PaymentPlaceTypeEnumeration.Normal)
+                            if (paymentPlaceDB != null)
                             {
-                                var payment = _currentViewModel.AllNormalPaymentPlaces.FirstOrDefault(p => p.Id == paymentPlace.Id);
+                                dbContext.PaymentPlaces.Remove(paymentPlaceDB);
+                                dbContext.SaveChanges();
 
-                                if (payment != null)
+                                MessageBox.Show("Uspešno ste obrisali platno mesto!", "Uspešno brisanje", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                                if (paymentPlace.Type == PaymentPlaceTypeEnumeration.Normal)
                                 {
-                                    _currentViewModel.AllNormalPaymentPlaces.Remove(payment);
-                                    _currentViewModel.NormalPaymentPlaces.Remove(paymentPlace);
+                                    var payment = _currentViewModel.AllNormalPaymentPlaces.FirstOrDefault(p => p.Id == paymentPlace.Id);
+
+                                    if (payment != null)
+                                    {
+                                        _currentViewModel.AllNormalPaymentPlaces.Remove(payment);
+                                        _currentViewModel.NormalPaymentPlaces.Remove(paymentPlace);
+                                    }
                                 }
-                            }
-                            else
-                            {
-                                var payment = _currentViewModel.AllRoundPaymentPlaces.FirstOrDefault(p => p.Id == paymentPlace.Id);
-
-                                if (payment != null)
+                                else
                                 {
-                                    _currentViewModel.AllRoundPaymentPlaces.Remove(payment);
-                                    _currentViewModel.RoundPaymentPlaces.Remove(paymentPlace);
+                                    var payment = _currentViewModel.AllRoundPaymentPlaces.FirstOrDefault(p => p.Id == paymentPlace.Id);
+
+                                    if (payment != null)
+                                    {
+                                        _currentViewModel.AllRoundPaymentPlaces.Remove(payment);
+                                        _currentViewModel.RoundPaymentPlaces.Remove(paymentPlace);
+                                    }
                                 }
                             }
                         }

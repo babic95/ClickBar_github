@@ -4,7 +4,6 @@ using ClickBar.Commands.Login;
 using ClickBar.Commands.Sale;
 using ClickBar.Models.Sale;
 using ClickBar.Models.TableOverview;
-using ClickBar_Database_Drlja;
 using ClickBar_DatabaseSQLManager;
 using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Settings;
@@ -70,17 +69,18 @@ namespace ClickBar.ViewModels
 
         #region Constructors
         public SaleViewModel(IServiceProvider serviceProvider,
-            IDbContextFactory<SqlServerDbContext> dbContextFactory,
-            IDbContextFactory<SqliteDrljaDbContext>? drljaDbContextFactory)
+            IDbContextFactory<SqlServerDbContext> dbContextFactory)
         {
             _serviceProvider = serviceProvider;
-            DbContext = dbContextFactory.CreateDbContext();
-            DrljaDbContext = drljaDbContextFactory != null ? drljaDbContextFactory.CreateDbContext() : null;
+            DbContextFactory = dbContextFactory;
             _updateCurrentAppStateViewModelCommand = new Lazy<UpdateCurrentAppStateViewModelCommand>(() => serviceProvider.GetRequiredService<UpdateCurrentAppStateViewModelCommand>());
-            LoggedCashier = serviceProvider.GetRequiredService<CashierDB>();
+            
             //TableOverviewCommand = serviceProvider.GetRequiredService<TableOverviewCommand>();
             //HookOrderOnTableCommand = serviceProvider.GetRequiredService<HookOrderOnTableCommand>();
             //PayCommand = _serviceProvider.GetRequiredService<PayCommand<SaleViewModel>>();
+
+            //SetCashier();
+
             _payCommand = new Lazy<PayCommand<SaleViewModel>>(() => new PayCommand<SaleViewModel>(_serviceProvider, this));
 
             var comPort = SettingsManager.Instance.GetComPort();
@@ -91,80 +91,14 @@ namespace ClickBar.ViewModels
                 _serialPort.WriteTimeout = 500;
             }
 
-            CashierNema = LoggedCashier.Name;
-            Supergroups = new ObservableCollection<Supergroup>();
-            Groups = new ObservableCollection<GroupItems>();
-            Items = new ObservableCollection<Item>();
-
-            AllItems = DbContext.Items.AsNoTracking().Where(i => i.DisableItem == 0).Include(i => i.Zelje).ToList();
-            AllGroups = DbContext.ItemGroups.AsNoTracking().ToList();
-
-            if (SettingsManager.Instance.EnableSuperGroup())
-            {
-                var supergroups = DbContext.Supergroups.AsNoTracking().ToList();
-
-                supergroups.ForEach(supergroup =>
-                {
-                    Supergroup s = new Supergroup(supergroup.Id, supergroup.Name);
-
-                    if (!s.Name.ToLower().Contains("osnovna"))
-                    {
-                        Supergroups.Add(s);
-                    }
-                });
-
-                VisibilitySupergroups = Visibility.Visible;
-            }
-            else
-            {
-                AllGroups.ForEach(group =>
-                {
-                    GroupItems g = new GroupItems(group.Id, group.IdSupergroup, group.Name);
-
-                    if (!g.Name.ToLower().Contains("sirovine"))
-                    {
-                        Groups.Add(g);
-                    }
-                });
-
-                VisibilitySupergroups = Visibility.Hidden;
-            }
-
-            ItemsInvoice = new ObservableCollection<ItemInvoice>();
-            OldOrders = new ObservableCollection<OldOrder>();
-            TotalAmount = 0;
+            UpdateSaleViewModel();
 
             RunTimer();
-
-            TableOverviewViewModel = new TableOverviewViewModel(_serviceProvider, dbContextFactory, drljaDbContextFactory, this);
-
-            if (SettingsManager.Instance.EnableTableOverview())
-            {
-                TableOverviewVisibility = Visibility.Visible;
-            }
-            else
-            {
-                TableOverviewVisibility = Visibility.Hidden;
-            }
-
-            if (SettingsManager.Instance.CancelOrderFromTable())
-            {
-                IsEnabledRemoveOrder = true;
-            }
-            else
-            {
-                IsEnabledRemoveOrder = false;
-            }
-            FirstChangeQuantity = true;
         }
         #endregion Constructors
 
         #region Internal Properties
-        internal SqlServerDbContext DbContext
-        {
-            get; private set;
-        }
-        internal SqliteDrljaDbContext? DrljaDbContext
+        internal IDbContextFactory<SqlServerDbContext> DbContextFactory
         {
             get; private set;
         }
@@ -176,10 +110,8 @@ namespace ClickBar.ViewModels
         #endregion Internal Properties
 
         #region Properties
-        public System.Timers.Timer Timer { get; set; }
-        public System.Timers.Timer Timer1 { get; set; }
         public PartHall? CurrentPartHall { get; set; }
-        public TableOverviewViewModel TableOverviewViewModel { get; set; }
+        //public TableOverviewViewModel TableOverviewViewModel { get; set; }
         public Order CurrentOrder
         {
             get { return _currentOrder; }
@@ -397,20 +329,90 @@ namespace ClickBar.ViewModels
         #endregion Commands
 
         #region Public methods
+        public void UpdateSaleViewModel()
+        {
+            if (DbContextFactory != null)
+            {
+                Supergroups = new ObservableCollection<Supergroup>();
+                Groups = new ObservableCollection<GroupItems>();
+                Items = new ObservableCollection<Item>();
+
+                using (var dbContext = DbContextFactory.CreateDbContext())
+                {
+                    AllItems = dbContext.Items.AsNoTracking().Where(i => i.DisableItem == 0).Include(i => i.Zelje).ToList();
+                    AllGroups = dbContext.ItemGroups
+                        .AsNoTracking()
+                        .Where(g => g.Name.ToLower() != "sirovine" && g.Name.ToLower() != "sirovina")
+                        .ToList();
+
+                    if (SettingsManager.Instance.EnableSuperGroup())
+                    {
+                        var supergroups = dbContext.Supergroups
+                            .AsNoTracking()
+                            .Where(s => !s.Name.ToLower().Contains("osnovna"))
+                            .OrderBy(s => s.Rb)
+                            .Select(s => new Supergroup(s))
+                            .ToList();
+
+                        supergroups.ForEach(s => Supergroups.Add(s));
+
+                        VisibilitySupergroups = Visibility.Visible;
+                    }
+                    else
+                    {
+                        var groups = AllGroups.OrderBy(g => g.Rb)
+                            .Select(g => new GroupItems(g))
+                            .ToList();
+
+                        groups.ForEach(g => Groups.Add(g));
+
+                        VisibilitySupergroups = Visibility.Hidden;
+                    }
+                }
+
+                ItemsInvoice = new ObservableCollection<ItemInvoice>();
+                OldOrders = new ObservableCollection<OldOrder>();
+                TotalAmount = 0;
+
+                if (SettingsManager.Instance.EnableTableOverview())
+                {
+                    TableOverviewVisibility = Visibility.Visible;
+                }
+                else
+                {
+                    TableOverviewVisibility = Visibility.Hidden;
+                }
+
+                if (SettingsManager.Instance.CancelOrderFromTable())
+                {
+                    IsEnabledRemoveOrder = true;
+                }
+                else
+                {
+                    IsEnabledRemoveOrder = false;
+                }
+                FirstChangeQuantity = true;
+            }
+        }
+        public void SetCashier()
+        {
+            LoggedCashier = _serviceProvider.GetRequiredService<CashierDB>();
+            CashierNema = LoggedCashier.Name;
+        }
         #endregion Public methods
 
         #region Internal methods
-        internal void SetOrder(Order order)
-        {
-            TableId = order.TableId;
-            CashierNema = order.Cashier.Name;
-            TotalAmount = 0;
-            ItemsInvoice = order.Items;
-            order.Items.ToList().ForEach(item =>
-            {
-                TotalAmount += item.TotalAmout;
-            });
-        }
+        //internal void SetOrder(Order order)
+        //{
+        //    TableId = order.TableId;
+        //    CashierNema = order.Cashier.Name;
+        //    TotalAmount = 0;
+        //    ItemsInvoice = order.Items;
+        //    order.Items.ToList().ForEach(item =>
+        //    {
+        //        TotalAmount += item.TotalAmout;
+        //    });
+        //}
         internal void Reset()
         {
             CurrentOrder = null;
@@ -421,14 +423,9 @@ namespace ClickBar.ViewModels
             OldOrders = new ObservableCollection<OldOrder>();
             HookOrderEnable = false;
 
-            var dbContextFactory = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
+            //var dbContextFactory = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
 
-            IDbContextFactory<SqliteDrljaDbContext>? drljaDbContextFactory = null;
-            if (DrljaDbContext != null)
-            {
-                drljaDbContextFactory = _serviceProvider.GetRequiredService<IDbContextFactory<SqliteDrljaDbContext>>();
-            }
-            TableOverviewViewModel = new TableOverviewViewModel(_serviceProvider, dbContextFactory, drljaDbContextFactory, this);
+            //TableOverviewViewModel = _serviceProvider.GetRequiredService<TableOverviewViewModel>();
         }
 
         internal void SendToDisplay(string nameItem, string? priceItem = null)
@@ -463,6 +460,7 @@ namespace ClickBar.ViewModels
         #endregion Internal methods
 
         #region Private methods
+
         private void RunTimer()
         {
             _timer = new Timer(

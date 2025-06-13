@@ -1,5 +1,4 @@
 ﻿using ClickBar_DatabaseSQLManager.Models;
-using ClickBar_Database_Drlja.Models;
 
 namespace ClickBar_Porudzbine.Server.Models
 {

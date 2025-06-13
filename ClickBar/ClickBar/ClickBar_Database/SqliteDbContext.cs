@@ -1047,6 +1047,53 @@ namespace ClickBar_Database
                 return false;
             }
         }
+        private void AddAndPopulateRbColumn(string tableName, SqliteConnection connection)
+        {
+            try
+            {
+                // Provera da li tabela postoji
+                if (!TableExists(tableName, connection))
+                {
+                    Log.Error($"Tabela {tableName} ne postoji.");
+                    return;
+                }
+
+                // Dodavanje nove kolone Rb u tabelu
+                using (SqliteCommand addColumnCmd = new SqliteCommand())
+                {
+                    addColumnCmd.CommandType = CommandType.Text;
+                    addColumnCmd.Connection = connection;
+                    addColumnCmd.CommandText = $"ALTER TABLE {tableName} ADD COLUMN Rb INTEGER";
+
+                    addColumnCmd.ExecuteNonQuery();
+                }
+
+                // Popunjavanje kolone Rb rednim brojevima
+                using (SqliteCommand populateColumnCmd = new SqliteCommand())
+                {
+                    populateColumnCmd.CommandType = CommandType.Text;
+                    populateColumnCmd.Connection = connection;
+                    // Koristimo ROWID za generisanje rednih brojeva
+                    populateColumnCmd.CommandText = $@"
+                WITH RankedRows AS (
+                    SELECT ROWID AS Id,
+                           ROW_NUMBER() OVER (ORDER BY ROWID) AS Rn
+                    FROM {tableName}
+                )
+                UPDATE {tableName}
+                SET Rb = (SELECT Rn FROM RankedRows WHERE RankedRows.Id = {tableName}.ROWID);
+            ";
+
+                    populateColumnCmd.ExecuteNonQuery();
+                }
+
+                Log.Debug($"Kolona Rb je uspešno dodata i popunjena u tabeli {tableName}.");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Greška prilikom dodavanja i popunjavanja kolone Rb u tabeli {tableName}.", ex);
+            }
+        }
         /// <summary>
         /// Creates tables in SQLite database
         /// <para>
@@ -1067,6 +1114,14 @@ namespace ClickBar_Database
                         "); ", SQLiteManagerTableNames.Supergroup);
                     CreateTable(SQLiteManagerTableNames.Supergroup, sql);
                 }
+                else
+                {
+                    try
+                    {
+                        AddAndPopulateRbColumn(SQLiteManagerTableNames.Supergroup, _sqliteConnection);
+                    }
+                    catch { }
+                }
                 if (!TableExists(SQLiteManagerTableNames.ItemGroup, _sqliteConnection))
                 {
                     sql = string.Format("CREATE TABLE {0} ( " +
@@ -1081,6 +1136,14 @@ namespace ClickBar_Database
                         "  ON UPDATE NO ACTION" +
                         "); ", SQLiteManagerTableNames.ItemGroup);
                     CreateTable(SQLiteManagerTableNames.ItemGroup, sql);
+                }
+                else
+                {
+                    try
+                    {
+                        AddAndPopulateRbColumn(SQLiteManagerTableNames.ItemGroup, _sqliteConnection);
+                    }
+                    catch { }
                 }
                 if (!TableExists(SQLiteManagerTableNames.Item, _sqliteConnection))
                 {
@@ -1113,6 +1176,12 @@ namespace ClickBar_Database
                 {
                     try
                     {
+                        try
+                        {
+                            AddAndPopulateRbColumn(SQLiteManagerTableNames.Item, _sqliteConnection);
+                        }
+                        catch { }
+
                         sql = string.Format("ALTER TABLE {0}  " +
                            "ADD COLUMN 'IsCheckedZabraniPopust'    INTEGER NOT NULL DEFAULT 0" +
                            "; ", SQLiteManagerTableNames.Item);
@@ -1744,6 +1813,14 @@ namespace ClickBar_Database
                     try
                     {
                         sql = string.Format("ALTER TABLE {0}  " +
+                           "ADD COLUMN 'Faza'    INTEGER NOT NULL DEFAULT 0 " +
+                           "; ", SQLiteManagerTableNames.OrderToday);
+                        CreateTable(SQLiteManagerTableNames.OrderToday, sql);
+                        sql = string.Format("ALTER TABLE {0}  " +
+                           "ADD COLUMN 'UnprocessedOrderId'    TEXT " +
+                           "; ", SQLiteManagerTableNames.OrderToday);
+                        CreateTable(SQLiteManagerTableNames.OrderToday, sql);
+                        sql = string.Format("ALTER TABLE {0}  " +
                            "ADD COLUMN 'CounterType'    INTEGER NOT NULL DEFAULT 0 " +
                            "; ", SQLiteManagerTableNames.OrderToday);
                         CreateTable(SQLiteManagerTableNames.OrderToday, sql);
@@ -1757,6 +1834,7 @@ namespace ClickBar_Database
                         Log.Error("SqlServerDbContext - CreateTables - OrderToday - Polje 'TableId' je vec dodato -> ", e);
                     }
                 }
+
                 if (!TableExists(SQLiteManagerTableNames.OrderTodayItem, _sqliteConnection))
                 {
                     sql = string.Format("CREATE TABLE '{0}' (" +
@@ -1777,6 +1855,28 @@ namespace ClickBar_Database
                         "    ON UPDATE NO ACTION" +
                         "); ", SQLiteManagerTableNames.OrderTodayItem);
                     CreateTable(SQLiteManagerTableNames.OrderTodayItem, sql);
+                }
+                else
+                {
+                    try
+                    {
+                        AddColumnIfNotExists("OrderTodayItem", "Id TEXT DEFAULT (hex(randomblob(16)))", _sqliteConnection);
+
+                        ReplacePrimaryKey(SQLiteManagerTableNames.OrderTodayItem, ["Id", "OrderTodayId", "ItemId"], _sqliteConnection);
+                        sql = string.Format("ALTER TABLE {0}  " +
+                           "ADD COLUMN 'NaplacenoQuantity'    NUMERIC NOT NULL DEFAULT 0 " +
+                           "; ", SQLiteManagerTableNames.OrderTodayItem);
+                        CreateTable(SQLiteManagerTableNames.OrderTodayItem, sql);
+                        sql = string.Format("ALTER TABLE {0}  " +
+                           "ADD COLUMN 'StornoQuantity'    NUMERIC NOT NULL DEFAULT 0 " +
+                           "; ", SQLiteManagerTableNames.OrderTodayItem);
+                        CreateTable(SQLiteManagerTableNames.OrderTodayItem, sql);
+                        sql = string.Format("ALTER TABLE {0}  " +
+                           "ADD COLUMN 'Zelja'    TEXT " +
+                           "; ", SQLiteManagerTableNames.OrderTodayItem);
+                        CreateTable(SQLiteManagerTableNames.OrderTodayItem, sql);
+                    }
+                    catch { }
                 }
                 if (!TableExists(SQLiteManagerTableNames.Otpis, _sqliteConnection))
                 {
@@ -1838,6 +1938,48 @@ namespace ClickBar_Database
                 int aa = 2;
             }
         }
+        private bool AddColumnIfNotExists(string tableName, string columnDefinition, SqliteConnection connection)
+        {
+            try
+            {
+                string columnName = columnDefinition.Split(' ')[0];
+                string checkColumnQuery = $@"
+            SELECT COUNT(*)
+            FROM pragma_table_info('{tableName}')
+            WHERE name = '{columnName}';
+        ";
+
+                using (SqliteCommand cmd = new SqliteCommand(checkColumnQuery, connection))
+                {
+                    int columnCount = Convert.ToInt32(cmd.ExecuteScalar());
+                    if (columnCount == 0)
+                    {
+                        // Dodavanje kolone bez DEFAULT vrednosti
+                        string addColumnQuery = $"ALTER TABLE {tableName} ADD COLUMN {columnName} TEXT";
+                        using (SqliteCommand addCmd = new SqliteCommand(addColumnQuery, connection))
+                        {
+                            addCmd.ExecuteNonQuery();
+                        }
+
+                        // Popunjavanje kolone sa hex(randomblob(16))
+                        string updateColumnQuery = $"UPDATE {tableName} SET {columnName} = hex(randomblob(16)) WHERE {columnName} IS NULL;";
+                        using (SqliteCommand updateCmd = new SqliteCommand(updateColumnQuery, connection))
+                        {
+                            updateCmd.ExecuteNonQuery();
+                        }
+
+                        return true;
+                    }
+                }
+
+                return false; // Kolona već postoji
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"SQLiteDbContext - AddColumnIfNotExists - Greška prilikom dodavanja kolone {columnDefinition} u tabelu {tableName}.", ex);
+                return false;
+            }
+        }
         /// <summary>
         /// Checks if table exists in SQLite database
         /// </summary>
@@ -1891,6 +2033,76 @@ namespace ClickBar_Database
                     Log.Error(string.Format("SqlServerDbContext - CreateTable - Error occurred while creating table {0}.", tableName), ex);
                 }
                 return false;
+            }
+        }
+        private static void ReplacePrimaryKey(string tableName, string[] columnNames, SqliteConnection sqliteConnection)
+        {
+            try
+            {
+                string columns = string.Join(", ", columnNames);
+
+                bool shouldCloseConnection = false;
+                if (sqliteConnection.State == System.Data.ConnectionState.Closed)
+                {
+                    sqliteConnection.Open();
+                    shouldCloseConnection = true;
+                }
+
+                // Dohvatanje strukture originalne tabele
+                string getTableInfoQuery = $"PRAGMA table_info({tableName});";
+                List<string> allColumns = new List<string>();
+                using (SqliteCommand getTableInfoCmd = new SqliteCommand(getTableInfoQuery, sqliteConnection))
+                using (SqliteDataReader reader = getTableInfoCmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        allColumns.Add(reader["name"].ToString());
+                    }
+                }
+
+                string allColumnsJoined = string.Join(", ", allColumns);
+
+                // Kreiranje nove tabele sa novim primarnim ključem
+                string tempTableName = $"{tableName}_temp";
+                string createTableQuery = $@"
+            CREATE TABLE {tempTableName} (
+                {string.Join(", ", allColumns.Select(col => col == columnNames[0] ? $"{col} PRIMARY KEY" : col))}
+            );
+        ";
+                using (SqliteCommand createTableCmd = new SqliteCommand(createTableQuery, sqliteConnection))
+                {
+                    createTableCmd.ExecuteNonQuery();
+                }
+
+                // Kopiranje podataka iz originalne tabele u novu tabelu
+                string copyDataQuery = $"INSERT INTO {tempTableName} ({allColumnsJoined}) SELECT {allColumnsJoined} FROM {tableName};";
+                using (SqliteCommand copyDataCmd = new SqliteCommand(copyDataQuery, sqliteConnection))
+                {
+                    copyDataCmd.ExecuteNonQuery();
+                }
+
+                // Brisanje originalne tabele
+                string dropTableQuery = $"DROP TABLE {tableName};";
+                using (SqliteCommand dropTableCmd = new SqliteCommand(dropTableQuery, sqliteConnection))
+                {
+                    dropTableCmd.ExecuteNonQuery();
+                }
+
+                // Preimenovanje nove tabele nazad u originalno ime
+                string renameTableQuery = $"ALTER TABLE {tempTableName} RENAME TO {tableName};";
+                using (SqliteCommand renameTableCmd = new SqliteCommand(renameTableQuery, sqliteConnection))
+                {
+                    renameTableCmd.ExecuteNonQuery();
+                }
+
+                if (shouldCloseConnection)
+                {
+                    sqliteConnection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"SQLiteDbContext - ReplacePrimaryKey - Greška prilikom zamene primarnog ključa na tabeli {tableName}.", ex);
             }
         }
         #endregion Private methods

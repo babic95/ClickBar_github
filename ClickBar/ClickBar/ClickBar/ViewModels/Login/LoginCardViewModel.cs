@@ -3,7 +3,6 @@ using ClickBar.Commands.AppMain;
 using ClickBar.Enums;
 using ClickBar_API;
 using ClickBar_Common.Enums;
-using ClickBar_Database_Drlja;
 using ClickBar_DatabaseSQLManager;
 using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Settings;
@@ -40,18 +39,16 @@ namespace ClickBar.ViewModels.Login
 
         public readonly CashierDB CashierAdmin2 = new CashierDB()
         {
-            Id = "9876543210",
+            Id = "9876543211",
             Type = CashierTypeEnumeration.Admin,
             Name = "CleanCodeSirmium"
         };
 
         public LoginCardViewModel(IServiceProvider serviceProvider, 
-            IDbContextFactory<SqlServerDbContext> dbContextFactory,
-            IDbContextFactory<SqliteDrljaDbContext>? drljaDbContextFactory)
+            IDbContextFactory<SqlServerDbContext> dbContextFactory)
         {
             _serviceProvider = serviceProvider;
             DbContext = dbContextFactory.CreateDbContext();
-            DrljaDbContext = drljaDbContextFactory != null ? drljaDbContextFactory.CreateDbContext() : null;
             _updateCurrentAppStateViewModelCommand = new Lazy<UpdateCurrentAppStateViewModelCommand>(() => serviceProvider.GetRequiredService<UpdateCurrentAppStateViewModelCommand>());
 
             Initialization();
@@ -68,7 +65,6 @@ namespace ClickBar.ViewModels.Login
 
         #region Internal Properties
         internal SqlServerDbContext DbContext { get; private set; }
-        internal SqliteDrljaDbContext DrljaDbContext { get; private set; }
         #endregion Internal Properties
 
         #region Properties
@@ -133,15 +129,39 @@ namespace ClickBar.ViewModels.Login
                         scopedCashierDB.Name = c.Name;
                         scopedCashierDB.Type = c.Type;
 
-                        AppStateParameter appStateParameter;
+                        var typeApp = SettingsManager.Instance.GetTypeApp();
+
+                        AppStateParameter appStateParameter = null;
                         if (c.Type == CashierTypeEnumeration.Worker)
                         {
-                            appStateParameter = new AppStateParameter(AppStateEnumerable.Sale, scopedCashierDB);
+                            if (typeApp == TypeAppEnumeration.Sale)
+                            {
+                                appStateParameter = new AppStateParameter(AppStateEnumerable.Sale,
+                                    scopedCashierDB,
+                                    -1);
+                            }
+                            else if (typeApp == TypeAppEnumeration.Table)
+                            {
+                                appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
+                                    scopedCashierDB,
+                                    -1);
+                            }
                         }
                         else
                         {
-                            appStateParameter = new AppStateParameter(AppStateEnumerable.Main, scopedCashierDB);
+                            appStateParameter = new AppStateParameter(AppStateEnumerable.Main,
+                                scopedCashierDB,
+                                    -1);
                         }
+
+                        //if (c.Type == CashierTypeEnumeration.Worker)
+                        //{
+                        //    appStateParameter = new AppStateParameter(AppStateEnumerable.Sale, scopedCashierDB, -1);
+                        //}
+                        //else
+                        //{
+                        //    appStateParameter = new AppStateParameter(AppStateEnumerable.Main, scopedCashierDB, -1);
+                        //}
                         UpdateCurrentAppStateViewModelCommand.Execute(appStateParameter);
                     }
                     else

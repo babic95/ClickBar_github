@@ -653,7 +653,12 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             CurrentNivelacija = new Nivelacija(DbContext,
                 NivelacijaStateEnumeration.Nivelacija);
 
-            Groups = new List<GroupItems>() { new GroupItems(-1, -1, "Sve grupe") };
+            Groups = new List<GroupItems>() { new GroupItems()
+            {
+                Id = -1,
+                IdSupergroup = -1,
+                Name = "Sve grupe"
+            } };
             TotalNivelacija = 0;
             TotalNewNivelacija = 0;
             TotalOldNivelacija = 0;
@@ -689,7 +694,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                     }
                     else
                     {
-                        Groups.Add(new GroupItems(group.Id, group.IdSupergroup, group.Name));
+                        Groups.Add(new GroupItems(group));
                     }
                 });
             }

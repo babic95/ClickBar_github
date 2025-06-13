@@ -63,19 +63,26 @@ namespace ClickBar_InputOutputExcelFiles
                         supergroupDB.Name = supergroup.Ime;
 
                         sqliteDbContext.Supergroups.Update(supergroupDB);
-                        supergroups.Add(supergroupDB);
+                        //supergroups.Add(supergroupDB);
                     }
                     else
                     {
+                        int max = 0;
+
+                        if (supergroups.Any())
+                        {
+                            max = supergroups.Max(s => s.Rb);
+                        }
                         SupergroupDB supergroupDB = new SupergroupDB()
                         {
                             Name = supergroup.Ime,
+                            Rb = max + 1
                         };
-                        await sqliteDbContext.Supergroups.AddAsync(supergroupDB);
                         supergroups.Add(supergroupDB);
                     }
                 });
 
+                await sqliteDbContext.Supergroups.AddRangeAsync(supergroups);
                 sqliteDbContext.SaveChanges();
                 return supergroups;
             }
@@ -107,21 +114,32 @@ namespace ClickBar_InputOutputExcelFiles
                             itemGroupDB.IdSupergroup = group.Nadgrupa;
 
                             sqliteDbContext.ItemGroups.Update(itemGroupDB);
-                            groups.Add(itemGroupDB);
+                            //groups.Add(itemGroupDB);
                         }
                         else
                         {
+                            int max = 0;
+
+                            if (groups
+                            .Where(i => i.IdSupergroup == group.Nadgrupa).Any())
+                            {
+                                max = groups
+                                .Where(i => i.IdSupergroup == group.Nadgrupa)
+                                .Max(s => s.Rb);
+                            }
+
                             ItemGroupDB itemGroupDB = new ItemGroupDB()
                             {
                                 Name = group.Ime,
-                                IdSupergroup = group.Nadgrupa
+                                IdSupergroup = group.Nadgrupa,
+                                Rb = max + 1
                             };
-                            await sqliteDbContext.ItemGroups.AddAsync(itemGroupDB);
                             groups.Add(itemGroupDB);
                         }
                     }
                 });
 
+                await sqliteDbContext.ItemGroups.AddRangeAsync(groups);
                 sqliteDbContext.SaveChanges();
                 return groups;
             }
@@ -148,9 +166,21 @@ namespace ClickBar_InputOutputExcelFiles
 
                         if (i == null)
                         {
+
+                            int max = 0;
+
+                            if(items
+                            .Where(i => i.IdItemGroup == item.Grupa).Any())
+                            {
+                                max = items
+                                .Where(i => i.IdItemGroup == item.Grupa)
+                                .Max(i => i.Rb);
+                            }
+
                             i = new ItemDB()
                             {
                                 Id = item.Šifra,
+                                Rb = max + 1,
                                 Label = item.Oznaka,
                                 Name = item.Naziv,
                                 Jm = item.JM,
@@ -162,7 +192,7 @@ namespace ClickBar_InputOutputExcelFiles
                                 ItemGroupNavigation = itemGroupDB,
                                 Procurements = new List<ProcurementDB>()
                             };
-                            await sqliteDbContext.Items.AddAsync(i);
+                            items.Add(i);
                         }
                         else
                         {
@@ -177,9 +207,10 @@ namespace ClickBar_InputOutputExcelFiles
 
                             sqliteDbContext.Items.Update(i);
                         }
-                        items.Add(i);
                     }
                 });
+
+                await sqliteDbContext.Items.AddRangeAsync(items);
                 sqliteDbContext.SaveChanges();
 
                 return items;
@@ -215,6 +246,7 @@ namespace ClickBar_InputOutputExcelFiles
                         cashierDB.Name = cashier.Ime;
                         cashierDB.ContactNumber = cashier.Telefon;
                         cashierDB.Type = cashier.Pozicija_Radnika;
+                        cashierDB.SmartCardNumber = cashier.Broj_Kartice_Za_Prijavu;
 
                         sqliteDbContext.Cashiers.Update(cashierDB);
                     }
@@ -229,7 +261,8 @@ namespace ClickBar_InputOutputExcelFiles
                             Jmbg = cashier.Jmbg,
                             Name = cashier.Ime,
                             ContactNumber = cashier.Telefon,
-                            Type = cashier.Pozicija_Radnika
+                            Type = cashier.Pozicija_Radnika,
+                            SmartCardNumber = cashier.Broj_Kartice_Za_Prijavu
                         };
                         await sqliteDbContext.Cashiers.AddAsync(cashierDB);
                     }

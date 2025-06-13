@@ -9,11 +9,8 @@ using System.Windows;
 using ClickBar_Logging;
 using ClickBar_DatabaseSQLManager;
 using ClickBar_DatabaseSQLManager.Models;
-using ClickBar_Common.Models.Order.Drlja;
-using ClickBar_Settings;
-using Newtonsoft.Json;
-using System.Net.Http;
 using Microsoft.EntityFrameworkCore;
+using ClickBar.Enums.Kuhinja;
 
 namespace ClickBar.Commands.Sale.Pay.SplitOrder.ChangePaymentPlace
 {
@@ -22,257 +19,219 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder.ChangePaymentPlace
         public event EventHandler CanExecuteChanged;
 
         private ChangePaymentPlaceViewModel _viewModel;
-        private bool _isFirstTime;
 
         public ClickOnPaymentPlaceChangePaymentPlaceCommand(ChangePaymentPlaceViewModel viewModel)
         {
             _viewModel = viewModel;
-            _isFirstTime = true;
         }
 
         public bool CanExecute(object? parameter)
         {
-            return _isFirstTime;
+            return true;
         }
 
-        public async void Execute(object parameter)
+        public void Execute(object parameter)
         {
-            if (!_isFirstTime)
-            {
-                return;
-            }
-            _isFirstTime = false;
             try
             {
                 if (parameter is int paymentPlaceId)
                 {
                     if (paymentPlaceId > 0)
                     {
-                        var newUnprocessedOrdersDB = _viewModel.DbContext.UnprocessedOrders.Include(u => u.ItemsInUnprocessedOrder).FirstOrDefault(u => u.PaymentPlaceId == paymentPlaceId);
-                        var oldUnprocessedOrdersDB = _viewModel.DbContext.UnprocessedOrders.Include(u => u.ItemsInUnprocessedOrder).FirstOrDefault(u => u.PaymentPlaceId == _viewModel.SplitOrderViewModel.PaySaleViewModel.SaleViewModel.TableId);
-
-                        if (oldUnprocessedOrdersDB != null)
+                        using (var dbContext = _viewModel.DbContextFactory.CreateDbContext())
+                        using (var transaction = dbContext.Database.BeginTransaction())
                         {
-                            MovePorudzbinaClickBarDrlja? movePorudzbinaClickBarDrlja = null;
+                            var newUnprocessedOrdersDB = dbContext.UnprocessedOrders.Include(u => u.ItemsInUnprocessedOrder).FirstOrDefault(u => u.PaymentPlaceId == paymentPlaceId);
+                            var oldUnprocessedOrdersDB = dbContext.UnprocessedOrders.Include(u => u.ItemsInUnprocessedOrder).FirstOrDefault(u => u.PaymentPlaceId == _viewModel.SplitOrderViewModel.PaySaleViewModel.SaleViewModel.TableId);
 
-                            if (!string.IsNullOrEmpty(SettingsManager.Instance.GetPathToDrljaKuhinjaDB()))
+                            if (oldUnprocessedOrdersDB != null)
                             {
-                                movePorudzbinaClickBarDrlja = new MovePorudzbinaClickBarDrlja()
+                                var oldOrdersTodayDB = dbContext.OrdersToday
+                                    .Include(o => o.OrderTodayItems)
+                                    .Where(o => o.UnprocessedOrderId == oldUnprocessedOrdersDB.Id &&
+                                    o.Faza != (int)FazaKuhinjeEnumeration.Naplacena &&
+                                    o.Faza != (int)FazaKuhinjeEnumeration.Obrisana)
+                                    .ToList();
+
+                                decimal totalAmountForPay = _viewModel.SplitOrderViewModel.ItemsInvoiceForPay.Sum(i => i.TotalAmout);
+
+                                if (newUnprocessedOrdersDB == null)
                                 {
-                                    OldUnprocessedOrderId = oldUnprocessedOrdersDB.Id,
-                                    Items = new List<PorudzbinaItemDrlja>(),
-                                };
-                            }
-
-                            var oldOrdersTodayDB = _viewModel.DbContext.OrdersToday
-                                .Where(o => o.UnprocessedOrderId == oldUnprocessedOrdersDB.Id)
-                                .Include(o => o.OrderTodayItems)
-                                .ToList();
-
-                            if (newUnprocessedOrdersDB == null)
-                            {
-                                newUnprocessedOrdersDB = new UnprocessedOrderDB()
-                                {
-                                    Id = Guid.NewGuid().ToString(),
-                                    CashierId = oldUnprocessedOrdersDB.CashierId,
-                                    PaymentPlaceId = paymentPlaceId,
-                                    TotalAmount = 0,
-                                };
-                                _viewModel.DbContext.UnprocessedOrders.Add(newUnprocessedOrdersDB);
-                                await _viewModel.DbContext.SaveChangesAsync(); // Save changes to ensure UnprocessedOrderId exists
-                            }
-
-                            if (movePorudzbinaClickBarDrlja != null)
-                            {
-                                movePorudzbinaClickBarDrlja.NewUnprocessedOrderId = newUnprocessedOrdersDB.Id;
-                                movePorudzbinaClickBarDrlja.NewSto = newUnprocessedOrdersDB.PaymentPlaceId;
-                            }
-
-                            foreach (var item in _viewModel.SplitOrderViewModel.ItemsInvoiceForPay)
-                            {
-                                var itemInUnprocessedOrder = _viewModel.DbContext.ItemsInUnprocessedOrder.FirstOrDefault(i => i.ItemId == item.Item.Id &&
-                                i.UnprocessedOrderId == newUnprocessedOrdersDB.Id);
-
-                                if (itemInUnprocessedOrder != null)
-                                {
-                                    itemInUnprocessedOrder.Quantity += item.Quantity;
-                                }
-                                else
-                                {
-                                    itemInUnprocessedOrder = new ItemInUnprocessedOrderDB
+                                    newUnprocessedOrdersDB = new UnprocessedOrderDB()
                                     {
-                                        ItemId = item.Item.Id,
-                                        Quantity = item.Quantity,
-                                        UnprocessedOrderId = newUnprocessedOrdersDB.Id
+                                        Id = Guid.NewGuid().ToString(),
+                                        CashierId = oldUnprocessedOrdersDB.CashierId,
+                                        PaymentPlaceId = paymentPlaceId,
+                                        //TotalAmount = totalAmountForPay,
                                     };
-                                    _viewModel.DbContext.ItemsInUnprocessedOrder.Add(itemInUnprocessedOrder);
+                                    dbContext.UnprocessedOrders.Add(newUnprocessedOrdersDB);
+                                    dbContext.SaveChanges();
                                 }
+                                //else
+                                //{
+                                //    //newUnprocessedOrdersDB.TotalAmount += totalAmountForPay;
+                                //    //dbContext.UnprocessedOrders.Update(newUnprocessedOrdersDB);
+                                //}
 
-                                await _viewModel.DbContext.SaveChangesAsync(); // Save changes for each item
+                                //oldUnprocessedOrdersDB.TotalAmount -= totalAmountForPay;
+                                //dbContext.UnprocessedOrders.Update(oldUnprocessedOrdersDB);
 
-                                var itemInOldUnprocessedOrder = _viewModel.DbContext.ItemsInUnprocessedOrder.FirstOrDefault(i => i.ItemId == item.Item.Id &&
-                                i.UnprocessedOrderId == oldUnprocessedOrdersDB.Id);
 
-                                if (itemInOldUnprocessedOrder != null)
+                                foreach (var item in _viewModel.SplitOrderViewModel.ItemsInvoiceForPay)
                                 {
-                                    if (itemInOldUnprocessedOrder.Quantity == item.Quantity)
+                                    var itemsOrderToday = oldOrdersTodayDB.Where(o => o.OrderTodayItems.Any(oi => oi.ItemId == item.Item.Id &&
+                                    oi.Quantity - oi.NaplacenoQuantity - oi.StornoQuantity > 0)).ToList();
+
+                                    if (itemsOrderToday.Any())
                                     {
-                                        _viewModel.DbContext.ItemsInUnprocessedOrder.Remove(itemInOldUnprocessedOrder);
-                                    }
-                                    else
-                                    {
-                                        itemInOldUnprocessedOrder.Quantity -= item.Quantity;
-                                        _viewModel.DbContext.ItemsInUnprocessedOrder.Update(itemInOldUnprocessedOrder);
-                                    }
-                                }
+                                        decimal prebacivanjeQuantity = item.Quantity;
 
-                                await _viewModel.DbContext.SaveChangesAsync(); // Save changes for each item
-
-                                newUnprocessedOrdersDB.TotalAmount += item.TotalAmout;
-                                oldUnprocessedOrdersDB.TotalAmount -= item.TotalAmout;
-
-                                var orders = oldOrdersTodayDB.Where(o => o.OrderTodayItems.Any(oi => oi.ItemId == item.Item.Id)).
-                                    OrderBy(o => o.OrderDateTime).ToList();
-
-                                if (orders != null && orders.Any())
-                                {
-                                    decimal quantityItem = item.Quantity;
-                                    foreach (var order in orders)
-                                    {
-                                        if(quantityItem == 0)
+                                        foreach (var oldOrderToday in itemsOrderToday)
                                         {
-                                            break;
-                                        }
-
-                                        var orderTodayDB = _viewModel.DbContext.OrdersToday.Include(o => o.OrderTodayItems).
-                                            FirstOrDefault(o => o.UnprocessedOrderId == newUnprocessedOrdersDB.Id &&
-                                            o.OrderDateTime == order.OrderDateTime);
-
-                                        if (orderTodayDB == null)
-                                        {
-                                            orderTodayDB = new OrderTodayDB()
-                                            {
-                                                Id = Guid.NewGuid().ToString(),
-                                                CashierId = order.CashierId,
-                                                Counter = order.Counter,
-                                                CounterType = order.CounterType,
-                                                Name = order.Name,
-                                                OrderDateTime = order.OrderDateTime,
-                                                TableId = order.TableId,
-                                                TotalPrice = 0,
-                                                UnprocessedOrderId = newUnprocessedOrdersDB.Id,
-                                                OrderTodayItems = new List<OrderTodayItemDB>()
-                                            };
-
-                                            _viewModel.DbContext.OrdersToday.Add(orderTodayDB);
-                                        }
-
-                                        var orderTodayItem = order.OrderTodayItems.FirstOrDefault(oi => oi.ItemId == item.Item.Id);
-                                        if (orderTodayItem != null)
-                                        {
-                                            var orderTodayItemDB = orderTodayDB.OrderTodayItems.FirstOrDefault(oi => oi.OrderTodayId == orderTodayDB.Id &&
-                                            oi.ItemId == item.Item.Id);
-
-                                            if (orderTodayItemDB == null)
-                                            {
-                                                orderTodayItemDB = new OrderTodayItemDB()
-                                                {
-                                                    ItemId = item.Item.Id,
-                                                    OrderTodayId = orderTodayDB.Id,
-                                                    Quantity = 0,
-                                                    TotalPrice = 0
-                                                };
-
-                                                orderTodayDB.OrderTodayItems.Add(orderTodayItemDB);
-                                            }
-
-                                            decimal unitPrice = Decimal.Round(orderTodayItem.TotalPrice / orderTodayItem.Quantity, 2);
-
-                                            if (orderTodayItem.Quantity > quantityItem)
-                                            {
-                                                order.TotalPrice -= Decimal.Round(unitPrice * quantityItem);
-                                                orderTodayDB.TotalPrice += Decimal.Round(unitPrice * quantityItem);
-                                                orderTodayItem.Quantity -= quantityItem;
-
-                                                orderTodayItemDB.Quantity += quantityItem;
-                                                orderTodayItemDB.TotalPrice += Decimal.Round(unitPrice * quantityItem, 2);
-
-                                                quantityItem = 0;
-                                            }
-                                            else
-                                            {
-                                                orderTodayDB.TotalPrice += orderTodayItem.TotalPrice;
-                                                order.TotalPrice -= orderTodayItem.TotalPrice;
-
-                                                orderTodayItemDB.Quantity += orderTodayItem.Quantity;
-                                                orderTodayItemDB.TotalPrice += orderTodayItem.TotalPrice;
-
-                                                _viewModel.DbContext.OrderTodayItems.Remove(orderTodayItem);
-
-                                                quantityItem -= orderTodayItem.Quantity;
-                                            }
-
-                                            await _viewModel.DbContext.SaveChangesAsync(); // Save changes for each orderTodayItem
-
-                                            if (order.TotalPrice == 0)
-                                            {
-                                                _viewModel.DbContext.OrdersToday.Remove(order);
-                                            }
-
-                                            await _viewModel.DbContext.SaveChangesAsync(); // Save changes for each order
-
-                                            if (quantityItem == 0)
+                                            if (prebacivanjeQuantity == 0)
                                             {
                                                 break;
                                             }
+
+                                            var newOrderToday = dbContext.OrdersToday.Include(o => o.OrderTodayItems).
+                                                FirstOrDefault(o => o.UnprocessedOrderId == newUnprocessedOrdersDB.Id &&
+                                                o.OrderDateTime == oldOrderToday.OrderDateTime);
+
+                                            if (newOrderToday == null)
+                                            {
+                                                newOrderToday = new OrderTodayDB()
+                                                {
+                                                    Id = Guid.NewGuid().ToString(),
+                                                    CashierId = oldOrderToday.CashierId,
+                                                    Counter = oldOrderToday.Counter,
+                                                    CounterType = oldOrderToday.CounterType,
+                                                    Name = oldOrderToday.Name,
+                                                    OrderDateTime = oldOrderToday.OrderDateTime,
+                                                    TableId = newUnprocessedOrdersDB.PaymentPlaceId,
+                                                    Faza = oldOrderToday.Faza,
+                                                    TotalPrice = 0,
+                                                    UnprocessedOrderId = newUnprocessedOrdersDB.Id,
+                                                    OrderTodayItems = new List<OrderTodayItemDB>()
+                                                };
+                                                dbContext.OrdersToday.Add(newOrderToday);
+                                                dbContext.SaveChanges();
+                                            }
+
+                                            foreach (var oldOrderTodayItem in oldOrderToday.OrderTodayItems)
+                                            {
+                                                if (prebacivanjeQuantity == 0)
+                                                {
+                                                    break;
+                                                }
+
+                                                if (oldOrderTodayItem.ItemId == item.Item.Id)
+                                                {
+                                                    var newOrderTodayItem = dbContext.OrderTodayItems.FirstOrDefault(oi => oi.OrderTodayId == newOrderToday.Id &&
+                                                    oi.ItemId == item.Item.Id);
+
+                                                    if (newOrderTodayItem == null)
+                                                    {
+                                                        newOrderTodayItem = new OrderTodayItemDB()
+                                                        {
+                                                            Id = Guid.NewGuid().ToString(),
+                                                            ItemId = item.Item.Id,
+                                                            OrderTodayId = newOrderToday.Id,
+                                                            Quantity = 0,
+                                                            TotalPrice = 0,
+                                                            Zelja = oldOrderTodayItem.Zelja,
+                                                        };
+                                                        dbContext.OrderTodayItems.Add(newOrderTodayItem);
+                                                        dbContext.SaveChanges();
+                                                    }
+
+                                                    decimal preostaKolicina = oldOrderTodayItem.Quantity - oldOrderTodayItem.StornoQuantity - oldOrderTodayItem.NaplacenoQuantity;
+
+                                                    if (preostaKolicina > 0)
+                                                    {
+                                                        if (preostaKolicina >= prebacivanjeQuantity)
+                                                        {
+                                                            decimal totalSum = Decimal.Round((oldOrderTodayItem.TotalPrice / oldOrderTodayItem.Quantity)
+                                                                * prebacivanjeQuantity, 2);
+
+                                                            oldOrderToday.TotalPrice -= totalSum;
+                                                            newOrderToday.TotalPrice += totalSum;
+                                                            newOrderTodayItem.Quantity += prebacivanjeQuantity;
+                                                            newOrderTodayItem.TotalPrice += totalSum;
+                                                            oldOrderTodayItem.Quantity -= prebacivanjeQuantity;
+                                                            oldOrderTodayItem.TotalPrice -= totalSum;
+                                                            prebacivanjeQuantity = 0;
+
+                                                            if (oldOrderTodayItem.Quantity == 0)
+                                                            {
+                                                                dbContext.OrderTodayItems.Remove(oldOrderTodayItem);
+                                                            }
+                                                            else
+                                                            {
+                                                                dbContext.OrderTodayItems.Update(oldOrderTodayItem);
+                                                            }
+                                                            if (oldOrderToday.TotalPrice == 0)
+                                                            {
+                                                                dbContext.OrdersToday.Remove(oldOrderToday);
+                                                            }
+                                                            else
+                                                            {
+                                                                dbContext.OrdersToday.Update(oldOrderToday);
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            decimal totalSum = Decimal.Round((oldOrderTodayItem.TotalPrice / oldOrderTodayItem.Quantity)
+                                                                * preostaKolicina, 2);
+
+                                                            oldOrderToday.TotalPrice -= totalSum;
+                                                            newOrderToday.TotalPrice += totalSum;
+                                                            newOrderTodayItem.Quantity += preostaKolicina;
+                                                            newOrderTodayItem.TotalPrice += totalSum;
+                                                            prebacivanjeQuantity -= preostaKolicina;
+
+                                                            dbContext.OrderTodayItems.Remove(oldOrderTodayItem);
+
+                                                            if (oldOrderToday.TotalPrice == 0)
+                                                            {
+                                                                dbContext.OrdersToday.Remove(oldOrderToday);
+                                                            }
+                                                            else
+                                                            {
+                                                                dbContext.OrdersToday.Update(oldOrderToday);
+                                                            }
+
+                                                        }
+                                                        dbContext.OrdersToday.Update(newOrderToday);
+                                                        dbContext.OrderTodayItems.Update(newOrderTodayItem);
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
+                                dbContext.SaveChanges();
 
-                                if (movePorudzbinaClickBarDrlja != null)
+                                var oldU = dbContext.OrdersToday.Where(o => o.UnprocessedOrderId == oldUnprocessedOrdersDB.Id).ToList();
+
+                                if (!oldU.Any() ||
+                                    oldU.Sum(o => o.OrderTodayItems.Sum(oti => oti.Quantity - oti.StornoQuantity - oti.NaplacenoQuantity)) == 0)
                                 {
-                                    movePorudzbinaClickBarDrlja.Items.Add(new PorudzbinaItemDrlja()
-                                    {
-                                        Kolicina = item.Quantity,
-                                        MPC = item.Item.SellingUnitPrice,
-                                        ItemIdString = item.Item.Id,
-                                        Naziv = item.Item.Name,
-                                        RBS = 0,
-                                        BrojNarudzbe = 0,
-                                        Jm = item.Item.Jm
-                                    });
+                                    dbContext.UnprocessedOrders.Remove(oldUnprocessedOrdersDB);
+                                    dbContext.SaveChanges();
                                 }
-                            }
 
-                            if (oldUnprocessedOrdersDB.TotalAmount == 0)
-                            {
-                                _viewModel.DbContext.UnprocessedOrders.Remove(oldUnprocessedOrdersDB);
-                            }
+                                transaction.Commit();
 
-                            await _viewModel.DbContext.SaveChangesAsync(); // Save final changes
+                                _viewModel.TableId = paymentPlaceId;
 
-                            if (movePorudzbinaClickBarDrlja != null)
-                            {
-                                var result = await PostChangePaymentPlaceAsync(movePorudzbinaClickBarDrlja);
-
-                                if (result != 200)
+                                _viewModel.SplitOrderViewModel.ChangePaymentPlaceWindow.Close();
+                                _viewModel.SplitOrderViewModel.PaySaleViewModel.SplitOrderWindow.Close();
+                                if (_viewModel.SplitOrderViewModel.PaySaleViewModel.SaleViewModel.PayWindow != null)
                                 {
-                                    MessageBox.Show("Desila se greška prilikom prebacivanja porudžbine!\nObratite se serviseru.",
-                                        "Greška",
-                                        MessageBoxButton.OK,
-                                        MessageBoxImage.Error);
-
-                                    Log.Error($"ClickOnPaymentPlaceChangePaymentPlaceCommand -> greška prilikom prebacivanja porudzbine na drugi sto: Code={result}");
+                                    _viewModel.SplitOrderViewModel.PaySaleViewModel.SaleViewModel.PayWindow.Close();
                                 }
+                                _viewModel.SplitOrderViewModel.PaySaleViewModel.SaleViewModel.Reset();
                             }
-
-                            _viewModel.SplitOrderViewModel.ChangePaymentPlaceWindow.Close();
-                            _viewModel.SplitOrderViewModel.PaySaleViewModel.SplitOrderWindow.Close();
-                            if (_viewModel.SplitOrderViewModel.PaySaleViewModel.SaleViewModel.PayWindow != null)
-                            {
-                                _viewModel.SplitOrderViewModel.PaySaleViewModel.SaleViewModel.PayWindow.Close();
-                            }
-                            _viewModel.SplitOrderViewModel.PaySaleViewModel.SaleViewModel.Reset();
                         }
                     }
                 }
@@ -285,48 +244,6 @@ namespace ClickBar.Commands.Sale.Pay.SplitOrder.ChangePaymentPlace
                     MessageBoxImage.Error);
 
                 Log.Error("ClickOnPaymentPlaceChangePaymentPlaceCommand -> Greška u biranju platnog mesta", ex);
-            }
-        }
-
-        private async Task<int> PostChangePaymentPlaceAsync(MovePorudzbinaClickBarDrlja movePorudzbinaClickBarDrlja)
-        {
-            try
-            {
-                var handler = new HttpClientHandler();
-                handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
-                HttpClient client = new HttpClient(handler);
-
-                var ip = SettingsManager.Instance.GetHOstPC_IP();
-
-                string requestUrl = string.Empty;
-                if (string.IsNullOrEmpty(ip))
-                {
-                    requestUrl = "http://localhost:5000/api/porudzbina/movePorudzbina";
-                }
-                else
-                {
-                    requestUrl = $"https://{ip}:44323/api/porudzbina/movePorudzbina";
-                }
-
-                var json = JsonConvert.SerializeObject(movePorudzbinaClickBarDrlja);
-                var data = new StringContent(json, Encoding.UTF8, "application/json");
-
-                var response = await client.PostAsync(requestUrl, data);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    return (int)response.StatusCode;
-                }
-                else
-                {
-                    Log.Error($"ClickOnPaymentPlaceChangePaymentPlaceCommand -> PostChangePaymentPlaceAsync -> Status je: {(int)response.StatusCode} -> {response.StatusCode.ToString()} ");
-                    return (int)response.StatusCode;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error("ClickOnPaymentPlaceChangePaymentPlaceCommand -> PostChangePaymentPlaceAsync -> Greska prilikom prebacivanja porudzbine: ", ex);
-                return -1;
             }
         }
     }

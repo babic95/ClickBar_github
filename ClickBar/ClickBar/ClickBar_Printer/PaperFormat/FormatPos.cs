@@ -7,6 +7,7 @@ using ClickBar_Logging;
 using ClickBar_Printer.Enums;
 using ClickBar_Report;
 using ClickBar_Report.Models;
+using ClickBar_Report.Models.Kuhinja;
 using ClickBar_Settings;
 using System;
 using System.Collections.Generic;
@@ -24,6 +25,7 @@ namespace ClickBar_Printer.PaperFormat
         private static string _journal;
         private static string _reportString;
         private static string _inventoryStatus;
+        private static string _kuhinjaReport;
         private static string _verificationQRCode;
         private static int _width;
         private static float _fontSizeInMM;
@@ -33,82 +35,129 @@ namespace ClickBar_Printer.PaperFormat
         private static readonly float _fontSize80mm = 3.06f;
         private static readonly float _fontSize58mm = 2.16f;
 
-        private static string CreateOrder(Order order)
+        public static void PrintKuhinjaReport(PrinterFormatEnumeration printerFormat, 
+            KuhinjaReport kuhinjaReport)
         {
-            string orderPrint = CenterString($"Porudzbina {order.OrderName}", 36);
+            _kuhinjaReport = "====================================\r\n";
+            _kuhinjaReport += CenterString(kuhinjaReport.Name, 36);
 
-            if(order.PartHall == "storno")
+            _kuhinjaReport += "   \r\n";
+            _kuhinjaReport += "   \r\n";
+            _kuhinjaReport += "   \r\n";
+            _kuhinjaReport += "Artikli:\r\n";
+            _kuhinjaReport += "------------------------------------\r\n";
+            _kuhinjaReport += $"{"Naziv".PadRight(15)}{"Količina".PadLeft(9)}{"Ukupno".PadLeft(12)}\r\n";
+            kuhinjaReport.Items.ForEach(item =>
             {
-                orderPrint = CenterString($"STORNO {order.OrderName}", 36);
-            }
+                _kuhinjaReport += SplitInParts($"{item.Id} - {item.Name}", "", 36, 1);
+                string quantity = $"{string.Format("{0:#,##0.000}", item.Quantity).Replace(',', '#').Replace('.', ',').Replace('#', '.')}".PadLeft(9);
+                string total = $"{string.Format("{0:#,##0.00}", item.Total).Replace(',', '#').Replace('.', ',').Replace('#', '.')}".PadLeft(12);
 
-            orderPrint += "====================================\r\n";
-            orderPrint += SplitInParts($"{order.CashierName}", "Konobar:", 36);
-            orderPrint += SplitInParts($"{order.OrderTime.ToString("dd.MM.yyyy HH:mm:ss")}", "Vreme:", 36);
-            if (order.TableId != 0)
+                _kuhinjaReport += $"{string.Empty.PadRight(15)}{quantity}{total}\r\n";
+
+                _kuhinjaReport += "------------------------------------\r\n";
+            });
+
+            string total = $"{string.Format("{0:#,##0.00}", kuhinjaReport.Total).Replace(',', '#').Replace('.', ',').Replace('#', '.')}".PadLeft(28);
+            _kuhinjaReport += $"UKUPNO: {total}\r\n";
+
+            string? prName = SettingsManager.Instance.GetPrinterName();
+
+            if (!string.IsNullOrEmpty(prName))
             {
-                orderPrint += SplitInParts($"{order.TableId}", "Sto:", 36);
+                var pdoc = new PrintDocument();
+                PrinterSettings ps = new PrinterSettings();
+                pdoc.PrinterSettings.PrinterName = prName;
 
-                if (!string.IsNullOrEmpty(order.PartHall))
+                int width = Convert.ToInt32(pdoc.PrinterSettings.DefaultPageSettings.PaperSize.Width / 100 * 25.4);
+                switch (printerFormat)
                 {
-                    orderPrint += SplitInParts($"{order.PartHall}", "Deo sale:", 36);
+                    case PrinterFormatEnumeration.Pos58mm:
+                        _fontSizeInMM = _fontSize58mm;
+                        if (width > 52)
+                        {
+                            width = 52;
+                        }
+                        break;
+                    case PrinterFormatEnumeration.Pos80mm:
+                        _fontSizeInMM = _fontSize80mm;
+                        if (width > 72)
+                        {
+                            width = 72;
+                        }
+                        break;
                 }
+
+                _width = width;
+
+                pdoc.PrintPage += new PrintPageEventHandler(dailyKuhinja);
+                pdoc.Print();
+                pdoc.PrintPage -= new PrintPageEventHandler(dailyKuhinja);
             }
-            else
-            {
-                orderPrint += CenterString($"{order.PartHall}", 36);
-            }
-            orderPrint += "====================================\r\n";
-            orderPrint += CenterString("Artikli", 36);
-            orderPrint += string.Format("{0}{1}\r\n", "Naziv".PadRight(26), "Kol.".PadLeft(10));
-            orderPrint += "------------------------------------\r\n";
-
-            int counter = 1;
-            foreach (var item in order.Items)
-            {
-                string i = string.Format("{0}{1}", item.Name, !string.IsNullOrEmpty(item.Zelja) ? $" - {item.Zelja}" : string.Empty);
-
-                orderPrint += SplitInParts(i, "", 31, 1);
-                orderPrint += string.Format("{0}{1}\r\n", string.Empty.PadRight(26),
-                    string.Format("{0:#,##0.000}", item.Quantity).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(10));
-
-                if (order.Items.Count != counter)
-                {
-                    orderPrint += "------------------------------------\r\n";
-                    counter++;
-                }
-            }
-            orderPrint += "====================================\r\n";
-            orderPrint += CenterString(order.OrderTime.ToString("dd.MM.yyyy HH:mm:ss"), 36);
-            orderPrint += "====================================\r\n\r\n";
-
-            return orderPrint;
         }
-
-        private static string GetItemsForJournal(InvoceRequestFileSystemWatcher invoiceRequest)
+        public static void PrintKuhinjaKonobariReport(PrinterFormatEnumeration printerFormat,
+            List<KuhinjaReport> konobari, string name)
         {
-            string items = "Артикли\r\n";
-            items += "====================================\r\n";
-            items += string.Format("{0}{1}{2}{3}\r\n", "Назив".PadRight(13), "Цена".PadRight(8), "Кол.".PadRight(5), "Укупно".PadLeft(10));
+            _kuhinjaReport = "====================================\r\n";
+            _kuhinjaReport += CenterString(name, 36);
 
-            foreach (ItemFileSystemWatcher item in invoiceRequest.Items)
+            _kuhinjaReport += "   \r\n";
+            _kuhinjaReport += "   \r\n";
+            _kuhinjaReport += "   \r\n";
+            _kuhinjaReport += "Konobari:\r\n";
+            _kuhinjaReport += "------------------------------------\r\n";
+            _kuhinjaReport += $"{"Naziv".PadRight(20)}{"Ukupno".PadLeft(16)}\r\n";
+
+            decimal total = 0;
+            konobari.ForEach(konobar =>
             {
-                string i = string.Format("{0}", item.Name);
+                string nameKonobar = konobar.Name.PadRight(20);
+                string total = $"{string.Format("{0:#,##0.00}", konobar.Total).Replace(',', '#').Replace('.', ',').Replace('#', '.')}".PadLeft(16);
 
-                decimal price = item.TotalAmount / item.Quantity;
+                _kuhinjaReport += $"{nameKonobar}{total}\r\n";
 
-                items += SplitInParts(i, "", 36, 1);
-                items += string.Format("{0}{1}{2}{3}\r\n", string.Empty.PadRight(13),
-                    string.Format("{0:#,##0.00}", price).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadRight(8),
-                    item.Quantity.ToString().PadRight(5),
-                    string.Format("{0:#,##0.00}", item.TotalAmount).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(10));
+                _kuhinjaReport += "------------------------------------\r\n";
 
-                _totalAmount += item.TotalAmount;
+                total += konobar.Total;
+            });
+
+            string totalString = $"{string.Format("{0:#,##0.00}", total).Replace(',', '#').Replace('.', ',').Replace('#', '.')}".PadLeft(28);
+            _kuhinjaReport += $"UKUPNO: {totalString}\r\n";
+
+            string? prName = SettingsManager.Instance.GetPrinterName();
+
+            if (!string.IsNullOrEmpty(prName))
+            {
+                var pdoc = new PrintDocument();
+                PrinterSettings ps = new PrinterSettings();
+                pdoc.PrinterSettings.PrinterName = prName;
+
+                int width = Convert.ToInt32(pdoc.PrinterSettings.DefaultPageSettings.PaperSize.Width / 100 * 25.4);
+                switch (printerFormat)
+                {
+                    case PrinterFormatEnumeration.Pos58mm:
+                        _fontSizeInMM = _fontSize58mm;
+                        if (width > 52)
+                        {
+                            width = 52;
+                        }
+                        break;
+                    case PrinterFormatEnumeration.Pos80mm:
+                        _fontSizeInMM = _fontSize80mm;
+                        if (width > 72)
+                        {
+                            width = 72;
+                        }
+                        break;
+                }
+
+                _width = width;
+
+                pdoc.PrintPage += new PrintPageEventHandler(dailyKuhinja);
+                pdoc.Print();
+                pdoc.PrintPage -= new PrintPageEventHandler(dailyKuhinja);
             }
-
-            return items;
         }
-
         public static void PrintInventoryStatus(PrinterFormatEnumeration printerFormat, 
             List<InvertoryGlobal> inventoryStatusAll, 
             string title,
@@ -675,7 +724,30 @@ namespace ClickBar_Printer.PaperFormat
 
             return reportText;
         }
-
+        private static void dailyKuhinja(object sender, PrintPageEventArgs e)
+        {
+            Graphics graphics = e.Graphics;
+            graphics.PageUnit = GraphicsUnit.Point;
+            Font drawFontRegular = new Font("Cascadia Code",
+                _fontSizeInMM,
+                System.Drawing.FontStyle.Regular, GraphicsUnit.Millimeter);
+            SolidBrush drawBrush = new SolidBrush(System.Drawing.Color.Black);
+            string[] splitForPrint = _kuhinjaReport.Split("\r\n");
+            float x = 0;
+            float y = 0;
+            float width = 0; // max width I found through trial and error
+            float height = 0F;
+            int length = splitForPrint.Length;
+            if (splitForPrint[length - 1].Length == 0)
+            {
+                length--;
+            }
+            for (int i = 0; i < length; i++)
+            {
+                graphics.DrawString(splitForPrint[i], drawFontRegular, drawBrush, x, y);
+                y += graphics.MeasureString(splitForPrint[i], drawFontRegular).Height;
+            }
+        }
         private static void dailyDepInventory(object sender, PrintPageEventArgs e)
         {
             Graphics graphics = e.Graphics;
@@ -1000,6 +1072,82 @@ namespace ClickBar_Printer.PaperFormat
             result += SplitInParts($"{string.Format("{0:#,##0.00}", total).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "Bruto:", 36);
 
             return result;
+        }
+
+        private static string CreateOrder(Order order)
+        {
+            string orderPrint = CenterString($"Porudzbina {order.OrderName}", 36);
+
+            if (order.PartHall == "storno")
+            {
+                orderPrint = CenterString($"STORNO {order.OrderName}", 36);
+            }
+
+            orderPrint += "====================================\r\n";
+            orderPrint += SplitInParts($"{order.CashierName}", "Konobar:", 36);
+            orderPrint += SplitInParts($"{order.OrderTime.ToString("dd.MM.yyyy HH:mm:ss")}", "Vreme:", 36);
+            if (order.TableId != 0)
+            {
+                orderPrint += SplitInParts($"{order.TableId}", "Sto:", 36);
+
+                if (!string.IsNullOrEmpty(order.PartHall))
+                {
+                    orderPrint += SplitInParts($"{order.PartHall}", "Deo sale:", 36);
+                }
+            }
+            else
+            {
+                orderPrint += CenterString($"{order.PartHall}", 36);
+            }
+            orderPrint += "====================================\r\n";
+            orderPrint += CenterString("Artikli", 36);
+            orderPrint += string.Format("{0}{1}\r\n", "Naziv".PadRight(26), "Kol.".PadLeft(10));
+            orderPrint += "------------------------------------\r\n";
+
+            int counter = 1;
+            foreach (var item in order.Items)
+            {
+                string i = string.Format("{0}{1}", item.Name, !string.IsNullOrEmpty(item.Zelja) ? $" - {item.Zelja}" : string.Empty);
+
+                orderPrint += SplitInParts(i, "", 31, 1);
+                orderPrint += string.Format("{0}{1}\r\n", string.Empty.PadRight(26),
+                    string.Format("{0:#,##0.000}", item.Quantity).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(10));
+
+                if (order.Items.Count != counter)
+                {
+                    orderPrint += "------------------------------------\r\n";
+                    counter++;
+                }
+            }
+            orderPrint += "====================================\r\n";
+            orderPrint += CenterString(order.OrderTime.ToString("dd.MM.yyyy HH:mm:ss"), 36);
+            orderPrint += "====================================\r\n\r\n";
+
+            return orderPrint;
+        }
+
+        private static string GetItemsForJournal(InvoceRequestFileSystemWatcher invoiceRequest)
+        {
+            string items = "Артикли\r\n";
+            items += "====================================\r\n";
+            items += string.Format("{0}{1}{2}{3}\r\n", "Назив".PadRight(13), "Цена".PadRight(8), "Кол.".PadRight(5), "Укупно".PadLeft(10));
+
+            foreach (ItemFileSystemWatcher item in invoiceRequest.Items)
+            {
+                string i = string.Format("{0}", item.Name);
+
+                decimal price = item.TotalAmount / item.Quantity;
+
+                items += SplitInParts(i, "", 36, 1);
+                items += string.Format("{0}{1}{2}{3}\r\n", string.Empty.PadRight(13),
+                    string.Format("{0:#,##0.00}", price).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadRight(8),
+                    item.Quantity.ToString().PadRight(5),
+                    string.Format("{0:#,##0.00}", item.TotalAmount).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(10));
+
+                _totalAmount += item.TotalAmount;
+            }
+
+            return items;
         }
         //private static string ReportInvoiceTypes(Dictionary<InvoiceTypeEenumeration, List<ReportInvoiceType>> invoiceTypes)
         //{

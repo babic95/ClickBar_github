@@ -70,12 +70,17 @@ namespace ClickBar.Commands.Login
                         return;
                     }
                 }
+                var typeApp = SettingsManager.Instance.GetTypeApp();
 #if CRNO
 #else
-                Task.Run(() =>
+                if (typeApp == TypeAppEnumeration.Sale ||
+                    typeApp == TypeAppEnumeration.Table)
                 {
-                    SendPin();
-                });
+                    Task.Run(() =>
+                    {
+                        SendPin();
+                    });
+                }
 #endif
 
                 var scopedCashierDB = _serviceProvider.GetRequiredService<CashierDB>();
@@ -83,16 +88,27 @@ namespace ClickBar.Commands.Login
                 scopedCashierDB.Name = cashierDB.Name;
                 scopedCashierDB.Type = cashierDB.Type;
 
-                AppStateParameter appStateParameter;
+                AppStateParameter appStateParameter = null;
                 if (cashierDB.Type == CashierTypeEnumeration.Worker)
                 {
-                    appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
-                        scopedCashierDB);
+                    if(typeApp == TypeAppEnumeration.Sale)
+                    {
+                        appStateParameter = new AppStateParameter(AppStateEnumerable.Sale,
+                            scopedCashierDB,
+                            -1);
+                    }
+                    else if(typeApp == TypeAppEnumeration.Table)
+                    {
+                        appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
+                            scopedCashierDB,
+                            -1);
+                    }
                 }
                 else
                 {
                     appStateParameter = new AppStateParameter(AppStateEnumerable.Main,
-                        scopedCashierDB);
+                        scopedCashierDB,
+                            -1);
                 }
                 _currentView.UpdateCurrentAppStateViewModelCommand.Execute(appStateParameter);
             }

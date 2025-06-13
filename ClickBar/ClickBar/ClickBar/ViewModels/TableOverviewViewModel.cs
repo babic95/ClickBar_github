@@ -24,19 +24,23 @@ using System.Windows.Media.Imaging;
 using System.Timers;
 using Microsoft.Data.Sqlite;
 using System.Windows.Threading;
-using ClickBar_Database_Drlja;
-using ClickBar_Database_Drlja.Models;
 using Microsoft.EntityFrameworkCore;
 using ClickBar_Logging;
 using System.Media;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security.Policy;
+using ClickBar.Enums.Kuhinja;
+using ClickBar_Common.Models.Invoice;
+using DocumentFormat.OpenXml.InkML;
+using ClickBar.PollingServeices;
 
 namespace ClickBar.ViewModels
 {
     public class TableOverviewViewModel : ViewModelBase
     {
         #region Fields
+        private IServiceProvider _serviceProvider;
+
         private ObservableCollection<PartHall> _rooms;
         private ObservableCollection<PaymentPlace> _allNormalPaymentPlaces;
         private ObservableCollection<PaymentPlace> _normalPaymentPlaces;
@@ -60,13 +64,11 @@ namespace ClickBar.ViewModels
 
         #region Constructors
         public TableOverviewViewModel(IServiceProvider serviceProvider, 
-            IDbContextFactory<SqlServerDbContext> dbContextFactory, 
-            IDbContextFactory<SqliteDrljaDbContext>? drljaDbContextFactory,
-            SaleViewModel saleViewModel)
+            IDbContextFactory<SqlServerDbContext> dbContextFactory)
         {
-            DbContext = dbContextFactory.CreateDbContext();
-            DrljaDbContextFactory = drljaDbContextFactory;
-            SaleViewModel = saleViewModel;
+            _serviceProvider = serviceProvider;
+            DbContextFactory = dbContextFactory;
+            SaleViewModel = _serviceProvider.GetRequiredService<SaleViewModel>();
             Order = SaleViewModel.CurrentOrder;
 
             Rooms = new ObservableCollection<PartHall>();
@@ -94,15 +96,16 @@ namespace ClickBar.ViewModels
                 CurrentPartHall = Rooms.FirstOrDefault(r => r.Id == SaleViewModel.CurrentPartHall.Id);
             }
 
-            StartPolling();
-            StartPollingStatusStolova();
+
+            // Pokretanje polling metoda preko singletona
+            //TablePollingService.Instance.StartPolling(CheckDatabase);
+            TablePollingService.Instance.StartPollingStatusStolova(CheckDatabaseStatusStolovaAsync);
             SelectedDate = DateTime.Now;
         }
         #endregion Constructors
 
         #region Internal Properties
-        internal SqlServerDbContext DbContext { get; private set; }
-        internal IDbContextFactory<SqliteDrljaDbContext>? DrljaDbContextFactory { get; private set; }
+        internal IDbContextFactory<SqlServerDbContext> DbContextFactory { get; private set; }
         #endregion Internal Properties
 
         #region Properties
@@ -286,153 +289,133 @@ namespace ClickBar.ViewModels
         #endregion Commands
 
         #region Public methods
-        public void SetOrder(Order order)
-        {
-            PaymentPlace? paymentPlace = NormalPaymentPlaces.FirstOrDefault(pp => pp.Id == order.TableId);
+        //public void SetOrder(Order order)
+        //{
+        //    PaymentPlace? paymentPlace = NormalPaymentPlaces.FirstOrDefault(pp => pp.Id == order.TableId);
 
-            if (paymentPlace == null)
-            {
-                paymentPlace = RoundPaymentPlaces.FirstOrDefault(pp => pp.Id == order.TableId);
-            }
+        //    if (paymentPlace == null)
+        //    {
+        //        paymentPlace = RoundPaymentPlaces.FirstOrDefault(pp => pp.Id == order.TableId);
+        //    }
 
-            if (paymentPlace != null)
-            {
-                if (paymentPlace.Order != null && paymentPlace.Order.Items.Any())
-                {
-                    order.Items.ToList().ForEach(item =>
-                    {
-                        var itemInPaymentPlace = paymentPlace.Order.Items.FirstOrDefault(i => i.Item.Id == item.Item.Id);
-                        if (itemInPaymentPlace != null)
-                        {
-                            itemInPaymentPlace.TotalAmout += item.TotalAmout;
-                            itemInPaymentPlace.Quantity += item.Quantity;
-                        }
-                        else
-                        {
-                            paymentPlace.Order.Items.Add(item);
-                        }
-                    });
-                }
-                else
-                {
-                    paymentPlace.Order = new Order(order.TableId, order.PartHall)
-                    {
-                        Items = new ObservableCollection<ItemInvoice>(order.Items),
-                        Cashier = order.Cashier
-                    };
-                    paymentPlace.Total = SaleViewModel.TotalAmount;
-                    paymentPlace.Background = Brushes.Red;
-                }
+        //    if (paymentPlace != null)
+        //    {
+        //        if (paymentPlace.Order != null && paymentPlace.Order.Items.Any())
+        //        {
+        //            order.Items.ToList().ForEach(item =>
+        //            {
+        //                var itemInPaymentPlace = paymentPlace.Order.Items.FirstOrDefault(i => i.Item.Id == item.Item.Id);
+        //                if (itemInPaymentPlace != null)
+        //                {
+        //                    itemInPaymentPlace.TotalAmout += item.TotalAmout;
+        //                    itemInPaymentPlace.Quantity += item.Quantity;
+        //                }
+        //                else
+        //                {
+        //                    paymentPlace.Order.Items.Add(item);
+        //                }
+        //            });
+        //        }
+        //        else
+        //        {
+        //            paymentPlace.Order = new Order(order.TableId, order.PartHall)
+        //            {
+        //                Items = new ObservableCollection<ItemInvoice>(order.Items),
+        //                Cashier = order.Cashier
+        //            };
+        //            paymentPlace.Total = SaleViewModel.TotalAmount;
+        //            paymentPlace.Background = Brushes.Red;
+        //        }
 
-                SaleViewModel.TableId = 0;
-                SaleViewModel.ItemsInvoice = new ObservableCollection<ItemInvoice>();
-                SaleViewModel.TotalAmount = 0;
-            }
-        }
+        //        SaleViewModel.TableId = 0;
+        //        SaleViewModel.ItemsInvoice = new ObservableCollection<ItemInvoice>();
+        //        SaleViewModel.TotalAmount = 0;
+        //    }
+        //}
         #endregion Public methods
 
         #region Internal Methods
         internal async void SetKuhinjaNarudzbine()
         {
-            if (DrljaDbContextFactory != null)
+            if (DbContextFactory != null)
             {
-                using (var DrljaDbContext = DrljaDbContextFactory.CreateDbContext())
+                using (var dbContext = DbContextFactory.CreateDbContext())
                 {
                     Narudzbe = new ObservableCollection<Narudzbe>();
-                    var allNarudzbe = DrljaDbContext.StavkeNarudzbine.AsNoTracking()
-                        .Join(DrljaDbContext.Narudzbine.AsNoTracking(),
-                        s => s.TR_NARUDZBE_ID,
-                        n => n.TR_NARUDZBE_ID,
-                        (s, n) => new { s, n })
-                        .Where(n => n.n.TR_VREMENARUDZBE.Date == SelectedDate.Date);
+
+                    var allNarudzbe = dbContext.OrdersToday.Include(o => o.OrderTodayItems).ThenInclude(o => o.Item).AsNoTracking()
+                        .Where(o => o.OrderDateTime.Date == SelectedDate.Date &&
+                        !string.IsNullOrEmpty(o.Name) &&
+                        (o.Name.ToLower().Contains("k") ||
+                        o.Name.ToLower().Contains("h")));
 
                     if (allNarudzbe.Any())
                     {
-                        var maxBrPorudzbine = DrljaDbContext.Narudzbine.AsNoTracking()
-                            .Where(n => n.TR_VREMENARUDZBE.Date == SelectedDate.Date)
-                            .Max(n => n.TR_BROJNARUDZBE);
+                        TotalNarudzbeSmena1 = 0;
+                        TotalNarudzbeSmena2 = 0;
+                        TotalNarudzbeDostava1 = 0;
+                        TotalNarudzbeDostava2 = 0;
+                        TotalNarudzbe = 0;
 
-                        var minBrPorudzbine = DrljaDbContext.Narudzbine.AsNoTracking()
-                            .Where(n => n.TR_VREMENARUDZBE.Date == SelectedDate.Date)
-                            .Min(n => n.TR_BROJNARUDZBE);
-
-                        var allStavkeToDay = DrljaDbContext.StavkeNarudzbine.AsNoTracking()
-                            .Where(s => s.TR_BROJNARUDZBE >= minBrPorudzbine &&
-                            s.TR_BROJNARUDZBE <= maxBrPorudzbine);
-
-                        if (allStavkeToDay != null && allStavkeToDay.Any())
+                        foreach (var n in allNarudzbe)
                         {
-                            TotalNarudzbeSmena1 = 0;
-                            TotalNarudzbeSmena2 = 0;
-                            TotalNarudzbeDostava1 = 0;
-                            TotalNarudzbeDostava2 = 0;
-                            TotalNarudzbe = 0;
+                            var narudzba = Narudzbe.FirstOrDefault(na => na.Id == n.Id);
+                            if (narudzba == null)
+                            {
+                                narudzba = new Narudzbe()
+                                {
+                                    Id = n.Id,
+                                    BrojNarudzbe = n.CounterType,
+                                    RadnikId = n.CashierId,
+                                    Smena = n.CashierId == "1111" || n.CashierId == "3333" ? 1 : 2,
+                                    StoName = n.TableId.ToString(),
+                                    VremeNarudzbe = n.OrderDateTime,
+                                    Stavke = new ObservableCollection<StavkaNarudzbe>()
+                                };
+                                Narudzbe.Add(narudzba);
+                            }
 
-                            foreach (var s in allStavkeToDay)
+                            foreach (var s in n.OrderTodayItems)
                             {
                                 try
                                 {
-                                    var narudzbaDB = DrljaDbContext.Narudzbine.AsNoTracking()
-                                        .Where(n => n.TR_NARUDZBE_ID == s.TR_NARUDZBE_ID)
-                                        .OrderByDescending(n => n.TR_VREMENARUDZBE)
-                                        .FirstOrDefault();
-
-                                    if (narudzbaDB != null)
+                                    StavkaNarudzbe stavkaNarudzbe = new StavkaNarudzbe()
                                     {
-                                        var narudzbe = Narudzbe.FirstOrDefault(na => na.BrojNarudzbe == s.TR_BROJNARUDZBE &&
-                                            na.NarudzneId == s.TR_NARUDZBE_ID);
+                                        IdItem = s.ItemId,
+                                        IdNarudzbe = narudzba.Id,
+                                        Kolicina = s.Quantity,
+                                        Mpc = Decimal.Round(s.TotalPrice / s.Quantity, 2),
+                                        Naziv = s.Item.Name,
+                                        StornoKolicina = s.StornoQuantity,
+                                        Ukupno = Decimal.Round((s.Quantity - s.StornoQuantity) * (s.TotalPrice / s.Quantity), 2)
+                                    };
 
-                                        if (narudzbe == null)
-                                        {
-                                            narudzbe = new Narudzbe()
-                                            {
-                                                Id = narudzbaDB.Id,
-                                                BrojNarudzbe = s.TR_BROJNARUDZBE,
-                                                NarudzneId = s.TR_NARUDZBE_ID,
-                                                RadnikId = narudzbaDB.TR_RADNIK,
-                                                Smena = narudzbaDB.TR_RADNIK == "1111" || narudzbaDB.TR_RADNIK == "3333" ? 1 : 2,
-                                                StoName = narudzbaDB.TR_STO,
-                                                VremeNarudzbe = Convert.ToDateTime(narudzbaDB.TR_VREMENARUDZBE),
-                                                Stavke = new ObservableCollection<StavkaNarudzbe>()
-                                            };
-                                            Narudzbe.Add(narudzbe);
-                                        }
-                                        narudzbe.Stavke.Add(new StavkaNarudzbe()
-                                        {
-                                            BrArt = s.TR_BRART,
-                                            Id = s.Id,
-                                            Kolicina = s.TR_KOL,
-                                            Mpc = s.TR_MPC,
-                                            Naziv = s.TR_NAZIV,
-                                            StornoKolicina = s.TR_KOL_STORNO,
-                                            Ukupno = decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2)
-                                        });
+                                    narudzba.Stavke.Add(stavkaNarudzbe);
 
-                                        if (s.TR_KOL_STORNO > 0)
-                                        {
-                                            narudzbe.Storno = "IMA STORNO";
-                                        }
-                                        else
-                                        {
-                                            narudzbe.Storno = "NEMA STORNO";
-                                        }
+                                    if (s.StornoQuantity > 0)
+                                    {
+                                        narudzba.Storno = "IMA STORNO";
+                                    }
+                                    else
+                                    {
+                                        narudzba.Storno = "NEMA STORNO";
+                                    }
 
-                                        if (narudzbe.RadnikId == "1111")
-                                        {
-                                            TotalNarudzbeSmena1 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
-                                        }
-                                        else if (narudzbe.RadnikId == "2222")
-                                        {
-                                            TotalNarudzbeSmena2 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
-                                        }
-                                        else if (narudzbe.RadnikId == "3333")
-                                        {
-                                            TotalNarudzbeDostava1 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
-                                        }
-                                        else if (narudzbe.RadnikId == "4444")
-                                        {
-                                            TotalNarudzbeDostava2 += decimal.Round((s.TR_KOL - s.TR_KOL_STORNO) * s.TR_MPC, 2);
-                                        }
+                                    if (narudzba.RadnikId == "1111")
+                                    {
+                                        TotalNarudzbeSmena1 += stavkaNarudzbe.Ukupno;
+                                    }
+                                    else if (narudzba.RadnikId == "2222")
+                                    {
+                                        TotalNarudzbeSmena2 += stavkaNarudzbe.Ukupno;
+                                    }
+                                    else if (narudzba.RadnikId == "3333")
+                                    {
+                                        TotalNarudzbeDostava1 += stavkaNarudzbe.Ukupno;
+                                    }
+                                    else if (narudzba.RadnikId == "4444")
+                                    {
+                                        TotalNarudzbeDostava2 += stavkaNarudzbe.Ukupno;
                                     }
                                 }
                                 catch (Exception ex)
@@ -451,148 +434,205 @@ namespace ClickBar.ViewModels
                 }
             }
         }
-        #endregion Internal Methods
-
-        #region Private methods
-        private void LoadingDB()
+        internal async Task CheckDatabaseStatusStolovaAsync(object sender, ElapsedEventArgs e)
         {
-            var remove0Value = DbContext.UnprocessedOrders
-                .GroupJoin(
-                    DbContext.ItemsInUnprocessedOrder,
-                    order => order.Id,
-                    item => item.UnprocessedOrderId,
-                    (order, items) => new { Order = order, Items = items }
-                )
-                .Where(x => !x.Items.Any())
-                .Select(x => x.Order);
-
-            if (remove0Value.Any())
+            try
             {
-                DbContext.UnprocessedOrders.RemoveRange(remove0Value);
-                DbContext.SaveChanges();
-            }
-
-            DbContext.PartHalls.AsNoTracking().ToList().ForEach(part =>
-            {
-                PartHall partHall = new PartHall()
+                using (var dbContext = DbContextFactory.CreateDbContext())
                 {
-                    Id = part.Id,
-                    Name = part.Name,
-                    Image = part.Image
-                };
+                    var paymentPlaces = await dbContext.PaymentPlaces.AsNoTracking().ToListAsync();
 
-                Rooms.Add(partHall);
-            });
-
-            DbContext.PaymentPlaces.AsNoTracking().ToList().ForEach(payment =>
-            {
-                PaymentPlace paymentPlace = new PaymentPlace()
-                {
-                    Id = payment.Id,
-                    PartHallId = payment.PartHallId,
-                    Left = payment.LeftCanvas.Value,
-                    Top = payment.TopCanvas.Value,
-                    Type = payment.Type.HasValue ? (PaymentPlaceTypeEnumeration)payment.Type.Value : PaymentPlaceTypeEnumeration.Normal,
-                    Name = !string.IsNullOrEmpty(payment.Name) ? payment.Name : payment.Id.ToString(),
-                    Popust = payment.Popust
-                };
-
-                if (paymentPlace.Type == PaymentPlaceTypeEnumeration.Normal)
-                {
-                    paymentPlace.Width = payment.Width.Value;
-                    paymentPlace.Height = payment.Height.Value;
-                }
-                else
-                {
-                    paymentPlace.Diameter = payment.Width.Value;
-                }
-
-                var unprocessedOrders = DbContext.UnprocessedOrders.AsNoTracking().FirstOrDefault(order => order.PaymentPlaceId == payment.Id);
-
-                if (unprocessedOrders != null)
-                {
-                    CashierDB? cashierDB = DbContext.Cashiers.AsNoTracking().FirstOrDefault(c => c.Id == unprocessedOrders.CashierId);
-                    var itemsInUnprocessedOrder = DbContext.Items.AsNoTracking()
-                        .Join(DbContext.ItemsInUnprocessedOrder,
-                        item => item.Id,
-                        itemInUnprocessedOrder => itemInUnprocessedOrder.ItemId,
-                        (item, itemInUnprocessedOrder) => new { Item = item, ItemInUnprocessedOrder = itemInUnprocessedOrder })
-                        .Where(item => item.ItemInUnprocessedOrder.UnprocessedOrderId == unprocessedOrders.Id);
-
-                    if (cashierDB != null && itemsInUnprocessedOrder.Any())
+                    foreach (var paymentPlace in paymentPlaces)
                     {
-                        ObservableCollection<ItemInvoice> items = new ObservableCollection<ItemInvoice>();
-                        decimal total = 0;
+                        var existingPaymentPlace = AllNormalPaymentPlaces.FirstOrDefault(p => p.Id == paymentPlace.Id) ??
+                                                   AllRoundPaymentPlaces.FirstOrDefault(p => p.Id == paymentPlace.Id);
 
-                        itemsInUnprocessedOrder.ToList().ForEach(item =>
+                        if (existingPaymentPlace != null)
                         {
-                            ItemInvoice itemInvoice = new ItemInvoice(new Item(item.Item), item.ItemInUnprocessedOrder.Quantity);
-                            items.Add(itemInvoice);
-                            total += itemInvoice.TotalAmout;
-                        });
+                            var unprocessedOrders = await dbContext.UnprocessedOrders
+                                .Include(u => u.Cashier)
+                                .AsNoTracking()
+                                .FirstOrDefaultAsync(order => order.PaymentPlaceId == paymentPlace.Id);
 
-                        paymentPlace.Order = new Order(cashierDB, items);
-                        paymentPlace.Order.TableId = payment.Id;
-                        paymentPlace.Order.PartHall = payment.PartHallId;
-                        paymentPlace.Background = Brushes.Red;
-                        paymentPlace.Total = total;
+                            // Obrada statusa stolova
+                            if (unprocessedOrders != null)
+                            {
+                                var ordersOld = await dbContext.OrdersToday
+                                    .Include(o => o.OrderTodayItems)
+                                    .AsNoTracking()
+                                    .Where(o => o.TableId == paymentPlace.Id &&
+                                                o.UnprocessedOrderId == unprocessedOrders.Id &&
+                                                o.Faza != (int)FazaKuhinjeEnumeration.Naplacena &&
+                                                o.Faza != (int)FazaKuhinjeEnumeration.Obrisana)
+                                    .ToListAsync();
+
+                                decimal total = ordersOld.Sum(o => o.OrderTodayItems
+                                    .Where(oti => oti.Quantity != 0 && oti.Quantity - oti.StornoQuantity - oti.NaplacenoQuantity > 0)
+                                    .Sum(oti => Decimal.Round((oti.Quantity - oti.StornoQuantity - oti.NaplacenoQuantity) *
+                                                               (oti.TotalPrice / oti.Quantity), 2)));
+
+                                await Application.Current.Dispatcher.InvokeAsync(() =>
+                                {
+                                    if (total != 0 || ordersOld.Any())
+                                    {
+                                        existingPaymentPlace.Order = new Order(unprocessedOrders.Cashier);
+                                        existingPaymentPlace.Order.TableId = paymentPlace.Id;
+                                        existingPaymentPlace.Order.PartHall = paymentPlace.PartHallId;
+                                        existingPaymentPlace.Background = Brushes.Red;
+                                        existingPaymentPlace.Total = total;
+                                    }
+                                    else
+                                    {
+                                        existingPaymentPlace.Order = new Order(paymentPlace.Id, paymentPlace.PartHallId);
+                                        existingPaymentPlace.Background = Brushes.Green;
+                                        existingPaymentPlace.Total = 0;
+                                    }
+                                });
+                            }
+                            else
+                            {
+                                await Application.Current.Dispatcher.InvokeAsync(() =>
+                                {
+                                    existingPaymentPlace.Order = new Order(paymentPlace.Id, paymentPlace.PartHallId);
+                                    existingPaymentPlace.Background = Brushes.Green;
+                                    existingPaymentPlace.Total = 0;
+                                });
+                            }
+                        }
                     }
                 }
-                else
+            }
+            catch (Exception ex)
+            {
+                // Loguj grešku ako je potrebno
+                Log.Error("TableOverviewViewModel -> CheckDatabaseStatusStolovaAsync -> Greška prilikom provere statusa stolova: ", ex);
+                Console.WriteLine($"Greška u CheckDatabaseStatusStolovaAsync: {ex.Message}");
+            }
+        }
+
+        //internal void CheckDatabaseStatusStolova(object sender, ElapsedEventArgs e)
+        //{
+        //    Task.Run(() =>
+        //    {
+        //        using (var dbContext = DbContextFactory.CreateDbContext())
+        //        {
+        //            var updatedPaymentPlaces = dbContext.PaymentPlaces.AsNoTracking().ToList();
+        //            foreach (var paymentPlace in updatedPaymentPlaces)
+        //            {
+        //                var existingPaymentPlace = AllNormalPaymentPlaces.FirstOrDefault(p => p.Id == paymentPlace.Id) ??
+        //                                           AllRoundPaymentPlaces.FirstOrDefault(p => p.Id == paymentPlace.Id);
+
+        //                if (existingPaymentPlace != null)
+        //                {
+        //                    // Ažuriraj status stolova
+        //                    var unprocessedOrders = dbContext.UnprocessedOrders.Include(u => u.Cashier).AsNoTracking()
+        //                    .FirstOrDefault(order => order.PaymentPlaceId == paymentPlace.Id);
+        //                    if (unprocessedOrders != null)
+        //                    {
+        //                        var ordersOld = dbContext.OrdersToday.Include(o => o.OrderTodayItems).AsNoTracking()
+        //                            .Where(o => o.TableId == paymentPlace.Id &&
+        //                            o.UnprocessedOrderId == unprocessedOrders.Id &&
+        //                            o.Faza != (int)FazaKuhinjeEnumeration.Naplacena &&
+        //                            o.Faza != (int)FazaKuhinjeEnumeration.Obrisana);
+
+        //                        decimal total = Decimal.Round(ordersOld
+        //                            .Sum(o => o.OrderTodayItems.Where(oti => oti.Quantity != 0 && oti.Quantity - oti.StornoQuantity - oti.NaplacenoQuantity > 0).Sum(oti => Decimal.Round((oti.Quantity - oti.StornoQuantity - oti.NaplacenoQuantity) * (oti.TotalPrice / oti.Quantity), 2))), 2);
+
+        //                        Application.Current.Dispatcher.Invoke(() =>
+        //                        {
+        //                            if (total != 0 || ordersOld.Any())
+        //                            {
+        //                                existingPaymentPlace.Order = new Order(unprocessedOrders.Cashier);
+        //                                existingPaymentPlace.Order.TableId = paymentPlace.Id;
+        //                                existingPaymentPlace.Order.PartHall = paymentPlace.PartHallId;
+        //                                existingPaymentPlace.Background = Brushes.Red;
+        //                                existingPaymentPlace.Total = total;
+        //                            }
+        //                            else
+        //                            {
+        //                                existingPaymentPlace.Order = new Order(paymentPlace.Id, paymentPlace.PartHallId);
+        //                                existingPaymentPlace.Background = Brushes.Green;
+        //                                existingPaymentPlace.Total = 0;
+        //                            }
+        //                        });
+        //                    }
+        //                    else
+        //                    {
+        //                        Application.Current.Dispatcher.Invoke(() =>
+        //                        {
+        //                            existingPaymentPlace.Order = new Order(paymentPlace.Id, paymentPlace.PartHallId);
+        //                            existingPaymentPlace.Background = Brushes.Green;
+        //                            existingPaymentPlace.Total = 0;
+        //                        });
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    });
+        //}
+        internal async Task UpdateTableNoTask(int tableId)
+        {
+            using (var dbContext = DbContextFactory.CreateDbContext())
+            {
+                var updatedPaymentPlace = await dbContext.PaymentPlaces.AsNoTracking().FirstOrDefaultAsync(p => p.Id == tableId);
+
+                if (updatedPaymentPlace != null)
                 {
-                    paymentPlace.Order = new Order(payment.Id, payment.PartHallId);
-                    paymentPlace.Background = Brushes.Green;
-                    paymentPlace.Total = 0;
+                    var existingPaymentPlace = AllNormalPaymentPlaces.FirstOrDefault(p => p.Id == updatedPaymentPlace.Id) ??
+                                               AllRoundPaymentPlaces.FirstOrDefault(p => p.Id == updatedPaymentPlace.Id);
+
+                    if (existingPaymentPlace != null)
+                    {
+                        // Ažuriraj status stolova
+                        var unprocessedOrders = dbContext.UnprocessedOrders.Include(u => u.Cashier).AsNoTracking()
+                        .FirstOrDefault(order => order.PaymentPlaceId == updatedPaymentPlace.Id);
+                        if (unprocessedOrders != null)
+                        {
+                            var ordersOld = dbContext.OrdersToday.Include(o => o.OrderTodayItems).AsNoTracking()
+                                .Where(o => o.TableId == updatedPaymentPlace.Id &&
+                                o.UnprocessedOrderId == unprocessedOrders.Id &&
+                                o.Faza != (int)FazaKuhinjeEnumeration.Naplacena &&
+                                o.Faza != (int)FazaKuhinjeEnumeration.Obrisana);
+
+                            decimal total = Decimal.Round(ordersOld
+                                .Sum(o => o.OrderTodayItems.Where(oti => oti.Quantity != 0 && oti.Quantity - oti.StornoQuantity - oti.NaplacenoQuantity > 0).Sum(oti => Decimal.Round((oti.Quantity - oti.StornoQuantity - oti.NaplacenoQuantity) * (oti.TotalPrice / oti.Quantity), 2))), 2);
+
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                if (total != 0 || ordersOld.Any())
+                                {
+                                    existingPaymentPlace.Order = new Order(unprocessedOrders.Cashier);
+                                    existingPaymentPlace.Order.TableId = updatedPaymentPlace.Id;
+                                    existingPaymentPlace.Order.PartHall = updatedPaymentPlace.PartHallId;
+                                    existingPaymentPlace.Background = Brushes.Red;
+                                    existingPaymentPlace.Total = total;
+                                }
+                                else
+                                {
+                                    existingPaymentPlace.Order = new Order(updatedPaymentPlace.Id, updatedPaymentPlace.PartHallId);
+                                    existingPaymentPlace.Background = Brushes.Green;
+                                    existingPaymentPlace.Total = 0;
+                                }
+                            });
+                        }
+                        else
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                existingPaymentPlace.Order = new Order(updatedPaymentPlace.Id, updatedPaymentPlace.PartHallId);
+                                existingPaymentPlace.Background = Brushes.Green;
+                                existingPaymentPlace.Total = 0;
+                            });
+                        }
+                    }
                 }
-
-                switch (paymentPlace.Type)
-                {
-                    case PaymentPlaceTypeEnumeration.Normal:
-                        AllNormalPaymentPlaces.Add(paymentPlace);
-                        break;
-                    case PaymentPlaceTypeEnumeration.Round:
-                        AllRoundPaymentPlaces.Add(paymentPlace);
-                        break;
-                }
-            });
-
-            if (CurrentPartHall != null)
-            {
-                Title = CurrentPartHall.Name;
             }
         }
-
-        private void StartPolling()
+        internal void CheckDatabaseStatusStolovaNoTask()
         {
-            if (SaleViewModel.Timer != null)
+            using (var dbContext = DbContextFactory.CreateDbContext())
             {
-                SaleViewModel.Timer.Stop();
-                SaleViewModel.Timer.Dispose();
-            }
-            SaleViewModel.Timer = new Timer(5000); // Proverava svakih 5 sekundi
-            SaleViewModel.Timer.Elapsed += CheckDatabase;
-            SaleViewModel.Timer.AutoReset = true;
-            SaleViewModel.Timer.Enabled = true;
-        }
-
-        private void StartPollingStatusStolova()
-        {
-            if (SaleViewModel.Timer1 != null)
-            {
-                SaleViewModel.Timer1.Stop();
-                SaleViewModel.Timer1.Dispose();
-            }
-            SaleViewModel.Timer1 = new Timer(5000); // Proverava svakih 5 sekundi
-            SaleViewModel.Timer1.Elapsed += CheckDatabaseStatusStolova;
-            SaleViewModel.Timer1.AutoReset = true;
-            SaleViewModel.Timer1.Enabled = true;
-        }
-
-        private void CheckDatabaseStatusStolova(object sender, ElapsedEventArgs e)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                var updatedPaymentPlaces = DbContext.PaymentPlaces.AsNoTracking().ToList();
+                var updatedPaymentPlaces = dbContext.PaymentPlaces.AsNoTracking().ToList();
                 foreach (var paymentPlace in updatedPaymentPlaces)
                 {
                     var existingPaymentPlace = AllNormalPaymentPlaces.FirstOrDefault(p => p.Id == paymentPlace.Id) ??
@@ -601,57 +641,171 @@ namespace ClickBar.ViewModels
                     if (existingPaymentPlace != null)
                     {
                         // Ažuriraj status stolova
-                        var unprocessedOrders = DbContext.UnprocessedOrders.AsNoTracking().FirstOrDefault(order => order.PaymentPlaceId == paymentPlace.Id);
+                        var unprocessedOrders = dbContext.UnprocessedOrders.Include(u => u.Cashier).AsNoTracking()
+                        .FirstOrDefault(order => order.PaymentPlaceId == paymentPlace.Id);
                         if (unprocessedOrders != null)
                         {
-                            CashierDB? cashierDB = DbContext.Cashiers.AsNoTracking().FirstOrDefault(c => c.Id == unprocessedOrders.CashierId);
-                            var itemsInUnprocessedOrder = DbContext.Items.AsNoTracking()
-                                .Join(DbContext.ItemsInUnprocessedOrder,
-                                item => item.Id,
-                                itemInUnprocessedOrder => itemInUnprocessedOrder.ItemId,
-                                (item, itemInUnprocessedOrder) => new { Item = item, ItemInUnprocessedOrder = itemInUnprocessedOrder })
-                                .Where(item => item.ItemInUnprocessedOrder.UnprocessedOrderId == unprocessedOrders.Id);
+                            var ordersOld = dbContext.OrdersToday.Include(o => o.OrderTodayItems).AsNoTracking()
+                                .Where(o => o.TableId == paymentPlace.Id &&
+                                o.UnprocessedOrderId == unprocessedOrders.Id &&
+                                o.Faza != (int)FazaKuhinjeEnumeration.Naplacena &&
+                                o.Faza != (int)FazaKuhinjeEnumeration.Obrisana);
 
-                            if (cashierDB != null && itemsInUnprocessedOrder.Any())
+                            decimal total = Decimal.Round(ordersOld
+                                .Sum(o => o.OrderTodayItems.Where(oti => oti.Quantity != 0 && oti.Quantity - oti.StornoQuantity - oti.NaplacenoQuantity > 0).Sum(oti => Decimal.Round((oti.Quantity - oti.StornoQuantity - oti.NaplacenoQuantity) * (oti.TotalPrice / oti.Quantity), 2))), 2);
+
+                            Application.Current.Dispatcher.Invoke(() =>
                             {
-                                ObservableCollection<ItemInvoice> items = new ObservableCollection<ItemInvoice>();
-                                decimal total = 0;
-
-                                itemsInUnprocessedOrder.ToList().ForEach(item =>
+                                if (total != 0 || ordersOld.Any())
                                 {
-                                    ItemInvoice itemInvoice = new ItemInvoice(new Item(item.Item), item.ItemInUnprocessedOrder.Quantity);
-                                    items.Add(itemInvoice);
-                                    total += itemInvoice.TotalAmout;
-                                });
-
-                                existingPaymentPlace.Order = new Order(cashierDB, items);
-                                existingPaymentPlace.Order.TableId = paymentPlace.Id;
-                                existingPaymentPlace.Order.PartHall = paymentPlace.PartHallId;
-                                existingPaymentPlace.Background = Brushes.Red;
-                                existingPaymentPlace.Total = total;
-                            }
+                                    existingPaymentPlace.Order = new Order(unprocessedOrders.Cashier);
+                                    existingPaymentPlace.Order.TableId = paymentPlace.Id;
+                                    existingPaymentPlace.Order.PartHall = paymentPlace.PartHallId;
+                                    existingPaymentPlace.Background = Brushes.Red;
+                                    existingPaymentPlace.Total = total;
+                                }
+                                else
+                                {
+                                    existingPaymentPlace.Order = new Order(paymentPlace.Id, paymentPlace.PartHallId);
+                                    existingPaymentPlace.Background = Brushes.Green;
+                                    existingPaymentPlace.Total = 0;
+                                }
+                            });
                         }
                         else
                         {
-                            existingPaymentPlace.Order = new Order(paymentPlace.Id, paymentPlace.PartHallId);
-                            existingPaymentPlace.Background = Brushes.Green;
-                            existingPaymentPlace.Total = 0;
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                existingPaymentPlace.Order = new Order(paymentPlace.Id, paymentPlace.PartHallId);
+                                existingPaymentPlace.Background = Brushes.Green;
+                                existingPaymentPlace.Total = 0;
+                            });
                         }
                     }
                 }
-            });
+            }
         }
+        #endregion Internal Methods
 
+        #region Private methods
+        private void LoadingDB()
+        {
+            using (var dbContext = DbContextFactory.CreateDbContext())
+            {
+                //var remove0Value = dbContext.UnprocessedOrders
+                //    .GroupJoin(
+                //        dbContext.ItemsInUnprocessedOrder,
+                //        order => order.Id,
+                //        item => item.UnprocessedOrderId,
+                //        (order, items) => new { Order = order, Items = items }
+                //    )
+                //    .Where(x => !x.Items.Any())
+                //    .Select(x => x.Order);
+
+                //if (remove0Value.Any())
+                //{
+                //    dbContext.UnprocessedOrders.RemoveRange(remove0Value);
+                //    dbContext.SaveChanges();
+                //}
+
+                foreach (var part in dbContext.PartHalls)
+                {
+                    PartHall partHall = new PartHall()
+                    {
+                        Id = part.Id,
+                        Name = part.Name,
+                        Image = part.Image
+                    };
+
+                    Rooms.Add(partHall);
+                }
+
+                foreach (var payment in dbContext.PaymentPlaces)
+                {
+                    PaymentPlace paymentPlace = new PaymentPlace()
+                    {
+                        Id = payment.Id,
+                        PartHallId = payment.PartHallId,
+                        Left = payment.LeftCanvas.Value,
+                        Top = payment.TopCanvas.Value,
+                        Type = payment.Type.HasValue ? (PaymentPlaceTypeEnumeration)payment.Type.Value : PaymentPlaceTypeEnumeration.Normal,
+                        Name = !string.IsNullOrEmpty(payment.Name) ? payment.Name : payment.Id.ToString(),
+                        Popust = payment.Popust
+                    };
+
+                    if (paymentPlace.Type == PaymentPlaceTypeEnumeration.Normal)
+                    {
+                        paymentPlace.Width = payment.Width.Value;
+                        paymentPlace.Height = payment.Height.Value;
+                    }
+                    else
+                    {
+                        paymentPlace.Diameter = payment.Width.Value;
+                    }
+
+                    var unprocessedOrders = dbContext.UnprocessedOrders.Include(u => u.Cashier).AsNoTracking()
+                        .FirstOrDefault(order => order.PaymentPlaceId == payment.Id);
+
+                    if (unprocessedOrders != null)
+                    {
+                        var orersInTable = dbContext.OrdersToday.Include(o => o.OrderTodayItems).AsNoTracking()
+                            .Where(o => o.TableId == paymentPlace.Id &&
+                            o.UnprocessedOrderId == unprocessedOrders.Id &&
+                            o.Faza != (int)FazaKuhinjeEnumeration.Naplacena &&
+                            o.Faza != (int)FazaKuhinjeEnumeration.Obrisana).ToList();
+
+                        decimal total = Decimal.Round(orersInTable.Sum(o => o.OrderTodayItems.Where(oti => oti.Quantity != 0 && oti.Quantity - oti.StornoQuantity - oti.NaplacenoQuantity > 0).Sum(oti => Decimal.Round((oti.Quantity - oti.StornoQuantity - oti.NaplacenoQuantity) * (oti.TotalPrice / oti.Quantity), 2))), 2);
+
+                        if (total != 0 || orersInTable.Any())
+                        {
+                            paymentPlace.Order = new Order(unprocessedOrders.Cashier);
+                            paymentPlace.Order.TableId = payment.Id;
+                            paymentPlace.Order.PartHall = payment.PartHallId;
+                            paymentPlace.Background = Brushes.Red;
+                            paymentPlace.Total = total;
+                        }
+                        else
+                        {
+                            paymentPlace.Order = new Order(payment.Id, payment.PartHallId);
+                            paymentPlace.Background = Brushes.Green;
+                            paymentPlace.Total = 0;
+                        }
+
+                    }
+                    else
+                    {
+                        paymentPlace.Order = new Order(payment.Id, payment.PartHallId);
+                        paymentPlace.Background = Brushes.Green;
+                        paymentPlace.Total = 0;
+                    }
+
+                    switch (paymentPlace.Type)
+                    {
+                        case PaymentPlaceTypeEnumeration.Normal:
+                            AllNormalPaymentPlaces.Add(paymentPlace);
+                            break;
+                        case PaymentPlaceTypeEnumeration.Round:
+                            AllRoundPaymentPlaces.Add(paymentPlace);
+                            break;
+                    }
+                }
+
+                if (CurrentPartHall != null)
+                {
+                    Title = CurrentPartHall.Name;
+                }
+            }
+        }
         private void CheckDatabase(object sender, ElapsedEventArgs e)
         {
             try
             {
-                if (DrljaDbContextFactory != null)
+                if (DbContextFactory != null)
                 {
-                    using (var DrljaDbContext = DrljaDbContextFactory.CreateDbContext())
+                    using (var dbContext = DbContextFactory.CreateDbContext())
                     {
-                        var noveNarudzbe = DrljaDbContext.Narudzbine.AsNoTracking()
-                        .Where(n => n.TR_FAZA == 2 && n.TR_VREMENARUDZBE.Date == DateTime.Now.Date);
+                        var noveNarudzbe = dbContext.OrdersToday.AsNoTracking()
+                        .Where(n => n.Faza == 2 && n.OrderDateTime.Date == DateTime.Now.Date);
 
                         if (noveNarudzbe != null && noveNarudzbe.Any())
                         {
@@ -659,29 +813,13 @@ namespace ClickBar.ViewModels
                             {
                                 foreach (var n in noveNarudzbe)
                                 {
-                                    if (n.TR_STO.StartsWith("S"))
-                                    {
-                                        string numberPart = n.TR_STO.Substring(1);
+                                    var sto = AllNormalPaymentPlaces.FirstOrDefault(p => p.Id == n.TableId)
+                                        ?? AllRoundPaymentPlaces.FirstOrDefault(p => p.Id == n.TableId);
 
-                                        if (int.TryParse(numberPart, out int stoId))
-                                        {
-                                            var sto = AllNormalPaymentPlaces.FirstOrDefault(p => p.Id == stoId)
-                                                ?? AllRoundPaymentPlaces.FirstOrDefault(p => p.Id == stoId);
-
-                                            if (sto != null && sto.Background != Brushes.Blue)
-                                            {
-                                                sto.Background = Brushes.Blue;
-                                                //SystemSounds.Asterisk.Play();
-                                            }
-                                        }
-                                        else
-                                        {
-                                            Log.Error("Greska prilikom konvertovanja stringa u broj za broj stola.");
-                                        }
-                                    }
-                                    else
+                                    if (sto != null && sto.Background != Brushes.Blue)
                                     {
-                                        Log.Error("String ne počinje sa 'S' za broj stola iz Drljine baze.");
+                                        sto.Background = Brushes.Blue;
+                                        //SystemSounds.Asterisk.Play();
                                     }
                                 }
                             });
@@ -689,9 +827,9 @@ namespace ClickBar.ViewModels
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-
+                Log.Error("TableOverviewViewModel -> CheckDatabase -> Error checking database: ", ex);
             }
         }
         #endregion Private methods

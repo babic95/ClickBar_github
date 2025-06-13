@@ -1,9 +1,11 @@
 ﻿using ClickBar.Commands.AppMain.Statistic.DPU;
 using ClickBar.Commands.AppMain.Statistic.Knjizenje;
+using ClickBar.Models.AppMain.Statistic;
 using ClickBar.Models.AppMain.Statistic.DPU;
 using ClickBar.Models.AppMain.Statistic.Knjizenje;
 using ClickBar.Models.Sale;
 using ClickBar_DatabaseSQLManager;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -23,6 +25,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         private DateTime _toDate;
         private ObservableCollection<DPU_Item> _items;
         private readonly IServiceProvider _serviceProvider; // Dodato za korišćenje IServiceProvider
+        private string _searchText;
         #endregion Fields
 
         #region Constructors
@@ -39,6 +42,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
 
         #region Properties internal
         internal SqlServerDbContext DbContext { get; private set; }
+        internal List<DPU_Item> AllItems { get; set; }
         #endregion Properties internal
 
         #region Properties
@@ -67,6 +71,24 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             {
                 _items = value;
                 OnPropertyChange(nameof(Items));
+            }
+        }
+        public string SearchText
+        {
+            get { return _searchText; }
+            set
+            {
+                _searchText = value;
+                OnPropertyChange(nameof(SearchText));
+
+                if (string.IsNullOrEmpty(value))
+                {
+                    Items = new ObservableCollection<DPU_Item>(AllItems);
+                }
+                else
+                {
+                    Items = new ObservableCollection<DPU_Item>(AllItems.Where(item => item.Name.ToLower().Contains(value.ToLower())));
+                }
             }
         }
         #endregion Properties

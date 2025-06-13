@@ -1,5 +1,4 @@
 ﻿using ClickBar_DatabaseSQLManager.Models;
-using ClickBar_Database_Drlja.Models;
 
 namespace ClickBar_Porudzbine.Server.Models
 {
@@ -16,6 +15,7 @@ namespace ClickBar_Porudzbine.Server.Models
             Width = stoDB.WidthMobi;
             Height = stoDB.HeightMobi;
             Color = "#EC8B5E";
+            TotalPrice = 0; // Initialize with zero or any default value
         }
 
         public string? Id { get; set; }
@@ -26,5 +26,6 @@ namespace ClickBar_Porudzbine.Server.Models
         public float? Width { get; set; }
         public float? Height { get; set; }
         public string? Color { get; set; }
+        public decimal TotalPrice { get; set; }
     }
 }

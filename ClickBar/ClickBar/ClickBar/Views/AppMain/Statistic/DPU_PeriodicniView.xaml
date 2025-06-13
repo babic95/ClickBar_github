@@ -77,6 +77,40 @@
                 </Button>
             </StackPanel>
 
+            <StackPanel Orientation="Vertical"
+            Grid.Column="2"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Center"
+            Margin="10">
+                <StackPanel Orientation="Horizontal"
+               Margin="0 0 0 5">
+                    <Label Content="Pretraga:"
+               FontSize="16"
+               Width="80"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                 FontSize="20"
+                 Width="350"
+                 HorizontalContentAlignment="Center"
+                 VerticalContentAlignment="Center"/>
+                </StackPanel>
+                <!--<StackPanel Orientation="Horizontal">
+                    <Label Content="Grupe:"
+               FontSize="16"
+               Width="80"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"/>
+                    <ComboBox ItemsSource="{Binding AllGroups}"
+                  SelectedItem="{Binding CurrentGroup}"
+                  DisplayMemberPath="Name"
+                  FontSize="20"
+                  Width="350"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"/>
+                </StackPanel>-->
+            </StackPanel>
+
             <!--<StackPanel Orientation="Vertical"
                         Grid.Column="2"
                         HorizontalAlignment="Right"

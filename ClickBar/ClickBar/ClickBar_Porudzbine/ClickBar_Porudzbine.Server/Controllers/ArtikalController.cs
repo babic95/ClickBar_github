@@ -1,10 +1,9 @@
-﻿using ClickBar_Database_Drlja;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ClickBar_Porudzbine.Server.Models;
-using ClickBar_Database_Drlja.Models;
 using System.Text.RegularExpressions;
 using ClickBar_DatabaseSQLManager;
+using ClickBar_DatabaseSQLManager.Models;
 
 namespace ClickBar_Porudzbine.Server.Controllers
 {
@@ -13,12 +12,10 @@ namespace ClickBar_Porudzbine.Server.Controllers
     public class ArtikalController : ControllerBase
     {
         private readonly SqlServerDbContext _sqlServerDbContext;
-        private readonly SqliteDrljaDbContext _sqliteDrljaDbContext;
 
-        public ArtikalController(SqlServerDbContext sqlServerDbContext, SqliteDrljaDbContext sqliteDrljaDbContext)
+        public ArtikalController(SqlServerDbContext sqlServerDbContext)
         {
             _sqlServerDbContext = sqlServerDbContext;
-            _sqliteDrljaDbContext = sqliteDrljaDbContext;
         }
 
         [HttpGet("allArtikli")]
@@ -67,7 +64,7 @@ namespace ClickBar_Porudzbine.Server.Controllers
 
                         grupa.Artikli.Add(artikal);
 
-                        var zelje = _sqliteDrljaDbContext.Zelje.Where(z => z.TR_BRART == artikal.Id_String);
+                        var zelje = _sqlServerDbContext.Zelje.Where(z => z.ItemId == artikal.Id_String);
 
                         if (zelje != null &&
                         zelje.Any())
@@ -78,13 +75,13 @@ namespace ClickBar_Porudzbine.Server.Controllers
                             }
                         }
 
-                        Zelja zelja = new Zelja(new ZeljaDB()
-                        {
-                            TR_IDZELJA = -1 * artikal.Id,
-                            TR_ZELJA = "Dodaj zelju",
-                            TR_BRART = artikal.Id_String
-                        });
-                        artikal.Zelje.Add(zelja);
+                        //Zelja zelja = new Zelja(new ItemZeljaDB()
+                        //{
+                        //    TR_IDZELJA = -1 * artikal.Id,
+                        //    TR_ZELJA = "Dodaj zelju",
+                        //    TR_BRART = artikal.Id_String
+                        //});
+                        //artikal.Zelje.Add(zelja);
                     }
                 }
 

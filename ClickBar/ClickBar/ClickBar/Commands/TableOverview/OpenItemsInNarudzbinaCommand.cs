@@ -2,7 +2,6 @@
 using ClickBar.Models.TableOverview.Kuhinja;
 using ClickBar.ViewModels;
 using ClickBar.Views.TableOverview;
-using ClickBar_Database_Drlja;
 using ClickBar_Logging;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -35,37 +34,34 @@ namespace ClickBar.Commands.TableOverview
 
         public void Execute(object parameter)
         {
-            if (_currentView.DrljaDbContextFactory != null)
+            try
             {
-                try
+                using (var dbContext = _currentView.DbContextFactory.CreateDbContext())
                 {
-                    using (var DrljaDbContext = _currentView.DrljaDbContextFactory.CreateDbContext())
+                    DataGridCellInfo dataGridCellInfo = (DataGridCellInfo)parameter;
+                    Narudzbe narudzba = (Narudzbe)dataGridCellInfo.Item;
+                    if (narudzba != null)
                     {
-                        DataGridCellInfo dataGridCellInfo = (DataGridCellInfo)parameter;
-                        Narudzbe narudzba = (Narudzbe)dataGridCellInfo.Item;
-                        if (narudzba != null)
+                        var stavkeNarudzbine = dbContext.OrderTodayItems.Where(i => i.OrderTodayId == narudzba.Id);
+
+                        if (stavkeNarudzbine != null &&
+                            stavkeNarudzbine.Any())
                         {
-                            var stavkeNarudzbine = DrljaDbContext.StavkeNarudzbine.Where(s => s.TR_BROJNARUDZBE == narudzba.BrojNarudzbe);
+                            _currentView.CurrentNarudzba = narudzba;
 
-                            if (stavkeNarudzbine != null &&
-                                stavkeNarudzbine.Any())
-                            {
-                                _currentView.CurrentNarudzba = narudzba;
-
-                                KuhinjaStavkePorudzbine KuhinjaStavkePorudzbine = new KuhinjaStavkePorudzbine(_currentView);
-                                KuhinjaStavkePorudzbine.ShowDialog();
-                            }
+                            KuhinjaStavkePorudzbine KuhinjaStavkePorudzbine = new KuhinjaStavkePorudzbine(_currentView);
+                            KuhinjaStavkePorudzbine.ShowDialog();
                         }
                     }
                 }
-                catch (Exception ex)
-                {
-                    Log.Error("Greska prilikom otvaranja stavki narudzbine", ex);
-                    MessageBox.Show("Greska prilikom otvaranja stavki narudzbine",
-                        "Greska",
-                        System.Windows.MessageBoxButton.OK,
-                        System.Windows.MessageBoxImage.Error);
-                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Greska prilikom otvaranja stavki narudzbine", ex);
+                MessageBox.Show("Greska prilikom otvaranja stavki narudzbine",
+                    "Greska",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
             }
         }
     }

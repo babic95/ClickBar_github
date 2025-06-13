@@ -44,16 +44,14 @@ namespace ClickBar.Commands.Sale
                 _viewModel.CurrentGroup = group;
                 _viewModel.Items = new ObservableCollection<Item>();
 
-                var items = _viewModel.AllItems.Where(item => item.IdItemGroup == idGroup).ToList();
+                var items = _viewModel.AllItems.Where(item => item.IdItemGroup == idGroup)
+                    .OrderBy(i => i.Rb)
+                    .Select(i => new Item(i))
+                    .ToList();
 
                 if (items.Any())
                 {
-                    items.ForEach(item =>
-                    {
-                        Item i = new Item(item);
-
-                        _viewModel.Items.Add(i);
-                    });
+                    items.ForEach(i => _viewModel.Items.Add(i));
                 }
             }
         }

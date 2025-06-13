@@ -1,0 +1,110 @@
+﻿<Window x:Class="ClickBar.Views.Kuhinja.KuhinjaReportWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ClickBar.Views.Kuhinja" xmlns:viewmodels="clr-namespace:ClickBar.ViewModels" d:DataContext="{d:DesignInstance Type=viewmodels:KuhinjaViewModel}"
+        mc:Ignorable="d"
+        Title="Izveštaj" 
+        Background="{StaticResource BrushLogo2}"
+        Height="550"
+        Width="450"
+        WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+
+        <Label Grid.Row="0" 
+               Content="Izveštaj:"
+               FontSize="30"
+               FontWeight="Bold"
+               HorizontalAlignment="Center"/>
+
+        <StackPanel Grid.Row="1"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center">
+            <Label Content="Od:"
+                   FontSize="20"
+                   FontWeight="Bold"/>
+            <DatePicker SelectedDate="{Binding FromDate,
+                Mode=TwoWay, 
+                StringFormat={}{0:dd.MM.yyyy}}"
+                        FontSize="20"
+                        FontWeight="Bold"/>
+            <Label Content="Do:"
+                   FontSize="20"
+                   FontWeight="Bold"/>
+            <DatePicker SelectedDate="{Binding ToDate,
+                Mode=TwoWay,
+                StringFormat={}{0:dd.MM.yyyy}}"
+                        FontSize="20"
+                        FontWeight="Bold"/>
+        </StackPanel>
+        
+        <StackPanel Grid.Row="2"
+                    Orientation="Vertical"
+                    Margin="0 20 0 0"
+                    VerticalAlignment="Center">
+
+            <Button Style="{StaticResource RoundCorner}"
+                    Content="Štampa po artiklu"
+                    FontSize="22"
+                    Height="40"
+                    Width="300"
+                    Margin="0 5"
+                    Command="{Binding PrintPoArtikluCommand}"/>
+            <Button Style="{StaticResource RoundCorner}"
+                    Content="Ukupno po konobarima"
+                    FontSize="22"
+                    Height="40"
+                    Width="300"
+                    Margin="0 5"
+                    Command="{Binding PrintPoKonobaruCommand}"/>
+            <Button Style="{StaticResource RoundCorner}"
+                    Content="Štampa - gazde"
+                    FontSize="22"
+                    Height="40"
+                    Width="300"
+                    Margin="0 5"
+                    Command="{Binding PrintGazdeCommand}"/>
+            <Button Style="{StaticResource RoundCorner}"
+                    Content="Štampa - dostava"
+                    FontSize="22"
+                    Height="40"
+                    Width="300"
+                    Margin="0 5"
+                    Command="{Binding PrintDostavaCommand}"/>
+            <Button Style="{StaticResource RoundCorner}"
+                    Content="Štampa - konobari"
+                    FontSize="22"
+                    Height="40"
+                    Width="300"
+                    Margin="0 10"
+                    Command="{Binding PrintOsobljeCommand}"/>
+            <Button Style="{StaticResource RoundCorner}"
+                    Content="Štampa - kuhinja"
+                    FontSize="22"
+                    Height="40"
+                    Width="300"
+                    Margin="0 10"
+                    Command="{Binding PrintKuhinjaCommand}"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="3"
+                    Orientation="Vertical"
+                    Margin="0 5">
+
+            <Button Style="{StaticResource RoundCorner}"
+                    Content="Zatvori"
+                    FontSize="25"
+                    Height="50"
+                    Width="150"
+                    Margin="0 10"
+                    Click="Button_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

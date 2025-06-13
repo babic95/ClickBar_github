@@ -3,7 +3,6 @@ using ClickBar.Commands.AppMain;
 using ClickBar.Commands.Login;
 using ClickBar_API;
 using ClickBar_Common.Enums;
-using ClickBar_Database_Drlja;
 using ClickBar_DatabaseSQLManager;
 using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Settings;
@@ -43,12 +42,10 @@ namespace ClickBar.ViewModels.Login
         };
 
         public LoginViewModel(IServiceProvider serviceProvider,
-            IDbContextFactory<SqlServerDbContext> dbContextFactory,
-            IDbContextFactory<SqliteDrljaDbContext>? drljaDbContextFactory)
+            IDbContextFactory<SqlServerDbContext> dbContextFactory)
         {
             _serviceProvider = serviceProvider;
             DbContext = dbContextFactory.CreateDbContext();
-            DrljaDbContext = drljaDbContextFactory != null ? drljaDbContextFactory.CreateDbContext() : null;
             _updateCurrentAppStateViewModelCommand = new Lazy<UpdateCurrentAppStateViewModelCommand>(() => serviceProvider.GetRequiredService<UpdateCurrentAppStateViewModelCommand>());
 
             Initialization();
@@ -65,7 +62,6 @@ namespace ClickBar.ViewModels.Login
 
         #region Internal Properties
         internal SqlServerDbContext DbContext { get; private set; }
-        internal SqliteDrljaDbContext DrljaDbContext { get; private set; }
         #endregion Internal Properties
 
         #region Properties

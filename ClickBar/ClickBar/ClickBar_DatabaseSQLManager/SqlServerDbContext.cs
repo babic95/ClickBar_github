@@ -178,7 +178,16 @@ namespace ClickBar_DatabaseSQLManager
                 return new List<InvoiceDB>();
             }
 
-            CashierDB? cashier = Cashiers.Find(smartCard);
+            CashierDB? cashier = null;
+            
+            if(smartCard.Length <= 4)
+            {
+                cashier = Cashiers.Find(smartCard);
+            }
+            else
+            {
+                cashier = Cashiers.FirstOrDefault(f => f.SmartCardNumber == smartCard);
+            }
 
             if (cashier != null)
             {
@@ -894,7 +903,7 @@ namespace ClickBar_DatabaseSQLManager
 
             modelBuilder.Entity<OrderTodayItemDB>(entity =>
             {
-                entity.HasKey(e => new { e.OrderTodayId, e.ItemId })
+                entity.HasKey(e => new {e.Id, e.OrderTodayId, e.ItemId })
                     .HasName("PRIMARY");
 
                 entity.ToTable("OrderTodayItem");
@@ -903,7 +912,17 @@ namespace ClickBar_DatabaseSQLManager
 
                 entity.HasIndex(e => e.ItemId, "fk_OrderTodayItem_Item1_idx");
 
+                entity.Property(e => e.Id)
+                    .HasColumnName("Id")
+                    .HasColumnType("NVARCHAR(36)")
+                    .HasDefaultValueSql("NEWID()") // Set default value for Id
+                    .IsRequired(); // Ensure Id is NOT NULL
+
                 entity.Property(e => e.Quantity).HasColumnType("decimal(18, 3)");
+
+                entity.Property(e => e.StornoQuantity).HasColumnType("decimal(18, 3)");
+
+                entity.Property(e => e.NaplacenoQuantity).HasColumnType("decimal(18, 3)");
 
                 entity.Property(e => e.TotalPrice).HasColumnType("decimal(18, 2)");
 
@@ -1077,9 +1096,26 @@ namespace ClickBar_DatabaseSQLManager
                     sql = string.Format("CREATE TABLE {0} ( " +
                         "Id INT NOT NULL IDENTITY(1,1), " +
                         "Name NVARCHAR(45) NOT NULL, " +
+                        "Rb INT NOT NULL, " +
                         "PRIMARY KEY(Id) " +
                         "); ", "Supergroup");
                     CreateTable("Supergroup", sql);
+                }
+                else
+                {
+                    try
+                    {
+                        // Proveri i dodaj kolone ako ne postoje
+                        if(AddColumnIfNotExists("Supergroup", "Rb INT NOT NULL DEFAULT 0", _sqlConnection))
+                        {
+                            // Popuni kolonu Rb sa rednim brojevima
+                            PopulateRbColumn("Supergroup", _sqlConnection);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("SqlServerDbContext - CreateTables - Error occurred while altering table Supergroup.", ex);
+                    }
                 }
                 if (!TableExists("ItemGroup", _sqlConnection))
                 {
@@ -1087,12 +1123,29 @@ namespace ClickBar_DatabaseSQLManager
                         "Id INT NOT NULL IDENTITY(1,1), " +
                         "IdSupergroup INT NOT NULL, " +
                         "Name NVARCHAR(45) NOT NULL, " +
+                        "Rb INT NOT NULL, " +
                         "PRIMARY KEY(Id), " +
                         "FOREIGN KEY(IdSupergroup) REFERENCES Supergroup(Id) " +
                         "ON DELETE NO ACTION " +
                         "ON UPDATE NO ACTION" +
                         "); ", "ItemGroup");
                     CreateTable("ItemGroup", sql);
+                }
+                else
+                {
+                    try
+                    {
+                        // Proveri i dodaj kolone ako ne postoje
+                        if (AddColumnIfNotExists("ItemGroup", "Rb INT NOT NULL DEFAULT 0", _sqlConnection))
+                        {
+                            // Popuni kolonu Rb sa rednim brojevima
+                            PopulateRbColumn("ItemGroup", _sqlConnection);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("SqlServerDbContext - CreateTables - Error occurred while altering table Supergroup.", ex);
+                    }
                 }
                 if (!TableExists("Norm", _sqlConnection))
                 {
@@ -1119,6 +1172,7 @@ namespace ClickBar_DatabaseSQLManager
                         "IdNorm INT, " +
                         "DisableItem INT NOT NULL DEFAULT 0, " +
                         "IsCheckedZabraniPopust INT NOT NULL DEFAULT 0, " +
+                        "Rb INT NOT NULL, " +
                         "PRIMARY KEY(Id), " +
                         "FOREIGN KEY(IdNorm) REFERENCES Norm(Id), " +
                         "FOREIGN KEY(IdItemGroup) REFERENCES ItemGroup(Id) " +
@@ -1132,6 +1186,13 @@ namespace ClickBar_DatabaseSQLManager
                     try
                     {
                         // Proveri i dodaj kolone ako ne postoje
+                        // Proveri i dodaj kolone ako ne postoje
+                        if (AddColumnIfNotExists("Item", "Rb INT NOT NULL DEFAULT 0", _sqlConnection))
+                        {
+                            // Popuni kolonu Rb sa rednim brojevima
+                            PopulateRbColumn("Item", _sqlConnection);
+                        }
+
                         AddColumnIfNotExists("Item", "IsCheckedZabraniPopust INT NOT NULL DEFAULT 0", _sqlConnection);
                         AddColumnIfNotExists("Item", "DisableItem INT NOT NULL DEFAULT 0", _sqlConnection);
                         AddColumnIfNotExists("Item", "SellingDnevnaUnitPrice DECIMAL(18,2) NOT NULL DEFAULT 0", _sqlConnection);
@@ -1649,6 +1710,7 @@ namespace ClickBar_DatabaseSQLManager
                         "Name NVARCHAR(MAX), " +
                         "TotalPrice DECIMAL(18,2) NOT NULL, " +
                         "TableId INT, " +
+                        "Faza INT NOT NULL DEFAULT 0, " + 
                         "PRIMARY KEY(Id), " +
                         "FOREIGN KEY(CashierId) REFERENCES Cashier(Id) " +
                         "ON DELETE NO ACTION " +
@@ -1663,6 +1725,7 @@ namespace ClickBar_DatabaseSQLManager
                 {
                     try
                     {
+                        AddColumnIfNotExists("OrderToday", "Faza INT NOT NULL DEFAULT 0", _sqlConnection);
                         AddColumnIfNotExists("OrderToday", "UnprocessedOrderId NVARCHAR(36)", _sqlConnection);
                         AddColumnIfNotExists("OrderToday", "CounterType INT NOT NULL DEFAULT 0", _sqlConnection);
                         AddColumnIfNotExists("OrderToday", "TableId INT", _sqlConnection);
@@ -1677,11 +1740,15 @@ namespace ClickBar_DatabaseSQLManager
                 if (!TableExists("OrderTodayItem", _sqlConnection))
                 {
                     sql = string.Format("CREATE TABLE {0} (" +
+                        "Id NVARCHAR(36) DEFAULT NEWID(), " +
                         "OrderTodayId NVARCHAR(36) NOT NULL, " +
                         "ItemId NVARCHAR(36) NOT NULL, " +
                         "Quantity DECIMAL(18,3) NOT NULL, " +
+                        "StornoQuantity DECIMAL(18,3) NOT NULL DEFAULT 0, " +
+                        "NaplacenoQuantity DECIMAL(18,3) NOT NULL DEFAULT 0, " + 
                         "TotalPrice DECIMAL(18,2) NOT NULL, " +
-                        "PRIMARY KEY(OrderTodayId, ItemId), " +
+                        "Zelja NVARCHAR(200), " +
+                        "PRIMARY KEY(Id, OrderTodayId, ItemId), " +
                         "FOREIGN KEY(OrderTodayId) REFERENCES OrderToday(Id) " +
                         "ON DELETE NO ACTION " +
                         "ON UPDATE NO ACTION, " +
@@ -1690,6 +1757,29 @@ namespace ClickBar_DatabaseSQLManager
                         "ON UPDATE NO ACTION" +
                         "); ", "OrderTodayItem");
                     CreateTable("OrderTodayItem", sql);
+                }
+                else
+                {
+                    try
+                    {
+                        AddColumnIfNotExists("OrderTodayItem", "NaplacenoQuantity DECIMAL(18,3) NOT NULL DEFAULT 0", _sqlConnection);
+                        AddColumnIfNotExists("OrderTodayItem", "Id NVARCHAR(36) DEFAULT NEWID()", _sqlConnection); // Dodajte novi ključ
+                        AddColumnIfNotExists("OrderTodayItem", "StornoQuantity DECIMAL(18,3) NOT NULL DEFAULT 0", _sqlConnection);
+                        AddColumnIfNotExists("OrderTodayItem", "Zelja NVARCHAR(200)", _sqlConnection);
+
+                        // Ažurirajte postojeće redove kako bi `Id` kolona imala jedinstvene vrednosti
+                        UpdateExistingRowsWithUniqueIds("OrderTodayItem", _sqlConnection);
+
+                        // Postavite kolonu `Id` da bude `NOT NULL`
+                        SetColumnNotNull("OrderTodayItem", "Id", _sqlConnection);
+
+                        // Promenite primarni ključ da uključuje kolonu `Id`
+                        ReplacePrimaryKey("OrderTodayItem", new string[] { "Id", "OrderTodayId", "ItemId" }, _sqlConnection);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("SqlServerDbContext - CreateTables - Error occurred while altering table OrderTodayItem.", ex);
+                    }
                 }
                 if (!TableExists("Otpis", _sqlConnection))
                 {
@@ -1772,20 +1862,141 @@ namespace ClickBar_DatabaseSQLManager
                 return false;
             }
         }
-        private void AddColumnIfNotExists(string tableName, string columnDefinition, SqlConnection connection)
+        private static void UpdateExistingRowsWithUniqueIds(string tableName, SqlConnection sqlConnection)
         {
             try
             {
-                string columnName = columnDefinition.Split(' ')[0];
-                string checkColumnQuery = $"IF COL_LENGTH('{tableName}', '{columnName}') IS NULL ALTER TABLE {tableName} ADD {columnDefinition};";
-                using (SqlCommand cmd = new SqlCommand(checkColumnQuery, connection))
+                string updateSql = $"UPDATE {tableName} SET Id = NEWID() WHERE Id IS NULL";
+                using (SqlCommand updateCommand = new SqlCommand(updateSql, sqlConnection))
+                {
+                    updateCommand.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"SqlServerDbContext - UpdateExistingRowsWithUniqueIds - Error occurred while updating table {tableName}.", ex);
+            }
+        }
+
+        private static void SetColumnNotNull(string tableName, string columnName, SqlConnection sqlConnection)
+        {
+            try
+            {
+                string alterColumnQuery = $"ALTER TABLE {tableName} ALTER COLUMN {columnName} NVARCHAR(36) NOT NULL";
+                using (SqlCommand alterCommand = new SqlCommand(alterColumnQuery, sqlConnection))
+                {
+                    alterCommand.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"SqlServerDbContext - SetColumnNotNull - Error occurred while setting column {columnName} to NOT NULL in table {tableName}.", ex);
+            }
+        }
+
+        private static void ReplacePrimaryKey(string tableName, string[] columnNames, SqlConnection sqlConnection)
+        {
+            try
+            {
+                string primaryKeyName = GetPrimaryKeyName(tableName, sqlConnection);
+                string columns = string.Join(", ", columnNames);
+
+                bool shouldCloseConnection = false;
+                if (sqlConnection.State == System.Data.ConnectionState.Closed)
+                {
+                    sqlConnection.Open();
+                    shouldCloseConnection = true;
+                }
+
+                // Drop existing primary key if exists
+                if (!string.IsNullOrEmpty(primaryKeyName))
+                {
+                    string dropPrimaryKeyQuery = $"ALTER TABLE {tableName} DROP CONSTRAINT {primaryKeyName};";
+                    using (SqlCommand dropCmd = new SqlCommand(dropPrimaryKeyQuery, sqlConnection))
+                    {
+                        dropCmd.ExecuteNonQuery();
+                    }
+                }
+
+                // Add new primary key
+                string addPrimaryKeyQuery = $"ALTER TABLE {tableName} ADD CONSTRAINT PK_{tableName} PRIMARY KEY ({columns})";
+                using (SqlCommand alterCmd = new SqlCommand(addPrimaryKeyQuery, sqlConnection))
+                {
+                    alterCmd.ExecuteNonQuery();
+                }
+
+                if (shouldCloseConnection)
+                {
+                    sqlConnection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"SqlServerDbContext - ReplacePrimaryKey - Error occurred while replacing primary key on table {tableName}.", ex);
+            }
+        }
+
+        private static string GetPrimaryKeyName(string tableName, SqlConnection sqlConnection)
+        {
+            string primaryKeyName = null;
+            string query = $"SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME = '{tableName}' AND CONSTRAINT_TYPE = 'PRIMARY KEY'";
+
+            using (SqlCommand command = new SqlCommand(query, sqlConnection))
+            {
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        primaryKeyName = reader["CONSTRAINT_NAME"].ToString();
+                    }
+                }
+            }
+            return primaryKeyName;
+        }
+        private void PopulateRbColumn(string tableName, SqlConnection connection)
+        {
+            try
+            {
+                string populateColumnQuery = $"UPDATE {tableName} SET Rb = t.Rn FROM (SELECT Id, ROW_NUMBER() OVER (ORDER BY Id) AS Rn FROM {tableName}) t WHERE {tableName}.Id = t.Id;";
+                using (SqlCommand cmd = new SqlCommand(populateColumnQuery, connection))
                 {
                     cmd.ExecuteNonQuery();
                 }
             }
             catch (Exception ex)
             {
+                Log.Error($"SqlServerDbContext - PopulateRbColumn - Error occurred while populating Rb column in table {tableName}.", ex);
+            }
+        }
+        private bool AddColumnIfNotExists(string tableName, string columnDefinition, SqlConnection connection)
+        {
+            try
+            {
+                string columnName = columnDefinition.Split(' ')[0];
+                string checkColumnQuery = $"SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{tableName}' AND COLUMN_NAME = '{columnName}'";
+
+                using (SqlCommand cmd = new SqlCommand(checkColumnQuery, connection))
+                {
+                    int columnCount = (int)cmd.ExecuteScalar();
+                    if (columnCount == 0)
+                    {
+                        string addColumnQuery = $"ALTER TABLE {tableName} ADD {columnDefinition}";
+                        using (SqlCommand addCmd = new SqlCommand(addColumnQuery, connection))
+                        {
+                            addCmd.ExecuteNonQuery();
+                        }
+
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
                 Log.Error($"SqlServerDbContext - AddColumnIfNotExists - Error occurred while adding column {columnDefinition} to table {tableName}.", ex);
+
+                return false;
             }
         }
         private void AddForeignKeyIfNotExists(string tableName, string columnName, string referencedTableName, string referencedColumnName, string onDelete, string onUpdate, SqlConnection sqlConnection)

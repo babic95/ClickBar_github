@@ -34,5 +34,6 @@ namespace ClickBar_Settings
         public string? HostPC_IP { get; set; }
         public bool RunPorudzbineServis { get; set; }
         public TypeAppEnumeration TypeApp { get; set; }
+        public bool EnableKartica { get; set; }
     }
 }

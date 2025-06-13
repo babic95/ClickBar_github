@@ -30,13 +30,13 @@ namespace ClickBar.ViewModels.AppMain
         public ReportViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
+            DbContextFactory = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
             _loggedCashier = serviceProvider.GetRequiredService<CashierDB>();
         }
         #endregion Constructors
 
         #region Internal Properties
-        internal SqlServerDbContext DbContext { get; private set; }
+        internal IDbContextFactory<SqlServerDbContext> DbContextFactory { get; private set; }
         #endregion Internal Properties
 
         #region Properties

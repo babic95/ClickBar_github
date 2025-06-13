@@ -15,6 +15,7 @@ namespace ClickBar_DatabaseSQLManager.Models
 
         public int Id { get; set; }
         public string Name { get; set; } = null!;
+        public int Rb { get; set; }
         public virtual ICollection<ItemGroupDB> ItemGroups { get; set; }
         
     }

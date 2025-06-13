@@ -1,14 +1,14 @@
 ﻿using ClickBar.Enums;
+using ClickBar.Enums.Kuhinja;
 using ClickBar.Models.Sale;
 using ClickBar.Models.TableOverview;
 using ClickBar.ViewModels;
 using ClickBar_Common.Enums;
 using ClickBar_Common.Models.Invoice;
-using ClickBar_Common.Models.Order.Drlja;
-using ClickBar_Database_Drlja;
 using ClickBar_DatabaseSQLManager;
 using ClickBar_DatabaseSQLManager.Models;
 using ClickBar_Logging;
+using ClickBar_Printer.Enums;
 using ClickBar_Printer.PaperFormat;
 using ClickBar_Settings;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +17,7 @@ using Newtonsoft.Json;
 using SQLitePCL;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity.Infrastructure;
 using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Net.Http;
@@ -33,6 +34,7 @@ namespace ClickBar.Commands.Sale
 
         private SaleViewModel _viewModel;
         private readonly IServiceProvider _serviceProvider;
+        private static bool _isPrinted = false;
 
         public HookOrderOnTableCommand(SaleViewModel viewModel, IServiceProvider serviceProvider)
         {
@@ -42,169 +44,161 @@ namespace ClickBar.Commands.Sale
 
         public bool CanExecute(object? parameter)
         {
-            return true;
+            return !_isPrinted;
         }
-
         public async void Execute(object parameter)
         {
-            if (_viewModel.TableId == 0)
+            var datetime = DateTime.Now;
+            _isPrinted = true;
+            RaiseCanExecuteChanged(); // Obavesti UI da se stanje promenilo
+
+            try
             {
-                var dbContextFactory = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
-                var drljaDbContextFactory = _serviceProvider.GetRequiredService<IDbContextFactory<SqliteDrljaDbContext>>();
-                _viewModel.TableOverviewViewModel = new TableOverviewViewModel(_serviceProvider, dbContextFactory, drljaDbContextFactory, _viewModel);
-
-                _viewModel.CurrentOrder = new Order(_viewModel.LoggedCashier, _viewModel.ItemsInvoice)
+                if (_viewModel.TableId == 0)
                 {
-                    TableId = _viewModel.TableId,
-                };
+                    //var dbContextFactory = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
+                    //_viewModel.TableOverviewViewModel = _serviceProvider.GetRequiredService<TableOverviewViewModel>();
 
-                AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
-                    _viewModel.LoggedCashier,
-                    _viewModel);
-                _viewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
-            }
-            else
-            {
-                try
+                    _viewModel.CurrentOrder = new Order(_viewModel.LoggedCashier)
+                    {
+                        TableId = _viewModel.TableId,
+                    };
+
+                    var typeApp = SettingsManager.Instance.GetTypeApp();
+
+                    var appStateParameter = new AppStateParameter(
+                        typeApp == TypeAppEnumeration.Sale ? AppStateEnumerable.Sale : AppStateEnumerable.TableOverview,
+                        _viewModel.LoggedCashier,
+                        -1,
+                        _viewModel);
+
+                    _viewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+                }
+                else
                 {
-                    var tableDB = _viewModel.DbContext.PaymentPlaces.Find(_viewModel.TableId);
-
-                    if (tableDB != null)
+                    try
                     {
-                        if (tableDB.Popust > 0 &&
-                            tableDB.Popust < 100)
+                        using (var context = _viewModel.DbContextFactory.CreateDbContext())
                         {
-                            var itemBezPopusta = _viewModel.ItemsInvoice.FirstOrDefault(i => i.Item.IsCheckedZabraniPopust);
+                            var tableDB = await context.PaymentPlaces.FindAsync(_viewModel.TableId);
 
-                            if (itemBezPopusta != null)
+                            if (tableDB != null && tableDB.Popust > 0 && tableDB.Popust < 100)
                             {
-                                MessageBox.Show("Na ovaj sto ne možete staviti artikle koji su označeni kao ZABRANJEN popust!",
-                                    "Zabranjen popust",
-                                    MessageBoxButton.OK,
-                                    MessageBoxImage.Error);
+                                var itemBezPopusta = _viewModel.ItemsInvoice.FirstOrDefault(i => i.Item.IsCheckedZabraniPopust);
 
-                                _viewModel.Reset();
-                                return;
-                            }
-                        }
-                    }
-
-                    var unprocessedOrderDB = _viewModel.DbContext.UnprocessedOrders.FirstOrDefault(table => table.PaymentPlaceId == _viewModel.TableId);
-
-                    if (unprocessedOrderDB != null)
-                    {
-                        _viewModel.ItemsInvoice.ToList().ForEach(item =>
-                        {
-                            var itemInUnprocessedOrderDB = _viewModel.DbContext.ItemsInUnprocessedOrder.FirstOrDefault(i => i.UnprocessedOrderId == unprocessedOrderDB.Id &&
-                            i.ItemId == item.Item.Id);
-
-                            if (itemInUnprocessedOrderDB == null)
-                            {
-                                itemInUnprocessedOrderDB = new ItemInUnprocessedOrderDB()
+                                if (itemBezPopusta != null)
                                 {
-                                    ItemId = item.Item.Id,
-                                    Quantity = item.Quantity,
-                                    UnprocessedOrderId = unprocessedOrderDB.Id,
-                                };
+                                    MessageBox.Show("Na ovaj sto ne možete staviti artikle koji su označeni kao ZABRANJEN popust!",
+                                        "Zabranjen popust",
+                                        MessageBoxButton.OK,
+                                        MessageBoxImage.Error);
 
-                                _viewModel.DbContext.ItemsInUnprocessedOrder.Add(itemInUnprocessedOrderDB);
+                                    _viewModel.Reset();
+                                    return;
+                                }
+                            }
+
+                            var unprocessedOrderDB = await context.UnprocessedOrders
+                                .FirstOrDefaultAsync(table => table.PaymentPlaceId == _viewModel.TableId);
+
+                            if (unprocessedOrderDB != null)
+                            {
+                                //decimal totalSum = _viewModel.ItemsInvoice.Sum(i => i.TotalAmout);
+
+                                //unprocessedOrderDB.TotalAmount += Decimal.Round(totalSum * ((100 - tableDB.Popust) / 100), 2);
+
+                                unprocessedOrderDB.CashierId = _viewModel.LoggedCashier.Id;
+                                context.UnprocessedOrders.Update(unprocessedOrderDB);
                             }
                             else
                             {
-                                itemInUnprocessedOrderDB.Quantity += item.Quantity;
-                                //_viewModel.DbContext.ItemsInUnprocessedOrder.Update(itemInUnprocessedOrderDB);
+                                unprocessedOrderDB = new UnprocessedOrderDB()
+                                {
+                                    Id = Guid.NewGuid().ToString(),
+                                    CashierId = _viewModel.LoggedCashier.Id,
+                                    PaymentPlaceId = _viewModel.TableId,
+                                    //TotalAmount = _viewModel.ItemsInvoice.Sum(i => i.TotalAmout),
+                                    ItemsInUnprocessedOrder = new List<ItemInUnprocessedOrderDB>(),
+                                };
+
+                                await context.UnprocessedOrders.AddAsync(unprocessedOrderDB);
                             }
 
-                            unprocessedOrderDB.TotalAmount += item.TotalAmout;
-                            unprocessedOrderDB.CashierId = _viewModel.LoggedCashier.Id;
-                            _viewModel.DbContext.UnprocessedOrders.Update(unprocessedOrderDB);
-                        });
-                    }
-                    else
-                    {
-                        unprocessedOrderDB = new UnprocessedOrderDB()
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            CashierId = _viewModel.LoggedCashier.Id,
-                            PaymentPlaceId = _viewModel.CurrentOrder.TableId,
-                            TotalAmount = 0,
-                            ItemsInUnprocessedOrder = new List<ItemInUnprocessedOrderDB>(),
-                        };
-
-                        _viewModel.ItemsInvoice.ToList().ForEach(item =>
-                        {
-                            var itemInUnprocessedOrderDB = new ItemInUnprocessedOrderDB()
+                            bool saveFailed;
+                            int retryCount = 0;
+                            do
                             {
-                                ItemId = item.Item.Id,
-                                Quantity = item.Quantity,
-                                UnprocessedOrderId = unprocessedOrderDB.Id,
-                            };
+                                saveFailed = false;
+                                try
+                                {
+                                    await context.SaveChangesAsync();
+                                }
+                                catch (System.Data.Entity.Infrastructure.DbUpdateConcurrencyException ex)
+                                {
+                                    saveFailed = true;
+                                    retryCount++;
 
-                            unprocessedOrderDB.ItemsInUnprocessedOrder.Add(itemInUnprocessedOrderDB);
+                                    // Update the values of the entity that failed to save from the store
+                                    ex.Entries.Single().Reload();
 
-                            unprocessedOrderDB.TotalAmount += item.TotalAmout;
-                        });
-                        _viewModel.DbContext.UnprocessedOrders.Add(unprocessedOrderDB);
+                                    if (retryCount >= 3)
+                                    {
+                                        throw;
+                                    }
+                                }
+                            } while (saveFailed);
+
+                            var loggedCashier = _viewModel.LoggedCashier;
+                            var tableId = _viewModel.TableId;
+                            var paymentPlace = await context.PaymentPlaces.Include(p => p.PartHall).FirstOrDefaultAsync(p => p.Id == tableId);
+                            var itemsInvoice = _viewModel.ItemsInvoice.ToList();
+                            var unprocessedOrder = unprocessedOrderDB;
+
+                            await PrintOrder(loggedCashier, paymentPlace, itemsInvoice, unprocessedOrder, context);
+
+                            _viewModel.Reset();
+
+                            var appStateParameter = new AppStateParameter(
+                                SettingsManager.Instance.GetTypeApp() == TypeAppEnumeration.Sale ? AppStateEnumerable.Sale : AppStateEnumerable.TableOverview,
+                                _viewModel.LoggedCashier,
+                                tableId,
+                                _viewModel);
+
+                            _viewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+                        }
                     }
-
-                    bool saveFailed;
-                    int retryCount = 0;
-                    do
+                    catch (Exception ex)
                     {
-                        saveFailed = false;
-                        try
-                        {
-                            _viewModel.DbContext.SaveChanges();
-                        }
-                        catch (DbUpdateConcurrencyException ex)
-                        {
-                            saveFailed = true;
-                            retryCount++;
-
-                            // Update the values of the entity that failed to save from the store
-                            ex.Entries.Single().Reload();
-
-                            if (retryCount >= 3)
-                            {
-                                throw;
-                            }
-                        }
-                    } while (saveFailed);
-
-                    var loggedCashier = _viewModel.LoggedCashier;
-                    var tableId = _viewModel.TableId;
-                    var itemsInvoice = _viewModel.ItemsInvoice.ToList();
-                    var unprocessedOrder = unprocessedOrderDB;
-
-                    Task.Run(() =>
-                    {
-                        PrintOrder(loggedCashier,
-                            tableId,
-                            itemsInvoice,
-                            unprocessedOrder);
-                    });
-
-                    _viewModel.Reset();
-
-                    AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
-                        _viewModel.LoggedCashier,
-                        _viewModel);
-                    _viewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
-                }
-                catch (Exception ex)
-                {
-                    Log.Error("HookOrderOnTableCommand -> Execute -> Greska prilikom kreiranja porudzbine na vec postojecu: ", ex);
-                    MessageBox.Show("Desila se greška prilikom kreiranja porudžbine!\nObratite se serviseru.",
-                        "Greška",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                        Log.Error("HookOrderOnTableCommand -> Execute -> Greska prilikom kreiranja porudzbine na vec postojecu: ", ex);
+                        MessageBox.Show("Desila se greška prilikom kreiranja porudžbine!\nObratite se serviseru.",
+                            "Greška",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                Log.Error("HookOrderOnTableCommand -> Execute -> dogodila se greska prilikom kacenja porudzbine: ", ex);
+                MessageBox.Show("Desila se greška prilikom kreiranja porudžbine!\nObratite se serviseru.",
+                    "Greška",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            finally
+            {
+                _isPrinted = false;
+                RaiseCanExecuteChanged(); // Obavesti UI da se stanje promenilo
+            }
+
+
+            Log.Debug($"PROVERA -> VREME IZVRSENJA: {DateTime.Now.Subtract(datetime).TotalMilliseconds} ms");
         }
-        private void PrintOrder(CashierDB cashierDB,
-            int tableId,
+        private async Task PrintOrder(CashierDB cashierDB,
+            PaymentPlaceDB paymentPlaceDB,
             List<ItemInvoice> items,
-            UnprocessedOrderDB unprocessedOrderDB)
+            UnprocessedOrderDB unprocessedOrderDB,
+            SqlServerDbContext context)
         {
             try
             {
@@ -213,7 +207,7 @@ namespace ClickBar.Commands.Sale
                 ClickBar_Common.Models.Order.Order orderKuhinja = new ClickBar_Common.Models.Order.Order()
                 {
                     CashierName = cashierDB.Name,
-                    TableId = tableId,
+                    TableId = paymentPlaceDB.Id,
                     Items = new List<ClickBar_Common.Models.Order.ItemOrder>(),
                     OrderTime = orderTime,
                     OrderName = "K"
@@ -221,7 +215,7 @@ namespace ClickBar.Commands.Sale
                 ClickBar_Common.Models.Order.Order orderSank = new ClickBar_Common.Models.Order.Order()
                 {
                     CashierName = cashierDB.Name,
-                    TableId = tableId,
+                    TableId = paymentPlaceDB.Id,
                     Items = new List<ClickBar_Common.Models.Order.ItemOrder>(),
                     OrderTime = orderTime,
                     OrderName = "S"
@@ -229,39 +223,38 @@ namespace ClickBar.Commands.Sale
                 ClickBar_Common.Models.Order.Order orderDrugo = new ClickBar_Common.Models.Order.Order()
                 {
                     CashierName = cashierDB.Name,
-                    TableId = tableId,
+                    TableId = paymentPlaceDB.Id,
                     Items = new List<ClickBar_Common.Models.Order.ItemOrder>(),
                     OrderTime = orderTime
                 };
-                var partHall = _viewModel.DbContext.PartHalls.Join(_viewModel.DbContext.PaymentPlaces,
-                    partHall => partHall.Id,
-                    table => table.PartHallId,
-                    (partHall, table) => new { PartHall = partHall, Table = table })
-                    .FirstOrDefault(t => t.Table.Id == tableId);
 
-                if (partHall != null)
+                orderKuhinja.PartHall = paymentPlaceDB.PartHall.Name;
+                orderSank.PartHall = paymentPlaceDB.PartHall.Name;
+                orderDrugo.PartHall = paymentPlaceDB.PartHall.Name;
+
+                var allItemsDB = await context.Items.Include(i => i.ItemGroupNavigation)
+                    .ThenInclude(ig => ig.IdSupergroupNavigation).ToListAsync();
+
+                foreach (var item in items)
                 {
-                    orderKuhinja.PartHall = partHall.PartHall.Name;
-                    orderSank.PartHall = partHall.PartHall.Name;
-                    orderDrugo.PartHall = partHall.PartHall.Name;
-                }
+                    var itemDB = allItemsDB.FirstOrDefault(i => i.Id == item.Item.Id);
 
-                items.ForEach(item =>
-                {
-                    var itemNadgroup = _viewModel.DbContext.Items.Join(_viewModel.DbContext.ItemGroups,
-                    item => item.IdItemGroup,
-                    itemGroup => itemGroup.Id,
-                    (item, itemGroup) => new { Item = item, ItemGroup = itemGroup })
-                    .Join(_viewModel.DbContext.Supergroups,
-                    group => group.ItemGroup.IdSupergroup,
-                    supergroup => supergroup.Id,
-                    (group, supergroup) => new { Group = group, Supergroup = supergroup })
-                    .FirstOrDefault(it => it.Group.Item.Id == item.Item.Id);
+                    decimal popust = (100 - paymentPlaceDB.Popust) / 100;
+                    //var itemNadgroup = context.Items.Join(context.ItemGroups,
+                    //item => item.IdItemGroup,
+                    //itemGroup => itemGroup.Id,
+                    //(item, itemGroup) => new { Item = item, ItemGroup = itemGroup })
+                    //.Join(context.Supergroups,
+                    //group => group.ItemGroup.IdSupergroup,
+                    //supergroup => supergroup.Id,
+                    //(group, supergroup) => new { Group = group, Supergroup = supergroup })
+                    //.FirstOrDefault(it => it.Group.Item.Id == item.Item.Id);
 
-                    if (itemNadgroup != null)
+                    if (itemDB != null)
                     {
-                        if (itemNadgroup.Supergroup.Name.ToLower().Contains("hrana") ||
-                        itemNadgroup.Supergroup.Name.ToLower().Contains("kuhinja"))
+
+                        if (itemDB.ItemGroupNavigation.IdSupergroupNavigation.Name.ToLower().Contains("hrana") ||
+                        itemDB.ItemGroupNavigation.IdSupergroupNavigation.Name.ToLower().Contains("kuhinja"))
                         {
                             if (!string.IsNullOrEmpty(item.GlobalZelja))
                             {
@@ -270,7 +263,7 @@ namespace ClickBar.Commands.Sale
                                     Name = item.Item.Name,
                                     Quantity = item.Quantity,
                                     Id = item.Item.Id,
-                                    TotalAmount = item.TotalAmout,
+                                    TotalAmount = item.TotalAmout * popust,
                                     Zelja = item.GlobalZelja
                                 });
                             }
@@ -280,18 +273,18 @@ namespace ClickBar.Commands.Sale
 
                                 if (saZeljama.Any())
                                 {
-                                    saZeljama.ToList().ForEach(z =>
+                                    foreach (var z in saZeljama)
                                     {
-                                        decimal quantity = item.Quantity;
+                                        decimal quantityz = item.Quantity;
                                         orderKuhinja.Items.Add(new ClickBar_Common.Models.Order.ItemOrder()
                                         {
                                             Name = item.Item.Name,
                                             Quantity = 1,
                                             Id = item.Item.Id,
-                                            TotalAmount = item.Item.SellingUnitPrice,
+                                            TotalAmount = item.Item.SellingUnitPrice * popust,
                                             Zelja = z.Description
                                         });
-                                    });
+                                    }
                                 }
 
                                 decimal quantity = item.Quantity - (saZeljama != null ? saZeljama.Count() : 0);
@@ -303,7 +296,7 @@ namespace ClickBar.Commands.Sale
                                         Name = item.Item.Name,
                                         Quantity = quantity,
                                         Id = item.Item.Id,
-                                        TotalAmount = decimal.Round(item.Item.SellingUnitPrice * quantity, 2)
+                                        TotalAmount = decimal.Round(item.Item.SellingUnitPrice * quantity, 2) * popust,
                                     });
                                 }
                             }
@@ -314,34 +307,34 @@ namespace ClickBar.Commands.Sale
                                     Name = item.Item.Name,
                                     Quantity = item.Quantity,
                                     Id = item.Item.Id,
-                                    TotalAmount = item.TotalAmout
+                                    TotalAmount = item.TotalAmout * popust,
                                 });
                             }
                         }
                         else
                         {
-                            if (itemNadgroup.Supergroup.Name.ToLower().Contains("pice") ||
-                            itemNadgroup.Supergroup.Name.ToLower().Contains("piće") ||
-                            itemNadgroup.Supergroup.Name.ToLower().Contains("sank") ||
-                            itemNadgroup.Supergroup.Name.ToLower().Contains("šank"))
+                            if (itemDB.ItemGroupNavigation.IdSupergroupNavigation.Name.ToLower().Contains("pice") ||
+                            itemDB.ItemGroupNavigation.IdSupergroupNavigation.Name.ToLower().Contains("piće") ||
+                            itemDB.ItemGroupNavigation.IdSupergroupNavigation.Name.ToLower().Contains("sank") ||
+                            itemDB.ItemGroupNavigation.IdSupergroupNavigation.Name.ToLower().Contains("šank"))
                             {
                                 orderSank.Items.Add(new ClickBar_Common.Models.Order.ItemOrder()
                                 {
                                     Name = item.Item.Name,
                                     Quantity = item.Quantity,
                                     Id = item.Item.Id,
-                                    TotalAmount = item.TotalAmout
+                                    TotalAmount = item.TotalAmout * popust,
                                 });
                             }
                             else
                             {
-                                orderDrugo.OrderName = $"{itemNadgroup.Supergroup.Name[0]}";
+                                orderDrugo.OrderName = $"{itemDB.ItemGroupNavigation.IdSupergroupNavigation.Name[0]}";
                                 orderDrugo.Items.Add(new ClickBar_Common.Models.Order.ItemOrder()
                                 {
                                     Name = item.Item.Name,
                                     Quantity = item.Quantity,
                                     Id = item.Item.Id,
-                                    TotalAmount = item.TotalAmout
+                                    TotalAmount = item.TotalAmout * popust,
                                 });
                             }
                         }
@@ -353,14 +346,14 @@ namespace ClickBar.Commands.Sale
                             Name = item.Item.Name,
                             Quantity = item.Quantity,
                             Id = item.Item.Id,
-                            TotalAmount = item.TotalAmout
+                            TotalAmount = item.TotalAmout * popust,
                         });
                     }
-                });
+                }
 
                 int orderCounter = 1;
 
-                var ordersTodayDB = _viewModel.DbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date);
+                var ordersTodayDB = context.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date);
 
                 if (ordersTodayDB != null &&
                     ordersTodayDB.Any())
@@ -375,7 +368,7 @@ namespace ClickBar.Commands.Sale
                 {
                     int orderCounterType = 1;
 
-                    var ordersTodayTypeDB = _viewModel.DbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
+                    var ordersTodayTypeDB = context.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
                     !string.IsNullOrEmpty(o.Name) &&
                     o.Name.ToLower().Contains(orderSank.OrderName.ToLower()));
 
@@ -394,20 +387,22 @@ namespace ClickBar.Commands.Sale
                     {
                         Id = Guid.NewGuid().ToString(),
                         UnprocessedOrderId = unprocessedOrderDB.Id,
-                        CashierId = cashierDB.Id,
+                        CashierId = !string.IsNullOrEmpty(paymentPlaceDB.Name) && paymentPlaceDB.Name.ToLower().Contains("dostava 1") ? "3333" :
+                        !string.IsNullOrEmpty(paymentPlaceDB.Name) && paymentPlaceDB.Name.ToLower().Contains("dostava 2") ? "4444" : cashierDB.Id,
                         Counter = orderCounter,
                         CounterType = orderCounterType,
                         OrderDateTime = DateTime.Now,
                         TotalPrice = totalAmount,
                         Name = orderSank.OrderName,
-                        TableId = tableId,
-                        OrderTodayItems = new List<OrderTodayItemDB>()
+                        TableId = paymentPlaceDB.Id,
+                        OrderTodayItems = new List<OrderTodayItemDB>(),
+                        Faza = (int)FazaKuhinjeEnumeration.Nova
                     };
 
                     //sqliteDbContext.OrdersToday.Add(orderTodayDB);
                     //sqliteDbContext.SaveChanges();
 
-                    orderSank.Items.ForEach(item =>
+                    foreach(var item in orderSank.Items)
                     {
                         var orderTodayItemDB = orderTodayDB.OrderTodayItems.FirstOrDefault(o => o.ItemId == item.Id);
 
@@ -421,6 +416,7 @@ namespace ClickBar.Commands.Sale
                         {
                             orderTodayItemDB = new OrderTodayItemDB()
                             {
+                                Id = Guid.NewGuid().ToString(),
                                 ItemId = item.Id,
                                 OrderTodayId = orderTodayDB.Id,
                                 Quantity = item.Quantity,
@@ -428,9 +424,9 @@ namespace ClickBar.Commands.Sale
                             };
                             orderTodayDB.OrderTodayItems.Add(orderTodayItemDB);
                         }
-                    });
-                    _viewModel.DbContext.OrdersToday.Add(orderTodayDB);
-                    _viewModel.DbContext.SaveChanges();
+                    }
+                    await context.OrdersToday.AddAsync(orderTodayDB);
+                    await context.SaveChangesAsync();
 
                     FormatPos.PrintOrder(orderSank, posType, ClickBar_Printer.Enums.OrderTypeEnumeration.Sank);
                 }
@@ -438,7 +434,7 @@ namespace ClickBar.Commands.Sale
                 {
                     int orderCounterType = 1;
 
-                    var ordersTodayTypeDB = _viewModel.DbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
+                    var ordersTodayTypeDB = context.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
                     !string.IsNullOrEmpty(o.Name) &&
                     o.Name.ToLower().Contains(orderKuhinja.OrderName.ToLower()));
 
@@ -457,59 +453,51 @@ namespace ClickBar.Commands.Sale
                     {
                         Id = Guid.NewGuid().ToString(),
                         UnprocessedOrderId = unprocessedOrderDB.Id,
-                        CashierId = cashierDB.Id,
+                        CashierId = !string.IsNullOrEmpty(paymentPlaceDB.Name) && paymentPlaceDB.Name.ToLower().Contains("dostava 1") ? "3333" :
+                        !string.IsNullOrEmpty(paymentPlaceDB.Name) && paymentPlaceDB.Name.ToLower().Contains("dostava 2") ? "4444" : cashierDB.Id,
                         Counter = orderCounter,
                         CounterType = orderCounterType,
                         OrderDateTime = DateTime.Now,
                         TotalPrice = totalAmount,
                         Name = orderKuhinja.OrderName,
-                        TableId = tableId,
-                        OrderTodayItems = new List<OrderTodayItemDB>()
+                        TableId = paymentPlaceDB.Id,
+                        OrderTodayItems = new List<OrderTodayItemDB>(),
+                        Faza = (int)FazaKuhinjeEnumeration.Nova
                     };
 
                     //sqliteDbContext.OrdersToday.Add(orderTodayDB);
                     //sqliteDbContext.SaveChanges();
 
-                    orderKuhinja.Items.ForEach(item =>
+                    foreach (var item in orderKuhinja.Items)
                     {
                         var orderTodayItemDB = orderTodayDB.OrderTodayItems.FirstOrDefault(o => o.ItemId == item.Id);
 
-                        if (orderTodayItemDB != null)
-                        {
-                            orderTodayItemDB.Quantity += item.Quantity;
-                            orderTodayItemDB.TotalPrice += item.TotalAmount;
-                            //sqliteDbContext.OrderTodayItems.Update(orderTodayItemDB);
-                        }
-                        else
-                        {
-                            orderTodayItemDB = new OrderTodayItemDB()
-                            {
-                                ItemId = item.Id,
-                                OrderTodayId = orderTodayDB.Id,
-                                Quantity = item.Quantity,
-                                TotalPrice = item.TotalAmount,
-                            };
-                            orderTodayDB.OrderTodayItems.Add(orderTodayItemDB);
-                        }
-                        //sqliteDbContext.SaveChanges();
-                    });
-                    _viewModel.DbContext.OrdersToday.Add(orderTodayDB);
-                    _viewModel.DbContext.SaveChanges();
-
-
-                    if (!string.IsNullOrEmpty(SettingsManager.Instance.GetPathToDrljaKuhinjaDB()))
-                    {
-                        var isSucceed = AddDrljaNarudzbina(orderTodayDB,
-                            orderKuhinja.Items,
-                            cashierDB,
-                            unprocessedOrderDB).Result;
-
-                        //if(!isSucceed)
+                        //if (orderTodayItemDB != null)
                         //{
-                        //    FormatPos.PrintOrder(orderKuhinja, posType, ClickBar_Printer.Enums.OrderTypeEnumeration.Kuhinja);
+                        //    orderTodayItemDB.Quantity += item.Quantity;
+                        //    orderTodayItemDB.TotalPrice += item.TotalAmount;
+                        //    //sqliteDbContext.OrderTodayItems.Update(orderTodayItemDB);
                         //}
+                        //else
+                        //{
+                        orderTodayItemDB = new OrderTodayItemDB()
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            ItemId = item.Id,
+                            OrderTodayId = orderTodayDB.Id,
+                            Quantity = item.Quantity,
+                            TotalPrice = item.TotalAmount,
+                            Zelja = item.Zelja
+                        };
+                        orderTodayDB.OrderTodayItems.Add(orderTodayItemDB);
+                        //}
+                        //sqliteDbContext.SaveChanges();
                     }
-                    else
+                    await context.OrdersToday.AddAsync(orderTodayDB);
+                    await context.SaveChangesAsync();
+
+
+                    if (string.IsNullOrEmpty(SettingsManager.Instance.GetPathToDrljaKuhinjaDB()))
                     {
                         FormatPos.PrintOrder(orderKuhinja, posType, ClickBar_Printer.Enums.OrderTypeEnumeration.Kuhinja);
                     }
@@ -518,7 +506,7 @@ namespace ClickBar.Commands.Sale
                 {
                     int orderCounterType = 1;
 
-                    var ordersTodayTypeDB = _viewModel.DbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
+                    var ordersTodayTypeDB = context.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
                     !string.IsNullOrEmpty(o.Name) &&
                     o.Name.ToLower().Contains(orderDrugo.OrderName.ToLower()));
 
@@ -537,17 +525,19 @@ namespace ClickBar.Commands.Sale
                     {
                         Id = Guid.NewGuid().ToString(),
                         UnprocessedOrderId = unprocessedOrderDB.Id,
-                        CashierId = cashierDB.Id,
+                        CashierId = !string.IsNullOrEmpty(paymentPlaceDB.Name) && paymentPlaceDB.Name.ToLower().Contains("dostava 1") ? "3333" :
+                        !string.IsNullOrEmpty(paymentPlaceDB.Name) && paymentPlaceDB.Name.ToLower().Contains("dostava 2") ? "4444" : cashierDB.Id,
                         Counter = orderCounter,
                         CounterType = orderCounterType,
                         OrderDateTime = DateTime.Now,
                         TotalPrice = totalAmount,
                         Name = orderDrugo.OrderName,
-                        TableId = tableId,
-                        OrderTodayItems = new List<OrderTodayItemDB>()
+                        TableId = paymentPlaceDB.Id,
+                        OrderTodayItems = new List<OrderTodayItemDB>(),
+                        Faza = (int)FazaKuhinjeEnumeration.Nova
                     };
 
-                    orderDrugo.Items.ForEach(item =>
+                    foreach (var item in orderDrugo.Items)
                     {
                         var orderTodayItemDB = orderTodayDB.OrderTodayItems.FirstOrDefault(o => o.ItemId == item.Id);
 
@@ -560,6 +550,7 @@ namespace ClickBar.Commands.Sale
                         {
                             orderTodayItemDB = new OrderTodayItemDB()
                             {
+                                Id = Guid.NewGuid().ToString(),
                                 ItemId = item.Id,
                                 OrderTodayId = orderTodayDB.Id,
                                 Quantity = item.Quantity,
@@ -567,10 +558,10 @@ namespace ClickBar.Commands.Sale
                             };
                             orderTodayDB.OrderTodayItems.Add(orderTodayItemDB);
                         }
-                    });
+                    }
 
-                    _viewModel.DbContext.OrdersToday.Add(orderTodayDB);
-                    _viewModel.DbContext.SaveChanges();
+                    await context.OrdersToday.AddAsync(orderTodayDB);
+                    await context.SaveChangesAsync();
 
                     FormatPos.PrintOrder(orderDrugo, posType, ClickBar_Printer.Enums.OrderTypeEnumeration.Sank);
                 }
@@ -585,128 +576,33 @@ namespace ClickBar.Commands.Sale
             }
         }
 
-        private async Task<bool> AddDrljaNarudzbina(OrderTodayDB orderTodayDB,
-            List<ClickBar_Common.Models.Order.ItemOrder> items,
-            CashierDB cashierDB,
-            UnprocessedOrderDB unprocessedOrderDB)
+        private async Task ProcessOrder(SqlServerDbContext context, ClickBar_Common.Models.Order.Order order, PaymentPlaceDB paymentPlaceDB, PosTypeEnumeration posType, OrderTypeEnumeration orderType)
         {
-            try
+            // Logika za obradu narudžbine i štampanje
+            var totalAmount = order.Items.Sum(i => i.TotalAmount);
+            var orderTodayDB = new OrderTodayDB
             {
-                var paymetPlaceDB = _viewModel.DbContext.PaymentPlaces.Find(orderTodayDB.TableId);
+                // Inicijalizacija OrderTodayDB
+            };
 
-                if (paymetPlaceDB == null)
+            foreach (var item in order.Items)
+            {
+                var orderTodayItemDB = new OrderTodayItemDB
                 {
-                    MessageBox.Show("Desila se greška prilikom slanja porudžbine!\nObratite se serviseru.",
-                        "Greška",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
-                    return false;
-                }
-
-                string radnikId = cashierDB.Id;
-                string radnikName = cashierDB.Name;
-
-                if (!string.IsNullOrEmpty(paymetPlaceDB.Name) &&
-                    paymetPlaceDB.Name.ToLower().Contains("dostava"))
-                {
-                    radnikId = cashierDB.Id == "1111" ? "3333" : cashierDB.Id == "2222" ? "4444" : cashierDB.Id;
-                    radnikName = "Dostava";
-                }
-
-                PorudzbinaDrlja porudzbinaDrlja = new PorudzbinaDrlja()
-                {
-                    Items = new List<PorudzbinaItemDrlja>(),
-                    RadnikName = radnikName,
-                    RadnikId = radnikId,
-                    StoBr = orderTodayDB.TableId.HasValue ? orderTodayDB.TableId.Value.ToString() : "1",
-                    InsertInDB = false,
-                    PorudzbinaId = unprocessedOrderDB.Id
+                    // Inicijalizacija OrderTodayItemDB
                 };
-
-                items.ForEach(item =>
-                {
-                    decimal mpc = decimal.Round(item.TotalAmount / item.Quantity, 2);
-
-                    if (paymetPlaceDB.Popust > 0)
-                    {
-                        mpc = decimal.Round(mpc - (mpc * paymetPlaceDB.Popust / 100), 2);
-                    }
-
-                    porudzbinaDrlja.Items.Add(new PorudzbinaItemDrlja()
-                    {
-                        ItemIdString = item.Id,
-                        Kolicina = item.Quantity,
-                        Naziv = item.Name,
-                        MPC = mpc,
-                        Zelje = item.Zelja,
-                        RBS = 0,
-                        BrojNarudzbe = 0,
-                        Jm = "kom",
-                    });
-                });
-
-                var result = await PostPorudzbinaAsync(porudzbinaDrlja);
-
-                if (result != 200)
-                {
-                    MessageBox.Show("Desila se greška prilikom slanja porudžbine!\nObratite se serviseru.",
-                        "Greška",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
-                    return false;
-                }
-                return true;
+                orderTodayDB.OrderTodayItems.Add(orderTodayItemDB);
             }
-            catch (Exception ex)
-            {
-                Log.Error("HookOrderOnTableCommand -> AddDrljaNarudzbina -> Greska prilikom slanja porudzbine: ", ex);
-                MessageBox.Show("Desila se nepoznata greška prilikom slanja porudžbine!\nObratite se serviseru.",
-                    "Greška",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                return false;
-            }
+
+            await context.OrdersToday.AddAsync(orderTodayDB);
+            await context.SaveChangesAsync();
+
+            FormatPos.PrintOrder(order, posType, orderType);
         }
-
-        private async Task<int> PostPorudzbinaAsync(PorudzbinaDrlja porudzbina)
+        // Metoda za obaveštavanje UI-a o promenama
+        private void RaiseCanExecuteChanged()
         {
-            try
-            {
-                var handler = new HttpClientHandler(); handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
-                HttpClient client = new HttpClient(handler);
-
-                var ip = SettingsManager.Instance.GetHOstPC_IP();
-
-                string requestUrl = string.Empty;
-                if (string.IsNullOrEmpty(ip))
-                {
-                    requestUrl = "http://localhost:5000/api/porudzbina/create";
-                }
-                else
-                {
-                    requestUrl = $"https://{ip}:44323/api/porudzbina/create";
-                }
-
-                var json = JsonConvert.SerializeObject(porudzbina);
-                var data = new StringContent(json, Encoding.UTF8, "application/json");
-
-                var response = await client.PostAsync(requestUrl, data);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    return (int)response.StatusCode;
-                }
-                else
-                {
-                    Log.Error($"HookOrderOnTableCommand -> PostPorudzbinaAsync -> Status je: {(int)response.StatusCode} -> {response.StatusCode.ToString()} ");
-                    return (int)response.StatusCode;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error("HookOrderOnTableCommand -> PostPorudzbinaAsync -> Greska prilikom slanja porudzbine: ", ex);
-                return -1;
-            }
+            CanExecuteChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 }

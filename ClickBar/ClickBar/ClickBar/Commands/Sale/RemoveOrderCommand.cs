@@ -11,9 +11,12 @@ using System.Windows;
 using ClickBar_Logging;
 using ClickBar_DatabaseSQLManager.Models;
 using System.Windows.Navigation;
-using ClickBar_Database_Drlja;
 using ClickBar.Enums;
 using ClickBar.ViewModels.Sale;
+using ClickBar_Common.Enums;
+using ClickBar.Enums.Kuhinja;
+using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore;
 
 namespace ClickBar.Commands.Sale
 {
@@ -51,151 +54,52 @@ namespace ClickBar.Commands.Sale
                             return;
                         }
 
-                        var order = _viewModel.DbContext.UnprocessedOrders.FirstOrDefault(order => order.PaymentPlaceId == _viewModel.TableId);
-                        decimal totalForDelete = 0;
-
-                        if (order != null)
+                        using (var dbContext = _viewModel.DbContextFactory.CreateDbContext())
                         {
-                            var itemsInOrder = _viewModel.DbContext.ItemsInUnprocessedOrder.Where(item => item.UnprocessedOrderId == order.Id);
+                            var order = dbContext.UnprocessedOrders.FirstOrDefault(order => order.PaymentPlaceId == _viewModel.TableId);
 
-                            if (itemsInOrder != null &&
-                                itemsInOrder.Any())
+                            if (order != null)
                             {
-                                //if (itemsInOrder.Count() != _viewModel.OldOrders.Count)
-                                //{
-                                //    Log.Error("RemoveOrderCommand -> Execute -> Greška prilikom brisanja porudžbine! Broj stavki u bazi i broj stavki u listi se ne poklapaju!");
-                                //    MessageBox.Show("Greška prilikom brisanja porudžbine!", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
-                                //    return;
-                                //}
+                                var ordersToday = dbContext.OrdersToday.Where(o => o.UnprocessedOrderId == order.Id).ToList();
 
-                                int orderBrisanjeCounter = 1;
-                                int orderTotalCounter = 1;
-
-                                var ordersTodayBrisanjeDB = _viewModel.DbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date &&
-                                !string.IsNullOrEmpty(o.Name) &&
-                                o.Name.ToLower().Contains("brisanje"));
-
-                                var ordersTodayDB = _viewModel.DbContext.OrdersToday.Where(o => o.OrderDateTime.Date == DateTime.Now.Date);
-
-                                if (ordersTodayBrisanjeDB != null &&
-                                    ordersTodayBrisanjeDB.Any())
+                                if (ordersToday != null &&
+                                    ordersToday.Any())
                                 {
-                                    orderBrisanjeCounter = ordersTodayBrisanjeDB.Max(o => o.CounterType);
-                                    orderBrisanjeCounter++;
-                                }
-
-                                if (ordersTodayDB != null &&
-                                    ordersTodayDB.Any())
-                                {
-                                    orderTotalCounter = ordersTodayDB.Max(o => o.Counter);
-                                    orderTotalCounter++;
-                                }
-
-                                OrderTodayDB orderTodayDB = new OrderTodayDB()
-                                {
-                                    CashierId = _viewModel.LoggedCashier.Id,
-                                    UnprocessedOrderId = order.Id,
-                                    Id = Guid.NewGuid().ToString(),
-                                    OrderDateTime = DateTime.Now,
-                                    TableId = order.PaymentPlaceId,
-                                    TotalPrice = 0,
-                                    CounterType = orderBrisanjeCounter,
-                                    Counter = orderTotalCounter,
-                                    Name = $"BRISANJE{orderBrisanjeCounter}__{orderTotalCounter}",
-                                    OrderTodayItems = new List<OrderTodayItemDB>()
-                                };
-
-                                List<OrderTodayItemDB> itemsForDelete = new List<OrderTodayItemDB>();
-
-                                foreach(var oldOrder in _viewModel.OldOrders)
-                                {
-                                    foreach (var item in oldOrder.Items)
+                                    foreach (var orderToday in ordersToday)
                                     {
-                                        OrderTodayItemDB orderTodayItemDB = new OrderTodayItemDB()
-                                        {
-                                            ItemId = item.Item.Id,
-                                            OrderTodayId = orderTodayDB.Id,
-                                            Quantity = -1 * item.Quantity,
-                                            TotalPrice = Decimal.Round(item.Quantity * item.Item.SellingUnitPrice, 2)
-                                        };
-
-                                        orderTodayDB.TotalPrice += orderTodayItemDB.TotalPrice;
-
-                                        itemsForDelete.Add(orderTodayItemDB);
+                                        orderToday.Faza = (int)FazaKuhinjeEnumeration.Obrisana;
+                                        dbContext.OrdersToday.Update(orderToday);
                                     }
                                 }
-
-                                _viewModel.DbContext.ItemsInUnprocessedOrder.RemoveRange(itemsInOrder);
-                                _viewModel.DbContext.SaveChanges();
-
-                                if (itemsForDelete.Any())
-                                {
-                                    itemsForDelete.ForEach(i =>
-                                    {
-                                        var itemFD = orderTodayDB.OrderTodayItems.FirstOrDefault(o => o.ItemId == i.ItemId);
-
-                                        if (itemFD == null)
-                                        {
-                                            orderTodayDB.OrderTodayItems.Add(i);
-                                        }
-                                        else
-                                        {
-                                            itemFD.Quantity += i.Quantity;
-                                            itemFD.TotalPrice += i.TotalPrice;
-                                        }
-
-                                        totalForDelete += i.TotalPrice;
-                                    });
-                                    _viewModel.DbContext.OrdersToday.Add(orderTodayDB);
-                                    _viewModel.DbContext.SaveChanges();
-                                }
-
-
-                                //itemsInOrder.ToList().ForEach(item =>
-                                //{
-                                //    sqliteDbContext.ItemsInUnprocessedOrder.Remove(item);
-                                //});
+                                dbContext.UnprocessedOrders.Remove(order);
                             }
+                            dbContext.SaveChanges();
 
-                            itemsInOrder = _viewModel.DbContext.ItemsInUnprocessedOrder.Where(item => item.UnprocessedOrderId == order.Id);
-                            if (itemsInOrder == null ||
-                                !itemsInOrder.Any())
-                            {
-                                _viewModel.DbContext.UnprocessedOrders.Remove(order);
-
-                                var pathToDrljaDB = SettingsManager.Instance.GetPathToDrljaKuhinjaDB();
-
-                                if (_viewModel.DrljaDbContext != null &&
-                                    !string.IsNullOrEmpty(pathToDrljaDB))
-                                {
-                                    var narudzbineDrlja = _viewModel.DrljaDbContext.Narudzbine.Where(nar => nar.TR_STO.Contains(order.PaymentPlaceId.ToString())
-                                    && nar.TR_FAZA != 4);
-                                    if (narudzbineDrlja != null &&
-                                        narudzbineDrlja.Any())
-                                    {
-                                        narudzbineDrlja.ToList().ForEach(narudzbinaDrlja =>
-                                        {
-                                            narudzbinaDrlja.TR_FAZA = 4;
-                                            _viewModel.DrljaDbContext.Narudzbine.Update(narudzbinaDrlja);
-                                            RetryHelperDrlja.ExecuteWithRetry(() => { _viewModel.DrljaDbContext.SaveChanges(); });
-                                        });
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                order.TotalAmount += totalForDelete;
-                                _viewModel.DbContext.UnprocessedOrders.Update(order);
-                            }
-                            _viewModel.DbContext.SaveChanges();
+                            Log.Debug($"RemoveOrderCommand -> Execute -> Porudžbina sa stola {_viewModel.TableId} je uspešno obrisana!");
                         }
+
+                        int tableId = _viewModel.TableId;
 
                         _viewModel.Reset();
 
-                        AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
+                        var typeApp = SettingsManager.Instance.GetTypeApp();
+
+                        if (typeApp == TypeAppEnumeration.Sale)
+                        {
+                            AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.Sale,
                             _viewModel.LoggedCashier,
+                            tableId,
                             _viewModel);
-                        _viewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+                            _viewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+                        }
+                        else
+                        {
+                            AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.TableOverview,
+                            _viewModel.LoggedCashier,
+                            tableId,
+                            _viewModel);
+                            _viewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+                        }
                     }
                 }
                 catch

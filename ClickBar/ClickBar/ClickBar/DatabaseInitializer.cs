@@ -1,19 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ClickBar_DatabaseSQLManager;
-using ClickBar_Database_Drlja;
 using ClickBar_Settings;
 using Microsoft.Data.SqlClient;
 
 public class DatabaseInitializer
 {
     private readonly IDbContextFactory<SqlServerDbContext> _sqlServerDbContextFactory;
-    private readonly IDbContextFactory<SqliteDrljaDbContext>? _sqliteDrljaDbContextFactory;
 
-    public DatabaseInitializer(IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory,
-                               IDbContextFactory<SqliteDrljaDbContext>? sqliteDrljaDbContextFactory)
+    public DatabaseInitializer(IDbContextFactory<SqlServerDbContext> sqlServerDbContextFactory)
     {
         _sqlServerDbContextFactory = sqlServerDbContextFactory;
-        _sqliteDrljaDbContextFactory = sqliteDrljaDbContextFactory;
 
         EnsureDatabase();
     }
@@ -27,14 +23,6 @@ public class DatabaseInitializer
                 CreateDatabase(dbContext);
             }
             dbContext.Database.EnsureCreated();
-        }
-
-        if (_sqliteDrljaDbContextFactory != null)
-        {
-            using (var dbContext = _sqliteDrljaDbContextFactory.CreateDbContext())
-            {
-                dbContext.Database.EnsureCreated();
-            }
         }
     }
 

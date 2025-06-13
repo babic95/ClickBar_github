@@ -282,7 +282,6 @@ const Artikli = () => {
             console.log(oneClick);
 
             const poru = {
-                radnikName: porudzbina.userName,
                 radnikId: porudzbina.user,
                 stoBr: porudzbina.stoName.toString(),
                 items: []
@@ -292,13 +291,10 @@ const Artikli = () => {
 
                 const a = {
                     kolicina: artikalPor.kolicina,
-                    itemIdString: artikalPor.id_String,
-                    jm: artikalPor.jm,
-                    naziv: artikalPor.name,
+                    itemId: artikalPor.id_String,
+                    name: artikalPor.name,
                     mpc: artikalPor.mpc,
-                    zelje: "",
-                    rbs: 0,
-                    brojNarudzbe: 0
+                    zelje: ""
                 };
 
                 let brojac = 0;

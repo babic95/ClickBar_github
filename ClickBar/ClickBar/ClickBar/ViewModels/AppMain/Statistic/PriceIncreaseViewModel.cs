@@ -34,14 +34,19 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             _serviceProvider = serviceProvider;
             DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
 
-            AllGroups = new ObservableCollection<Models.Sale.GroupItems>() { new Models.Sale.GroupItems(-1, -1, "Sve grupe") };
+            AllGroups = new ObservableCollection<Models.Sale.GroupItems>() { new Models.Sale.GroupItems()
+            { 
+                Id = -1,
+                IdSupergroup = -1,
+                Name = "Sve grupe",
+            } };
 
             if (DbContext.ItemGroups != null &&
                 DbContext.ItemGroups.Any())
             {
                 DbContext.ItemGroups.ToList().ForEach(gropu =>
                 {
-                    AllGroups.Add(new Models.Sale.GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
+                    AllGroups.Add(new Models.Sale.GroupItems(gropu));
                 });
             }
 

@@ -63,7 +63,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             LoggedCashier = serviceProvider.GetRequiredService<CashierDB>();
 
             CalculationDate = DateTime.Now;
-            Groups = new List<GroupItems>() { new GroupItems(-1, -1, "Sve grupe") };
+            Groups = new List<GroupItems>() { new GroupItems() {Id = -1, IdSupergroup = -1, Name = "Sve grupe" } };
             Suppliers = new ObservableCollection<Supplier>();
             InventoryStatusCalculation = new ObservableCollection<Invertory>();
 
@@ -98,7 +98,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             {
                 DbContext.ItemGroups.ToList().ForEach(gropu =>
                 {
-                    Groups.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
+                    Groups.Add(new GroupItems(gropu));
                 });
             }
             AllGroups = new ObservableCollection<GroupItems>(Groups);

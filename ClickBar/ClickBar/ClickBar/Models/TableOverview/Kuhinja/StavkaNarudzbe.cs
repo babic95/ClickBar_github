@@ -8,30 +8,30 @@ namespace ClickBar.Models.TableOverview.Kuhinja
 {
     public class StavkaNarudzbe : ObservableObject
     {
-        private string _id;
-        private string _brArt;
+        private string _idItem;
+        private string _idNarudzbe;
         private string _naziv;
         private decimal _kolicina;
         private decimal _stornoKolicina;
         private decimal _mpc;
         private decimal _ukupno;
 
-        public string Id
+        public string IdItem
         {
-            get { return _id; }
+            get { return _idItem; }
             set
             {
-                _id = value;
-                OnPropertyChange(nameof(Id));
+                _idItem = value;
+                OnPropertyChange(nameof(IdItem));
             }
         }
-        public string BrArt
+        public string IdNarudzbe
         {
-            get { return _brArt; }
+            get { return _idNarudzbe; }
             set
             {
-                _brArt = value;
-                OnPropertyChange(nameof(BrArt));
+                _idNarudzbe = value;
+                OnPropertyChange(nameof(IdNarudzbe));
             }
         }
         public string Naziv

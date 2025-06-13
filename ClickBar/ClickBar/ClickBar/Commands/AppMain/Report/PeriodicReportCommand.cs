@@ -30,6 +30,13 @@ namespace ClickBar.Commands.AppMain.Report
         {
             _currentViewModel.Title = "PERIODIČNI IZVEŠTAJ";
 
+            var nowDateTime = DateTime.Now;
+
+            _currentViewModel.StartReport = new DateTime(nowDateTime.Date.Year,
+                nowDateTime.Date.Month,
+                nowDateTime.Date.Day, 5, 0, 0);
+            _currentViewModel.EndReport = _currentViewModel.StartReport.AddDays(1).AddSeconds(-1);
+
             _currentViewModel.AuxiliaryWindow = new PeriodicreportWindow(_currentViewModel);
             _currentViewModel.AuxiliaryWindow.ShowDialog();
 
@@ -42,14 +49,14 @@ namespace ClickBar.Commands.AppMain.Report
             ClickBar_Report.Report report;
             if (string.IsNullOrEmpty(_currentViewModel.SmartCard))
             {
-                report = new ClickBar_Report.Report(_currentViewModel.DbContext, 
+                report = new ClickBar_Report.Report(_currentViewModel.DbContextFactory.CreateDbContext(), 
                     _currentViewModel.StartReport,
                     _currentViewModel.EndReport,
                     _currentViewModel.Items);
             }
             else
             {
-                report = new ClickBar_Report.Report(_currentViewModel.DbContext, 
+                report = new ClickBar_Report.Report(_currentViewModel.DbContextFactory.CreateDbContext(), 
                     _currentViewModel.StartReport,
                     _currentViewModel.EndReport,
                     _currentViewModel.Items,

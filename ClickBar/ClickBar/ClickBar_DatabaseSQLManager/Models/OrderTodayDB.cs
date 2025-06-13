@@ -22,6 +22,7 @@ namespace ClickBar_DatabaseSQLManager.Models
         public string? Name { get; set; }
         public decimal TotalPrice { get; set; }
         public int? TableId { get; set; }
+        public int Faza { get; set; }
 
         public virtual UnprocessedOrderDB? UnprocessedOrder { get; set; }
         public virtual CashierDB Cashier { get; set; } = null!;

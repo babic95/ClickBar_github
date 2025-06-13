@@ -126,6 +126,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
                     List<Payment> payments = new List<Payment>();
 
                     var paymentsIvoice = await _dbContext.GetAllPaymentFromInvoice(invoiceDB.Id);
+
                     paymentsIvoice.ForEach(payment =>
                     {
                         if (payment.Amout.HasValue)
@@ -198,7 +199,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Refaund
                             refaundViewModel.CurrentInvoiceRequest.BuyerId = firma.Pib;
                         }
 
-                        var payRefaundViewModel = _serviceProvider.GetRequiredService<PayRefaundViewModel>();
+                        PayRefaundViewModel payRefaundViewModel = new PayRefaundViewModel(_serviceProvider);
                         PayRefaundWindow payRefaundWindow = new PayRefaundWindow(payRefaundViewModel);
                         payRefaundViewModel.Initialize(refaundViewModel.DbContext, payRefaundWindow, refaundViewModel);
 

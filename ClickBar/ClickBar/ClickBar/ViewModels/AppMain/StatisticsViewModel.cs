@@ -39,6 +39,7 @@ namespace ClickBar.ViewModels.AppMain
         private bool _isCheckedNivelacija;
         private bool _isCheckedNivelacijaView;
         private bool _isCheckedViewKnjizenje;
+        private bool _isCheckedPregledPorudzbina; 
         private bool _isCheckedPocetnoStanje;
         private bool _isCheckedNorm;
         private bool _isCheckedPartner;
@@ -77,7 +78,6 @@ namespace ClickBar.ViewModels.AppMain
                 OnPropertyChange(nameof(CurrentViewModel));
             }
         }
-        
         public bool IsCheckedViewKnjizenje
         {
             get { return _isCheckedViewKnjizenje; }
@@ -85,6 +85,15 @@ namespace ClickBar.ViewModels.AppMain
             {
                 _isCheckedViewKnjizenje = value;
                 OnPropertyChange(nameof(IsCheckedViewKnjizenje));
+            }
+        }
+        public bool IsCheckedPregledPorudzbina
+        {
+            get { return _isCheckedPregledPorudzbina; }
+            set
+            {
+                _isCheckedPregledPorudzbina = value;
+                OnPropertyChange(nameof(IsCheckedPregledPorudzbina));
             }
         }
         public bool IsCheckedKnjizenje
@@ -292,6 +301,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedAddEditSupplier()
         {
@@ -316,6 +326,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedCalculation()
         {
@@ -340,6 +351,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedViewCalculation()
         {
@@ -364,6 +376,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedPriceIncrease()
         {
@@ -388,6 +401,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedNivelacija()
         {
@@ -412,6 +426,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedViewNivelacija()
         {
@@ -436,6 +451,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedKnjizenje()
         {
@@ -460,6 +476,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedKEP()
         {
@@ -484,6 +501,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedViewKnjizenje()
         {
@@ -508,6 +526,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedRefaund()
         {
@@ -532,6 +551,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedPocetnoStanje()
         {
@@ -556,6 +576,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedNorm()
         {
@@ -580,6 +601,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedFirma()
         {
@@ -604,6 +626,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedPartner()
         {
@@ -628,6 +651,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedLagerLista()
         {
@@ -652,6 +676,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedRadnici()
         {
@@ -676,6 +701,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = true;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedOtpis()
         {
@@ -700,6 +726,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = true;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedOtpisPreview()
         {
@@ -724,6 +751,7 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = true;
+            IsCheckedPregledPorudzbina = false;
         }
         public void CheckedDPU()
         {
@@ -748,6 +776,32 @@ namespace ClickBar.ViewModels.AppMain
             IsCheckedRadnici = false;
             IsCheckedOtpis = false;
             IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = false;
+        }
+        public void CheckedPregledPorudzbina()
+        {
+            CurrentViewModel = new PregledPorudzbinaNaDanViewModel(_serviceProvider);
+            IsCheckedInventoryStatus = false;
+            IsCheckedAddEditSupplier = false;
+            IsCheckedCalculation = false;
+            IsCheckedViewCalculation = false;
+            IsCheckedPriceIncrease = false;
+            IsCheckedNivelacija = false;
+            IsCheckedNivelacijaView = false;
+            IsCheckedKnjizenje = false;
+            IsCheckedKEP = false;
+            IsCheckedViewKnjizenje = false;
+            IsCheckedRefaund = false;
+            IsCheckedPocetnoStanje = false;
+            IsCheckedNorm = false;
+            IsCheckedFirma = false;
+            IsCheckedPartner = false;
+            IsCheckedLagerLista = false;
+            IsCheckedDPU = false;
+            IsCheckedRadnici = false;
+            IsCheckedOtpis = false;
+            IsCheckedOtpisPreview = false;
+            IsCheckedPregledPorudzbina = true;
         }
 
         #endregion Public methods

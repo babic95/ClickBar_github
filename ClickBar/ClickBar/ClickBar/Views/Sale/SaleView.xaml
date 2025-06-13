@@ -16,6 +16,8 @@
         <converters:DecimalNumberToString x:Key="decimalToString"/>
         <converters:DecimalNumberQuantityToString x:Key="decimalQuantityToString"/>
         <converters:Subtracting x:Key="subtracting"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <!-- Pretpostavka da imate ovaj konverter -->
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -121,14 +123,15 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                        <ScrollViewer x:Name="OldOrdersScrollViewer"
+                                      HorizontalScrollBarVisibility="Disabled"
                                       VerticalScrollBarVisibility="Auto"
                                       Grid.Row="0"
                                       Visibility="{Binding OldOrdersVisibility, Mode=TwoWay}"
                                       MaxHeight="{Binding ActualHeight,
-                            RelativeSource={RelativeSource AncestorType=Window},
+                            RelativeSource={RelativeSource AncestorType=Grid},
                             Converter={StaticResource FractionHeightConverter}, 
-                            ConverterParameter=0.5}">
+                            ConverterParameter=0.6}">
                             <Grid Margin="10">
                                 <ItemsControl ItemsSource="{Binding OldOrders}">
                                     <ItemsControl.ItemTemplate>
@@ -264,8 +267,26 @@
                         <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                                       VerticalScrollBarVisibility="Auto"
                                       Grid.Row="1"
+                                      x:Name="MainScrollViewer"
                                       BorderBrush="Black"
                                       BorderThickness="2">
+                            <ScrollViewer.Style>
+                                <Style TargetType="ScrollViewer">
+                                    <Setter Property="MaxHeight" Value="{Binding ActualHeight,
+                                            RelativeSource={RelativeSource AncestorType=Grid},
+                                            Converter={StaticResource FractionHeightConverter},
+                                            ConverterParameter=1}"/>
+                                    <!-- Default value when OldOrdersVisibility is not Visible -->
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding OldOrdersVisibility}" Value="Visible">
+                                            <Setter Property="MaxHeight" Value="{Binding ActualHeight,
+                                                    RelativeSource={RelativeSource AncestorType=Grid},
+                                                    Converter={StaticResource FractionHeightConverter},
+                                                    ConverterParameter=0.4}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ScrollViewer.Style>
                             <Grid Margin="10">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="55*"/>
@@ -396,104 +417,7 @@
                                 </StackPanel>
                             </Grid>
                         </ScrollViewer>
-                        <!--<StackPanel Grid.Row="1"
-                                    Margin="10"
-                                    Orientation="Horizontal"
-                                    HorizontalAlignment="Center">
 
-                            <StackPanel Orientation="Vertical">
-
-                                <StackPanel HorizontalAlignment="Center"
-                                        Orientation="Horizontal">
-
-                                    <Button x:Name="but1"
-                                        Style="{DynamicResource QuantityButton}" 
-                                        Content="1"
-                                        Command="{Binding ClickOnQuantityButtonCommand}" 
-                                        CommandParameter="1"/>
-                                    <Button Style="{DynamicResource QuantityButton}"
-                                        Content="2" 
-                                        Command="{Binding ClickOnQuantityButtonCommand}"
-                                        CommandParameter="2"/>
-                                    <Button Style="{DynamicResource QuantityButton}"
-                                        Content="3" 
-                                        Command="{Binding ClickOnQuantityButtonCommand}" 
-                                        CommandParameter="3"/>
-
-                                </StackPanel>
-
-                                <StackPanel HorizontalAlignment="Center"
-                                        Orientation="Horizontal">
-
-                                    <Button Style="{DynamicResource QuantityButton}"
-                                        Content="4" 
-                                        Command="{Binding ClickOnQuantityButtonCommand}"
-                                        CommandParameter="4"/>
-                                    <Button Style="{DynamicResource QuantityButton}"
-                                        Content="5" 
-                                        Command="{Binding ClickOnQuantityButtonCommand}"
-                                        CommandParameter="5"/>
-                                    <Button Style="{DynamicResource QuantityButton}"
-                                        Content="6" 
-                                        Command="{Binding ClickOnQuantityButtonCommand}"
-                                        CommandParameter="6"/>
-
-                                </StackPanel>
-                                <StackPanel HorizontalAlignment="Center"
-                                        Orientation="Horizontal">
-
-                                    <Button Style="{DynamicResource QuantityButton}"
-                                        Content="7" 
-                                        Command="{Binding ClickOnQuantityButtonCommand}"
-                                        CommandParameter="7"/>
-                                    <Button Style="{DynamicResource QuantityButton}"
-                                        Content="8" 
-                                        Command="{Binding ClickOnQuantityButtonCommand}" 
-                                        CommandParameter="8"/>
-                                    <Button Style="{DynamicResource QuantityButton}"
-                                        Content="9" 
-                                        Command="{Binding ClickOnQuantityButtonCommand}"
-                                        CommandParameter="9"/>
-
-                                </StackPanel>
-                                <StackPanel HorizontalAlignment="Center"
-                                        Orientation="Horizontal">
-
-                                    <Button Width="50" 
-                                        Height="50"
-                                        Style="{DynamicResource QuantityButton}"
-                                        Command="{Binding ClickOnQuantityButtonCommand}"
-                                        CommandParameter="backspace">
-                                        <Image Source="/Icons/delete.png"
-                                           Margin="1 3 3 3"/>
-                                    </Button>
-                                    <Button Style="{DynamicResource QuantityButton}"
-                                        Content="0" 
-                                        Command="{Binding ClickOnQuantityButtonCommand}"
-                                        CommandParameter="0"/>
-                                    <Button Style="{DynamicResource QuantityButton}"
-                                        Content="," 
-                                        Command="{Binding ClickOnQuantityButtonCommand}"
-                                        CommandParameter=","/>
-
-                                </StackPanel>
-                            </StackPanel>
-
-                            <StackPanel Orientation="Vertical">
-                                <Label Content="Količina:"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       FontSize="14"/>
-                                <TextBox Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}"
-                                         FontSize="22"
-                                         Width="130"
-                                         Height="35"
-                                         Margin="20 0 0 0"
-                                         HorizontalContentAlignment="Center"
-                                         VerticalContentAlignment="Center"/>
-                            </StackPanel>
-
-                        </StackPanel>-->
                     </Grid>
                     
                 </Border>

@@ -28,5 +28,6 @@ namespace ClickBar.Enums.AppMain.Statistic
         Otpis = 17,
         OtpisPreview = 18,
         DPU = 19,
+        PregledPorudzbina = 20,
     }
 }

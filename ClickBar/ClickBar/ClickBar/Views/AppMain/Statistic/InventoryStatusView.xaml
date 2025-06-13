@@ -37,6 +37,17 @@
                           Command="{Binding OpenAddOrEditGroupItemsCommand}"
                           CommandParameter="edit"/>
             </MenuItem>
+            <MenuItem Header="Redosled prikaza">
+                <MenuItem Header="Redosled Nadgrupa"
+                          Command="{Binding OpenRedosledSupergroupCommand}"
+                          CommandParameter="edit"/>
+                <MenuItem Header="Redosled Grupa"
+                          Command="{Binding OpenRedosledGroupItemsCommand}"
+                          CommandParameter="edit"/>
+                <MenuItem Header="Redosled Artikala"
+                          Command="{Binding OpenRedosledItemsCommand}"
+                          CommandParameter="edit"/>
+            </MenuItem>
 
         </Menu>
         <Grid Grid.Row="1"
@@ -244,7 +255,7 @@
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
 
-                <DataGridTemplateColumn MinWidth="70">
+                <DataGridTemplateColumn MinWidth="60">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal"
@@ -257,13 +268,21 @@
                                         Width="30">
                                     <Image Source="../../../Icons/edit.png"/>
                                 </Button>
-                                <Button Command="{Binding DataContext.DeleteCommand, ElementName=dataGrid}"
+                                <!--<Button Command="{Binding DataContext.DeleteCommand, ElementName=dataGrid}"
                                         CommandParameter="{Binding Item.Id}"
                                         Background="{x:Null}"
                                         ToolTip="Obriši artikal"
                                         BorderBrush="{x:Null}"
                                         Width="30">
                                     <Image Source="../../../Icons/clear.png"/>
+                                </Button>-->
+                                <Button Command="{Binding DataContext.OpenCardItemCommand, ElementName=dataGrid}"
+                                        CommandParameter="{Binding Item.Id}"
+                                        Background="{x:Null}"
+                                        ToolTip="Kartica artikla"
+                                        BorderBrush="{x:Null}"
+                                        Width="30">
+                                    <Image Source="../../../Icons/export.png"/>
                                 </Button>
                             </StackPanel>
                         </DataTemplate>

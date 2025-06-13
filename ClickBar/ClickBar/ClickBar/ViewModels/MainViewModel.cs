@@ -13,7 +13,6 @@ using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using ClickBar_Logging;
-using ClickBar_Database_Drlja;
 using ClickBar.Commands.AppMain;
 using ClickBar.ViewModels;
 
@@ -43,7 +42,7 @@ namespace ClickBar.ViewModels
 
                 if (typeApp == ClickBar_Common.Enums.TypeAppEnumeration.Kuhinja)
                 {
-
+                    CurrentViewModel = _serviceProvider.GetRequiredService<KuhinjaViewModel>();
                 }
                 else
                 {

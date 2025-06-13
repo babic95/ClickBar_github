@@ -98,15 +98,29 @@
                     Height="40"
                     Width="100"
                     Style="{StaticResource RoundCorner}"/>
-            <!--<Button HorizontalAlignment="Right"
-                    VerticalAlignment="Bottom"
-                    Content="Takse"
-                    Foreground="{StaticResource BrushLogo2}"
-                    FontSize="20"
-                    Click="Button_Click_1"
-                    Height="40"
-                    Width="70"
-                    Style="{StaticResource RoundCorner}"/>-->
+            <StackPanel Orientation="Horizontal"
+            VerticalAlignment="Bottom"
+            HorizontalAlignment="Right">
+
+                <Button HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom"
+                        Content="Proveri"
+                        Foreground="{StaticResource BrushLogo2}"
+                        FontSize="20"
+                        Command="{Binding CopyInvoicesFromESIRCommand}"
+                        Height="40"
+                        Width="100"
+                        Style="{StaticResource RoundCorner}"/>
+                <!--<Button HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom"
+                        Content="Takse"
+                        Foreground="{StaticResource BrushLogo2}"
+                        FontSize="20"
+                        Click="Button_Click_1"
+                        Height="40"
+                        Width="70"
+                        Style="{StaticResource RoundCorner}"/>-->
+            </StackPanel>
         </Grid>
     </Grid>
 </Window>

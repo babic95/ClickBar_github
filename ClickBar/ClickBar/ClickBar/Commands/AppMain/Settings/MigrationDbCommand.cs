@@ -29,7 +29,14 @@ namespace ClickBar.Commands.AppMain.Settings
         public void Execute(object parameter)
         {
             DataMigration dataMigration = new DataMigration(_viewModel.DbContext);
-            dataMigration.MigrateData();
+            if (dataMigration.MigrateData())
+            {
+                MessageBox.Show("Migracija podataka je uspešno završena.", "Uspeh", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Migracija podataka nije uspela.", "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

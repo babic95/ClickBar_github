@@ -23,12 +23,14 @@ namespace ClickBar.Models.Sale
         private string _jm;
         private bool _isCheckedDesableItem;
         private bool _isCheckedZabraniPopust;
+        private int _rb;
         private ObservableCollection<ItemZelja> _zelje;
 
         public Item() { }
         public Item(ItemDB itemDB)
         {
             Id = itemDB.Id;
+            Rb = itemDB.Rb;
             Name = itemDB.Name;
             InputUnitPrice = itemDB.InputUnitPrice;
             SellingUnitPrice = itemDB.SellingUnitPrice;
@@ -63,6 +65,15 @@ namespace ClickBar.Models.Sale
             {
                 _id = value;
                 OnPropertyChange(nameof(Id));
+            }
+        }
+        public int Rb
+        {
+            get { return _rb; }
+            set
+            {
+                _rb = value;
+                OnPropertyChange(nameof(Rb));
             }
         }
         public string Name
@@ -141,7 +152,7 @@ namespace ClickBar.Models.Sale
             get { return _quantity; }
             set
             {
-                _quantity = Decimal.Round(value, 2);
+                _quantity = Decimal.Round(value, 3);
                 OnPropertyChange(nameof(Quantity));
             }
         }

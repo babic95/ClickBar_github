@@ -21,8 +21,6 @@ namespace ClickBar.ViewModels.Activation
 
     public class ActivationViewModel : ViewModelBase
     {
-        private readonly IServiceProvider _serviceProvider;
-        private readonly MainViewModel _mainViewModel;
         private string _firstPart;
         private string _secondPart;
         private string _thirdPart;
@@ -32,11 +30,10 @@ namespace ClickBar.ViewModels.Activation
         private bool _isEnable;
         private ActivationCodePartEnumeration _activationCode;
 
-        public ActivationViewModel(IServiceProvider serviceProvider, MainViewModel mainViewModel)
+        public ActivationViewModel(IServiceProvider serviceProvider)
         {
-            _serviceProvider = serviceProvider;
-            _mainViewModel = mainViewModel;
-            ActivationCommand = _serviceProvider.GetRequiredService<ActivationCommand>();
+            ServiceProvider = serviceProvider;
+            //ActivationCommand = _serviceProvider.GetRequiredService<ActivationCommand>();
 
             IsEnable = false;
             ActivationCode = ActivationCodePartEnumeration.FirstPart;
@@ -58,6 +55,7 @@ namespace ClickBar.ViewModels.Activation
         }
 
         #region Properties
+        internal IServiceProvider ServiceProvider { get; private set; }
         public ActivationCodePartEnumeration ActivationCode
         {
             get { return _activationCode; }
@@ -190,6 +188,6 @@ namespace ClickBar.ViewModels.Activation
         }
         #endregion Properties
 
-        public ICommand ActivationCommand { get; }
+        public ICommand ActivationCommand => new ActivationCommand(this);
     }
 }

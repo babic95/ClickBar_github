@@ -1,8 +1,10 @@
 ﻿using ClickBar.Models.Sale;
+using ClickBar.ViewModels;
 using ClickBar.ViewModels.AppMain.Statistic;
 using ClickBar_DatabaseSQLManager;
 using ClickBar_DatabaseSQLManager.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -64,9 +66,17 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
 
                         if (result == MessageBoxResult.Yes)
                         {
+                            var max = 0;
+
+                            if (_currentViewModel.DbContext.Supergroups.Any())
+                            {
+                                max = _currentViewModel.DbContext.Supergroups.Max(supergroup => supergroup.Id);
+                            }
+
                             SupergroupDB supergroupDB = new SupergroupDB()
                             {
-                                Name = _currentViewModel.CurrentSupergroup.Name
+                                Name = _currentViewModel.CurrentSupergroup.Name,
+                                Rb = max + 1
                             };
                             _currentViewModel.DbContext.Supergroups.Add(supergroupDB);
                         }
@@ -81,10 +91,13 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
 
                     foreach(var supergroup1 in _currentViewModel.DbContext.Supergroups)
                     {
-                        _currentViewModel.AllSupergroups.Add(new Supergroup(supergroup1.Id, supergroup1.Name));
+                        _currentViewModel.AllSupergroups.Add(new Supergroup(supergroup1));
                     }
 
                     _currentViewModel.CurrentSupergroup = _currentViewModel.AllSupergroups.FirstOrDefault();
+
+                    var saleViewModel = _currentViewModel.ServiceProvider.GetRequiredService<SaleViewModel>();
+                    saleViewModel.UpdateSaleViewModel();
 
                     MessageBox.Show("Uspešno obavljeno!",
                             "Uspešno",

@@ -35,14 +35,16 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             FromDate = null;
             ToDate = null;
 
-            AllSupergroups = new ObservableCollection<Supergroup>() { new Supergroup(-1, "Sve nadgrupe") };
+
+
+            AllSupergroups = new ObservableCollection<Supergroup>() { new Supergroup() {  Id = -1, Name = "Sve nadgrupe" } };
 
             if (DbContext.Supergroups != null &&
                 DbContext.Supergroups.Any())
             {
                 foreach(var supergroup in DbContext.Supergroups)
                 {
-                    AllSupergroups.Add(new Supergroup(supergroup.Id, supergroup.Name));
+                    AllSupergroups.Add(new Supergroup(supergroup));
                 }
 
                 CurrentSupergroupSearch = AllSupergroups.FirstOrDefault();

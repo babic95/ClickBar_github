@@ -33,6 +33,7 @@ namespace ClickBar.Models.AppMain.Settings
         private string? _hostPC_IP;
         private bool _runPorudzbineServis;
         private TypeAppEnumeration _typeApp;
+        private bool _enabledKartica;
 
         public Settings(SettingsFile settingsFile)
         {
@@ -70,6 +71,16 @@ namespace ClickBar.Models.AppMain.Settings
             OutDirectory = settingsFile.OutDirectory;
             EfakturaDirectory = settingsFile.EfakturaDirectory;
             RunPorudzbineServis = settingsFile.RunPorudzbineServis;
+            EnabledKartica = settingsFile.EnableKartica;
+        }
+        public bool EnabledKartica
+        {
+            get { return _enabledKartica; }
+            set
+            {
+                _enabledKartica = value;
+                OnPropertyChange(nameof(EnabledKartica));
+            }
         }
         public bool RunPorudzbineServis
         {

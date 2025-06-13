@@ -190,14 +190,40 @@ namespace ClickBar.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
+            // Proverava da li je value tipa double i da li je parameter validan double
             if (value is double actualHeight && double.TryParse(parameter?.ToString(), out double fraction))
             {
+                // Vraća proizvod actualHeight i fraction
                 return actualHeight * fraction;
             }
+            // Ako parameter nije validan double, vraća DependencyProperty.UnsetValue
             return DependencyProperty.UnsetValue;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            // Ova metoda nije implementirana jer se konverzija nazad ne koristi
+            throw new NotImplementedException();
+        }
+    }
+    public class HeightAllocationConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values[0] is double totalHeight && values[1] is double oldOrdersHeight)
+            {
+                double maxOldOrdersHeight = totalHeight * 0.6;
+                double remainingHeight = totalHeight - Math.Min(oldOrdersHeight, maxOldOrdersHeight);
+                if (parameter != null && parameter.ToString() == "OldOrders")
+                {
+                    return Math.Min(oldOrdersHeight, maxOldOrdersHeight);
+                }
+                return remainingHeight;
+            }
+            return DependencyProperty.UnsetValue;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

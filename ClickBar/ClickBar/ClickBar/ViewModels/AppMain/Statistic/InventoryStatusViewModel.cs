@@ -1,8 +1,10 @@
 ﻿using ClickBar.Commands.AppMain.Statistic;
 using ClickBar.Commands.AppMain.Statistic.Calculation;
 using ClickBar.Commands.AppMain.Statistic.InventoryStatus;
+using ClickBar.Commands.AppMain.Statistic.InventoryStatus.Redosled;
 using ClickBar.Commands.AppMain.Statistic.Norm;
 using ClickBar.Models.AppMain.Statistic;
+using ClickBar.Models.AppMain.Statistic.Items;
 using ClickBar.Models.Sale;
 using ClickBar_DatabaseSQLManager;
 using ClickBar_DatabaseSQLManager.Models;
@@ -23,8 +25,6 @@ namespace ClickBar.ViewModels.AppMain.Statistic
     public class InventoryStatusViewModel : ViewModelBase
     {
         #region Fields
-        private IServiceProvider _serviceProvider;
-
         private Supergroup? _currentSupergroupSearch;
         private Supergroup? _currentSupergroup;
         private GroupItems? _currentGroupItems;
@@ -58,6 +58,21 @@ namespace ClickBar.ViewModels.AppMain.Statistic
 
         private ObservableCollection<TaxLabel> _allLabels;
         private TaxLabel _currentLabel;
+
+        private ObservableCollection<Supergroup> _redosledSupergroups;
+        private Supergroup _currentRedosledSupergroups;
+
+        private Supergroup _currentRedosledSupergroupForGroup;
+        private ObservableCollection<GroupItems> _redosledGroups;
+        private GroupItems _currentRedosledGroups;
+
+        private GroupItems _currentRedosledGroupForItem;
+        private ObservableCollection<Item> _redosledItems;
+        private Item _currentRedosledItem;
+
+        private CardForItem _currentItemCard;
+        private DateTime _itemCardFromDate;
+        private DateTime _itemCardToDate;
 #if DEBUG
         private List<TaxLabel> _labels = new List<TaxLabel>()
         {
@@ -80,11 +95,26 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #region Constructors
         public InventoryStatusViewModel(IServiceProvider serviceProvider)
         {
-            _serviceProvider = serviceProvider;
-            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
+            ServiceProvider = serviceProvider;
+            DbContext = ServiceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             AllGroupItems = new ObservableCollection<GroupItems>();
-            AllSupergroups = new ObservableCollection<Supergroup>() { new Supergroup(-1, "Sve nadgrupe") };
-            AllGroups = new ObservableCollection<GroupItems>() { new GroupItems(-1, -1, "Sve grupe") };
+
+            var sveNadgrupe = new Supergroup()
+            {
+                Id = -1,
+                Name = "Sve nadgrupe",
+            };
+
+            AllSupergroups = new ObservableCollection<Supergroup>() { sveNadgrupe };
+
+            var sveGrupe = new GroupItems()
+            {
+                Id = -1,
+                IdSupergroup = -1,
+                Name = "Sve grupe",
+            };
+
+            AllGroups = new ObservableCollection<GroupItems>() { sveGrupe };
 
             AllLabels = new ObservableCollection<TaxLabel>(_labels);
 
@@ -93,6 +123,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #endregion Constructors
 
         #region Properties internal
+        internal IServiceProvider ServiceProvider { get; private set; }
         internal SqlServerDbContext DbContext
         {
             get; private set;
@@ -102,9 +133,122 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         internal Window WindowHelper { get; set; }
         internal int CurrentNorm { get; set; }
         internal Window PrintTypeWindow { get; set; }
+        internal Window RasporedWindow { get; set; }
         #endregion Properties internal
 
         #region Properties
+        public CardForItem CurrentItemCard
+        {
+            get { return _currentItemCard; }
+            set
+            {
+                _currentItemCard = value;
+                OnPropertyChange(nameof(CurrentItemCard));
+            }
+        }
+        public DateTime ItemCardFromDate
+        {
+            get { return _itemCardFromDate; }
+            set
+            {
+                _itemCardFromDate = value;
+                OnPropertyChange(nameof(ItemCardFromDate));
+            }
+        }
+        public DateTime ItemCardToDate
+        {
+            get { return _itemCardToDate; }
+            set
+            {
+                _itemCardToDate = value;
+                OnPropertyChange(nameof(ItemCardToDate));
+            }
+        }
+        public ObservableCollection<Supergroup> RedosledSupergroups
+        {
+            get { return _redosledSupergroups; }
+            set
+            {
+                _redosledSupergroups = value;
+                OnPropertyChange(nameof(RedosledSupergroups));
+            }
+        }
+        public Supergroup CurrentRedosledSupergroups
+        {
+            get { return _currentRedosledSupergroups; }
+            set
+            {
+                _currentRedosledSupergroups = value;
+                OnPropertyChange(nameof(CurrentRedosledSupergroups));
+            }
+        }
+        public Supergroup CurrentRedosledSupergroupForGroup
+        {
+            get { return _currentRedosledSupergroupForGroup; }
+            set
+            {
+                _currentRedosledSupergroupForGroup = value;
+                OnPropertyChange(nameof(CurrentRedosledSupergroupForGroup));
+
+                if(value != null)
+                {
+                    RedosledGroups = new ObservableCollection<GroupItems>(AllGroupItems.Where(group => group.IdSupergroup == value.Id).OrderBy(g => g.Rb));
+                    CurrentRedosledGroups = null;
+                }
+            }
+        }
+        public ObservableCollection<GroupItems> RedosledGroups
+        {
+            get { return _redosledGroups; }
+            set
+            {
+                _redosledGroups = value;
+                OnPropertyChange(nameof(RedosledGroups));
+            }
+        }
+        public GroupItems CurrentRedosledGroups
+        {
+            get { return _currentRedosledGroups; }
+            set
+            {
+                _currentRedosledGroups = value;
+                OnPropertyChange(nameof(CurrentRedosledGroups));
+            }
+        }
+        public GroupItems CurrentRedosledGroupForItem
+        {
+            get { return _currentRedosledGroupForItem; }
+            set
+            {
+                _currentRedosledGroupForItem = value;
+                OnPropertyChange(nameof(CurrentRedosledGroupForItem));
+
+
+                if (value != null)
+                {
+                    RedosledItems = new ObservableCollection<Item>(InventoryStatusAll.Where(group => group.IdGroupItems == value.Id).Select(i => i.Item).OrderBy(i => i.Rb));
+                    CurrentRedosledItem = null;
+                }
+            }
+        }
+        public ObservableCollection<Item> RedosledItems
+        {
+            get { return _redosledItems; }
+            set
+            {
+                _redosledItems = value;
+                OnPropertyChange(nameof(RedosledItems));
+            }
+        }
+        public Item CurrentRedosledItem
+        {
+            get { return _currentRedosledItem; }
+            set
+            {
+                _currentRedosledItem = value;
+                OnPropertyChange(nameof(CurrentRedosledItem));
+            }
+        }
         public ObservableCollection<Supergroup> AllSupergroups
         {
             get { return _allSupergroups; }
@@ -470,6 +614,21 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         public ICommand FixQuantityCommand => new FixQuantityCommand(this);
         public ICommand DeleteZeljaCommand => new DeleteZeljaCommand(this);
         public ICommand AddNewZeljaCommand => new AddNewZeljaCommand(this);
+        public ICommand OpenRedosledSupergroupCommand => new OpenRedosledSupergroupCommand(this);
+        public ICommand OpenRedosledGroupItemsCommand => new OpenRedosledGroupItemsCommand(this);
+        public ICommand OpenRedosledItemsCommand => new OpenRedosledItemsCommand(this);
+        public ICommand SaveRedosledSupergroupCommand => new SaveRedosledSupergroupCommand(this);
+        public ICommand SaveRedosledGroupItemsCommand => new SaveRedosledGroupItemsCommand(this);
+        public ICommand SaveRedosledItemsCommand => new SaveRedosledItemsCommand(this);
+        public ICommand MoveToUpSupergroupCommand => new MoveToUpSupergroupCommand(this);
+        public ICommand MoveToDownSupergroupCommand => new MoveToDownSupergroupCommand(this);
+        public ICommand MoveToUpGroupCommand => new MoveToUpGroupCommand(this);
+        public ICommand MoveToDownGroupCommand => new MoveToDownGroupCommand(this);
+        public ICommand MoveToUpItemCommand => new MoveToUpItemCommand(this);
+        public ICommand MoveToDownItemCommand => new MoveToDownItemCommand(this);
+        public ICommand OpenCardItemCommand => new OpenCardItemCommand(this);
+        public ICommand SearchCardItemCommand => new SearchCardItemCommand(this);
+
         #endregion Commands
 
         #region Private methods
@@ -506,7 +665,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             {
                 foreach (var supergroup in DbContext.Supergroups.AsNoTracking().ToList())
                 {
-                    AllSupergroups.Add(new Supergroup(supergroup.Id, supergroup.Name));
+                    AllSupergroups.Add(new Supergroup(supergroup));
                 }
 
                 CurrentSupergroup = AllSupergroups.FirstOrDefault();
@@ -529,8 +688,8 @@ namespace ClickBar.ViewModels.AppMain.Statistic
             {
                 foreach (var group in DbContext.ItemGroups.AsNoTracking().ToList())
                 {
-                    AllGroupItems.Add(new GroupItems(group.Id, group.IdSupergroup, group.Name));
-                    AllGroups.Add(new GroupItems(group.Id, group.IdSupergroup, group.Name));
+                    AllGroupItems.Add(new GroupItems(group));
+                    AllGroups.Add(new GroupItems(group));
                 }
 
                 CurrentGroupItems = AllGroupItems.FirstOrDefault();

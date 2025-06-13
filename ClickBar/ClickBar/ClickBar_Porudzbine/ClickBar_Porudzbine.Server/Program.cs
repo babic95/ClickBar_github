@@ -1,5 +1,4 @@
 ﻿using ClickBar_DatabaseSQLManager;
-using ClickBar_Database_Drlja;
 using ClickBar_Logging;
 using ClickBar_Settings;
 using Microsoft.EntityFrameworkCore;
@@ -11,12 +10,6 @@ try
 
     Logger.ConfigureLog(SettingsManager.Instance.GetLoggingFolderPath(), true);
 
-    var pathToDrljaDB = SettingsManager.Instance.GetPathToDrljaKuhinjaDB();
-    if (string.IsNullOrEmpty(pathToDrljaDB))
-    {
-        pathToDrljaDB = @"C:\KRUG2024\KRUG2024SQLITE3.db";
-    }
-
     // Konfiguracija servisa
     string databaseConnectionString = SettingsManager.Instance.GetConnectionString();
 
@@ -25,16 +18,6 @@ try
         {
             sqlOptions.EnableRetryOnFailure();
         }));
-
-    try
-    {
-        builder.Services.AddDbContext<SqliteDrljaDbContext>(options =>
-            options.UseSqlite($"Data Source={pathToDrljaDB}"));
-    }
-    catch(Exception ex)
-    {
-        Log.Error("Main - Main -> greska prilikom dodavanja SqliteDrljaDbContext: ", ex);
-    }
 
     builder.Services.AddControllers();
     builder.Services.AddEndpointsApiExplorer();

@@ -3,7 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ClickBar.Views.AppMain.Statistic" xmlns:statistic="clr-namespace:ClickBar.ViewModels.AppMain.Statistic" d:DataContext="{d:DesignInstance Type=statistic:ViewCalculationViewModel}"
+             xmlns:local="clr-namespace:ClickBar.Views.AppMain.Statistic"
+             xmlns:statistic="clr-namespace:ClickBar.ViewModels.AppMain.Statistic"
+             d:DataContext="{d:DesignInstance Type=statistic:ViewCalculationViewModel}"
              mc:Ignorable="d"
              xmlns:converters="clr-namespace:ClickBar.Converters"
              Background="{StaticResource BrushLogo2}"
@@ -225,8 +227,8 @@
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridTemplateColumn Width="120"
-                                        MinWidth="120">
+                <DataGridTemplateColumn Width="160"
+                                        MinWidth="160">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal"
@@ -250,6 +252,15 @@
                                     <Image Margin="5"
                                            Source="../../../Icons/printer.png"/>
                                 </Button>
+                                <Button Style="{StaticResource RoundCorner}"
+                                        Margin="10 0 0 0"
+                                        ToolTip="Štampaj kalkulaciju na A4"
+                                        Height="40"
+                                        Width="40"
+                                        Content="A4"
+                                        Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}},
+                                    Path=DataContext.PrintCalculationA4Command}"
+                                        CommandParameter="{Binding Id}"/>
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>

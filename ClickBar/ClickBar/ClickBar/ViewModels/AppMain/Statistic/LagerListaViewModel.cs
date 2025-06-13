@@ -1,6 +1,7 @@
 ﻿using ClickBar.Commands.AppMain.Statistic;
 using ClickBar.Commands.AppMain.Statistic.LagerLista;
 using ClickBar.Models.AppMain.Statistic;
+using ClickBar.Models.AppMain.Statistic.DPU;
 using ClickBar.Models.Sale;
 using ClickBar_DatabaseSQLManager;
 using ClickBar_DatabaseSQLManager.Models;
@@ -152,14 +153,19 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #region Private methods
         private async void Initialize()
         {
-            AllGroups = new ObservableCollection<GroupItems>() { new GroupItems(-1, -1, "Sve grupe") };
+            AllGroups = new ObservableCollection<GroupItems>() { new GroupItems()
+            {
+                Id = -1,
+                IdSupergroup = -1,
+                Name = "Sve grupe"
+            } };
 
             if (DbContext.ItemGroups != null &&
                 DbContext.ItemGroups.Any())
             {
                 foreach(var gropu in DbContext.ItemGroups)
                 {
-                    AllGroups.Add(new GroupItems(gropu.Id, gropu.IdSupergroup, gropu.Name));
+                    AllGroups.Add(new GroupItems(gropu));
                 }
             }
 
@@ -189,20 +195,37 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                 }
             }
 
-            var allCalculations = DbContext.Calculations.Join(DbContext.CalculationItems,
-                calculation => calculation.Id,
-                calculationItem => calculationItem.CalculationId,
-                (calculation, calculationItem) => new { Calculation = calculation, CalculationItem = calculationItem })
-                .Where(cal => cal.Calculation.CalculationDate.Date > pocetnoStanjeDate.Date &&
-                cal.Calculation.CalculationDate.Date <= SelectedDate.Date);
+            //var allCalculations = DbContext.Calculations.Join(DbContext.CalculationItems,
+            //    calculation => calculation.Id,
+            //    calculationItem => calculationItem.CalculationId,
+            //    (calculation, calculationItem) => new { Calculation = calculation, CalculationItem = calculationItem })
+            //    .Where(cal => cal.Calculation.CalculationDate.Date > pocetnoStanjeDate.Date &&
+            //    cal.Calculation.CalculationDate.Date <= SelectedDate.Date);
 
-            var pazar = DbContext.Invoices.Join(DbContext.ItemInvoices,
-                invoice => invoice.Id,
-                invoiceItem => invoiceItem.InvoiceId,
-                (invoice, invoiceItem) => new { Invoice = invoice, InvoiceItem = invoiceItem })
-                .Where(inv => inv.Invoice.SdcDateTime != null && 
-                inv.Invoice.SdcDateTime.Value.Date > pocetnoStanjeDate.Date &&
-                inv.Invoice.SdcDateTime.Value.Date <= SelectedDate.Date);
+            //var pazar = DbContext.Invoices.Join(DbContext.ItemInvoices,
+            //    invoice => invoice.Id,
+            //    invoiceItem => invoiceItem.InvoiceId,
+            //    (invoice, invoiceItem) => new { Invoice = invoice, InvoiceItem = invoiceItem })
+            //    .Where(inv => inv.Invoice.SdcDateTime != null && 
+            //    inv.Invoice.SdcDateTime.Value.Date > pocetnoStanjeDate.Date &&
+            //    inv.Invoice.SdcDateTime.Value.Date <= SelectedDate.Date);
+
+            var itemsInvoice = DbContext.ItemInvoices.Include(i => i.Invoice).
+                Join(DbContext.Items,
+                invoiceItem => invoiceItem.ItemCode,
+                item => item.Id,
+                (invoiceItem, item) => new { InvoiceItem = invoiceItem, Item = item })
+                .Where(x => x.InvoiceItem.Invoice.SdcDateTime.HasValue &&
+                x.InvoiceItem.Invoice.SdcDateTime.Value.Date >= pocetnoStanjeDate.Date &&
+                x.InvoiceItem.Invoice.SdcDateTime.Value.Date <= SelectedDate.Date).ToList();
+
+            var itemsCalculation = DbContext.CalculationItems.Include(i => i.Calculation)
+                .Join(DbContext.Items,
+                ci => ci.ItemId,
+                i => i.Id, 
+                (ci, i) => new { CalculationItem = ci, Item = i })
+                .Where(x => x.CalculationItem.Calculation.CalculationDate.Date >= pocetnoStanjeDate.Date &&
+                x.CalculationItem.Calculation.CalculationDate.Date <= SelectedDate.Date).ToList();
 
             if (DbContext.Items != null &&
                 DbContext.Items.Any())
@@ -236,10 +259,10 @@ namespace ClickBar.ViewModels.AppMain.Statistic
 
                         if (x.IdNorm == null)
                         {
-                            if (allCalculations != null &&
-                            allCalculations.Any())
+                            if (itemsCalculation != null &&
+                            itemsCalculation.Any())
                             {
-                                var itemsInCal = allCalculations.Where(cal => cal.CalculationItem.ItemId == x.Id);
+                                var itemsInCal = itemsCalculation.Where(cal => cal.Item.Id == x.Id);
 
                                 if (itemsInCal != null &&
                                 itemsInCal.Any())
@@ -251,10 +274,10 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                                 }
                             }
 
-                            if (pazar != null &&
-                            pazar.Any())
+                            if (itemsInvoice != null &&
+                            itemsInvoice.Any())
                             {
-                                var itemsInPazar = pazar.Where(paz => paz.InvoiceItem.ItemCode == x.Id);
+                                var itemsInPazar = itemsInvoice.Where(paz => paz.InvoiceItem.ItemCode == x.Id);
 
                                 if (itemsInPazar != null &&
                                 itemsInPazar.Any())
@@ -263,7 +286,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
                                     {
                                         if (i.InvoiceItem.Quantity != null)
                                         {
-                                            if(i.Invoice.TransactionType == 0)
+                                            if(i.InvoiceItem.Invoice.TransactionType == 0)
                                             {
                                                 quantity -= i.InvoiceItem.Quantity.Value;
                                             }

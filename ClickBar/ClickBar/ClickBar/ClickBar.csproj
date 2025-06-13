@@ -16,6 +16,7 @@
     <None Remove="Icons\backspace1.png" />
     <None Remove="Icons\clear.png" />
     <None Remove="Icons\delete.png" />
+    <None Remove="Icons\down.png" />
     <None Remove="Icons\edit.png" />
     <None Remove="Icons\export.png" />
     <None Remove="Icons\information.png" />
@@ -31,6 +32,8 @@
     <None Remove="Icons\search.png" />
     <None Remove="Icons\signal.png" />
     <None Remove="Icons\sto.png" />
+    <None Remove="Icons\up.png" />
+    <None Remove="Zvukovi\ZVUK.wav" />
   </ItemGroup>
 
   <ItemGroup>
@@ -44,7 +47,6 @@
     <ProjectReference Include="..\ClickBar_Common\ClickBar_Common.csproj" />
     <ProjectReference Include="..\ClickBar_DatabaseSQLManager\ClickBar_DatabaseSQLManager.csproj" />
     <ProjectReference Include="..\ClickBar_Database\ClickBar_Database.csproj" />
-    <ProjectReference Include="..\ClickBar_Database_Drlja\ClickBar_Database_Drlja.csproj" />
     <ProjectReference Include="..\ClickBar_eFaktura\ClickBar_eFaktura.csproj" />
     <ProjectReference Include="..\ClickBar_InputOutputExcelFiles\ClickBar_InputOutputExcelFiles.csproj" />
     <ProjectReference Include="..\ClickBar_Mutex\ClickBar_Mutex.csproj" />
@@ -61,6 +63,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
     <PackageReference Include="PDFsharp" Version="6.1.1" />
+    <PackageReference Include="System.Data.SQLite" Version="1.0.119" />
     <PackageReference Include="System.IO.Ports" Version="7.0.0" />
   </ItemGroup>
 
@@ -72,6 +75,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Icons\delete.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Icons\down.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Icons\edit.png">
@@ -119,6 +125,12 @@
     <Resource Include="Icons\sto.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
+    <Resource Include="Icons\up.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Content Include="Zvukovi\ZVUK.wav">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

@@ -29,6 +29,7 @@ namespace ClickBar.Commands.TableOverview
         {
             AppStateParameter appStateParameter = new AppStateParameter(AppStateEnumerable.Sale, 
                 _currentView.SaleViewModel.LoggedCashier,
+                -1,
                 _currentView.SaleViewModel);
             _currentView.SaleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
         }

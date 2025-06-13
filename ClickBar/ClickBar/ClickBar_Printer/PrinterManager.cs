@@ -14,6 +14,7 @@ using ClickBar_Printer.Models.Otpremnice;
 using ClickBar_Printer.PaperFormat;
 using ClickBar_Report;
 using ClickBar_Report.Models;
+using ClickBar_Report.Models.Kuhinja;
 using ClickBar_Settings;
 using System;
 using System.Collections.Generic;
@@ -53,6 +54,47 @@ namespace ClickBar_Printer
         #endregion Constructors
 
         #region Public methods
+        public void PrintCalculationA4Status(CalculationDB calculationDB,
+            List<InvertoryGlobal> items,
+            SupplierDB supplierDB,
+            FirmaDB firmaDB)
+        {
+            CalculationDocument.PrintCalculation(calculationDB, items, supplierDB, firmaDB);
+        }
+        public void PrintKuhinjaReport(KuhinjaReport kuhinjaReport)
+        {
+            PrinterFormatEnumeration? printerFormatEnumeration = SettingsManager.Instance.GetPrinterFormat();
+
+            if (printerFormatEnumeration != null)
+            {
+                switch (printerFormatEnumeration.Value)
+                {
+                    case PrinterFormatEnumeration.Pos58mm:
+                        FormatPos.PrintKuhinjaReport(PrinterFormatEnumeration.Pos58mm, kuhinjaReport);
+                        break;
+                    case PrinterFormatEnumeration.Pos80mm:
+                        FormatPos.PrintKuhinjaReport(PrinterFormatEnumeration.Pos80mm, kuhinjaReport);
+                        break;
+                }
+            }
+        }
+        public void PrintKuhinjaKonobariReport(List<KuhinjaReport> konobari, string name)
+        {
+            PrinterFormatEnumeration? printerFormatEnumeration = SettingsManager.Instance.GetPrinterFormat();
+
+            if (printerFormatEnumeration != null)
+            {
+                switch (printerFormatEnumeration.Value)
+                {
+                    case PrinterFormatEnumeration.Pos58mm:
+                        FormatPos.PrintKuhinjaKonobariReport(PrinterFormatEnumeration.Pos58mm, konobari, name);
+                        break;
+                    case PrinterFormatEnumeration.Pos80mm:
+                        FormatPos.PrintKuhinjaKonobariReport(PrinterFormatEnumeration.Pos80mm, konobari, name);
+                        break;
+                }
+            }
+        }
         public void PrintOtpremnica(OtpremnicaPrint otpremnicaPrint, FirmaDB firmaDB)
         {
             OtpremnicaDocument.PrintJournal(otpremnicaPrint, firmaDB);

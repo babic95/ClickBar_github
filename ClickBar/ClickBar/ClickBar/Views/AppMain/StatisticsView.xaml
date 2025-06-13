@@ -57,6 +57,12 @@
                              CommandParameter="{x:Static state:StatisticStateEnumerable.PregledProknjizenogPazara}"
                              Content="PROKNJIŽENI PAZARI"/>
 
+                    <RadioButton x:Name="porudzbine"
+                             IsChecked="{Binding IsCheckedPregledPorudzbina}"
+                             Command="{Binding UpdateCurrentStatisticViewModelCommand}"
+                             CommandParameter="{x:Static state:StatisticStateEnumerable.PregledPorudzbina}"
+                             Content="PREGLED PORUDžBINA"/>
+
                     <RadioButton x:Name="kep"
                              IsChecked="{Binding IsCheckedKEP}"
                              Command="{Binding UpdateCurrentStatisticViewModelCommand}"
@@ -257,6 +263,9 @@
                     </DataTemplate>
                     <DataTemplate DataType="{x:Type statisticMainViewModels:DPU_PeriodicniViewModel}">
                         <local:DPU_PeriodicniView/>
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type statisticMainViewModels:PregledPorudzbinaNaDanViewModel}">
+                        <local:PregledPorudzbinaNaDanView/>
                     </DataTemplate>
                 </ResourceDictionary>
             </Grid.Resources>

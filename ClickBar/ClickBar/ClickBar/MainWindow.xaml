@@ -12,6 +12,7 @@
         xmlns:appMainView="clr-namespace:ClickBar.Views.AppMain"
         xmlns:tableOverviewView="clr-namespace:ClickBar.Views.TableOverview"
         xmlns:saleView="clr-namespace:ClickBar.Views.Sale"
+        xmlns:kuhinjaView="clr-namespace:ClickBar.Views.Kuhinja"
         d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
         mc:Ignorable="d"
         Title="CCS ClickBar"
@@ -34,6 +35,9 @@
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type viewmodels:AppMainViewModel}">
                     <appMainView:AppMainView/>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type viewmodels:KuhinjaViewModel}">
+                    <kuhinjaView:KuhinjaView/>
                 </DataTemplate>
                 <DataTemplate DataType="{x:Type viewmodels:TableOverviewViewModel}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto"

@@ -39,7 +39,12 @@ namespace ClickBar.Commands.AppMain.Statistic.InventoryStatus
                         if (_currentViewModel.CurrentSupergroup != null)
                         {
                             _currentViewModel.VisibilityAllGroupItems = Visibility.Hidden;
-                            _currentViewModel.CurrentGroupItems = new GroupItems(-1, _currentViewModel.CurrentSupergroup.Id, string.Empty);
+                            _currentViewModel.CurrentGroupItems = new GroupItems()
+                            {
+                                Id = -1,
+                                IdSupergroup = _currentViewModel.CurrentSupergroup.Id,
+                                Name = string.Empty
+                            };
 
                             _currentViewModel.Window = new AddOrEditGroupItemsWindow(_currentViewModel);
                             _currentViewModel.Window.ShowDialog();

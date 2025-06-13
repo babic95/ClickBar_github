@@ -40,13 +40,28 @@
     <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\Calculation\AddCaclulationWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\ItemCardWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\PrintTypeWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\Redosled\RedosledGroupWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\Redosled\RedosledItemsWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\Redosled\RedosledSupergroupWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\Otpis\AddQuantityForOtpisWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\Otpis\AllItemsForOtpisWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\Porudzbine\ItemsInOrderWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\AppMain\AuxiliaryWindows\Statistic\Radnici\WhatDidWorkerSellWindow.xaml.cs">
@@ -148,6 +163,9 @@
     <Compile Update="Views\AppMain\Statistic\PregledPazaraView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Views\AppMain\Statistic\PregledPorudzbinaNaDanView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Views\AppMain\Statistic\PriceIncreaseView.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -164,6 +182,15 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\Components\PasswordBox.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\Kuhinja\KuhinjaReportWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\Kuhinja\KuhinjaView.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\Kuhinja\PorudzbineItemsWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\Login\LoginCardView.xaml.cs">
@@ -234,13 +261,28 @@
     <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\Calculation\AddCaclulationWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\ItemCardWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
     <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\PrintTypeWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\Redosled\RedosledGroupWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\Redosled\RedosledItemsWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\InventoryStatus\Redosled\RedosledSupergroupWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\Otpis\AddQuantityForOtpisWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\Otpis\AllItemsForOtpisWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\Porudzbine\ItemsInOrderWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Views\AppMain\AuxiliaryWindows\Statistic\Radnici\WhatDidWorkerSellWindow.xaml">
@@ -342,6 +384,9 @@
     <Page Update="Views\AppMain\Statistic\PregledPazaraView.xaml">
       <SubType>Designer</SubType>
     </Page>
+    <Page Update="Views\AppMain\Statistic\PregledPorudzbinaNaDanView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
     <Page Update="Views\AppMain\Statistic\PriceIncreaseView.xaml">
       <SubType>Designer</SubType>
     </Page>
@@ -358,6 +403,15 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Views\Components\PasswordBox.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\Kuhinja\KuhinjaReportWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\Kuhinja\KuhinjaView.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\Kuhinja\PorudzbineItemsWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Views\Login\LoginCardView.xaml">

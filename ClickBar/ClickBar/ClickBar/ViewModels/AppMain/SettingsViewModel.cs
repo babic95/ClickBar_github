@@ -26,14 +26,13 @@ namespace ClickBar.ViewModels.AppMain
         private Settings _settings;
 
         private ObservableCollection<string> _allPrinters;
-        private readonly IServiceProvider _serviceProvider; // Dodato za korišćenje IServiceProvider
         #endregion Fields
 
         #region Constructors
         public SettingsViewModel(IServiceProvider serviceProvider)
         {
-            _serviceProvider = serviceProvider;
-            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
+            ServiceProvider = serviceProvider;
+            DbContext = ServiceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
             _loggedCashier = serviceProvider.GetRequiredService<CashierDB>();
 
             AllPrinters = new ObservableCollection<string>();
@@ -53,6 +52,7 @@ namespace ClickBar.ViewModels.AppMain
 
         #region Internal Properties
         internal SqlServerDbContext DbContext { get; private set; }
+        internal readonly IServiceProvider ServiceProvider; // Dodato za korišćenje IServiceProvider
         #endregion Internal Properties
 
         #region Properties

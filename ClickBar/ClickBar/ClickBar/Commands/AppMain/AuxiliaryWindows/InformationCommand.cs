@@ -1,4 +1,5 @@
-﻿using ClickBar.Views.AppMain.AuxiliaryWindows;
+﻿using ClickBar.ViewModels;
+using ClickBar.Views.AppMain.AuxiliaryWindows;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,8 +13,11 @@ namespace ClickBar.Commands.AppMain.AuxiliaryWindows
     {
         public event EventHandler CanExecuteChanged;
 
-        public InformationCommand()
+        private AppMainViewModel _viewModel;
+
+        public InformationCommand(AppMainViewModel appMainViewModel)
         {
+            _viewModel = appMainViewModel;
         }
 
         public bool CanExecute(object parameter)
@@ -23,7 +27,7 @@ namespace ClickBar.Commands.AppMain.AuxiliaryWindows
 
         public void Execute(object parameter)
         {
-            InformationWindow informationWindow = new InformationWindow();
+            InformationWindow informationWindow = new InformationWindow(_viewModel);
             informationWindow.Show();
         }
     }

@@ -1,0 +1,220 @@
+﻿<UserControl x:Class="ClickBar.Views.AppMain.Statistic.PregledPorudzbinaNaDanView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:ClickBar.Converters"
+             xmlns:local="clr-namespace:ClickBar.Views.AppMain.Statistic" xmlns:statistic="clr-namespace:ClickBar.ViewModels.AppMain.Statistic" d:DataContext="{d:DesignInstance Type=statistic:PregledPorudzbinaNaDanViewModel}"
+             mc:Ignorable="d">
+    <UserControl.Resources>
+        <converters:DecimalNumberToString x:Key="decimalToString"/>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="150"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Label Content="PORUDžBINE NA DAN:"
+                   FontSize="26"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Top"
+                   Margin="0 10"/>
+
+            <StackPanel Orientation="Horizontal"
+                        VerticalAlignment="Bottom"
+                        HorizontalAlignment="Center"
+                        Margin="10">
+                <DatePicker SelectedDate="{Binding Path=CurrentDate, 
+                    StringFormat='dd.MM.yyyy'}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontSize="18"/>
+                <Button HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Style="{StaticResource RoundCorner}"
+                        Height="40"
+                        ToolTip="Pretraži"
+                        Width="40"
+                        Margin="10" 
+                        FontSize="18"
+                        Command="{Binding SearchOrdersCommand}">
+                    <Image Margin="5"
+                       Source="../../../Icons/search.png"/>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <DataGrid x:Name="dataGrid"
+                  ItemsSource="{Binding Orders}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  RowBackground="{StaticResource BrushLogo2}" 
+                  AlternatingRowBackground="LightBlue"
+                  HorizontalContentAlignment="Center"
+                  VerticalAlignment="Top"
+                  Margin="10"
+                  Grid.Row="1"
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Auto"
+                  FontSize="16"
+                  BorderBrush="Black"
+                  BorderThickness="3">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Status porudžbine" 
+                                    Width="auto"
+                                    MinWidth="150"
+                                    Binding="{Binding Status}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="10 2.5"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="FontSize" Value="14"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Broj stola" 
+                                    Width="80"
+                                    MinWidth="80"
+                                    Binding="{Binding TableId}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="10 2.5"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="FontSize" Value="14"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Konobar" 
+                                    Width="auto"
+                                    MinWidth="100"
+                                    Binding="{Binding CashierName}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="10 2.5"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="FontSize" Value="14"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Vreme porudžbine" 
+                                    Width="*"
+                                    MinWidth="150"
+                                    Binding="{Binding OrderDateTime, 
+                    StringFormat=\{0:dd.MM.yyyy HH:mm:ss\}}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="10 2.5"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="FontSize" Value="14"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Broj porudžbine" 
+                                    Width="2*"
+                                    MinWidth="200"
+                                    Binding="{Binding Name}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="10 2.5"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="FontSize" Value="14"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Ukupan iznos" 
+                                    Width="auto"
+                                    MinWidth="150"
+                                    Binding="{Binding TotalPrice, Converter={StaticResource decimalToString}}">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="10 2.5"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="FontSize" Value="14"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTemplateColumn MinWidth="35">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal"
+                                        MinWidth="35">
+                                <Button Command="{Binding DataContext.OpenItemsInOrdersCommand, ElementName=dataGrid}"
+                                        CommandParameter="{Binding Id}"
+                                        Background="{x:Null}"
+                                        ToolTip="Pregledaj porudžbinu"
+                                        BorderBrush="{x:Null}"
+                                        Width="30"
+                                        MinWidth="30"
+                                        Margin="2.5 0">
+                                    <Image Source="../../../Icons/open.png"/>
+                                </Button>
+                                <!--<Button Command="{Binding DataContext.PrintInvoiceCommand, ElementName=dataGrid}"
+                                        CommandParameter="{Binding Id}"
+                                        Background="{x:Null}"
+                                        ToolTip="Štampaj dodatak uz račun"
+                                        BorderBrush="{x:Null}"
+                                        Width="30"
+                                        MinWidth="30"
+                                        Margin="2.5 0">
+                                    <Image Source="../../../Icons/printer.png"/>
+                                </Button>-->
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Row="2"
+                    Orientation="Vertical"
+                    Margin="10">
+
+            <Grid>
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Left">
+                    <StackPanel Orientation="Vertical">
+                        <Label FontSize="16"
+                           Content="Prodato:"/>
+                        <Label FontSize="16"
+                           Content="Obrisano:"/>
+                        <Label FontSize="16"
+                           Content="Neobrađeno:"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Vertical">
+                        <Label FontSize="16"
+                           FontWeight="Bold"
+                           Content="{Binding Path=ProdatoTotal, Converter={StaticResource decimalToString}}"/>
+                        <Label FontSize="16"
+                           FontWeight="Bold"
+                           Content="{Binding Path=ObrisanoTotal, Converter={StaticResource decimalToString}}"/>
+                        <Label FontSize="16"
+                           FontWeight="Bold"
+                           Content="{Binding Path=NeobradjenoTotal, Converter={StaticResource decimalToString}}"/>
+                    </StackPanel>
+                </StackPanel>
+                
+            </Grid>
+
+            <!--<StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                <Label Content="UKUPNO:"
+                       FontSize="18"
+                       FontWeight="Bold"/>
+                <Label Content="{Binding CurrentKnjizenjePazara.Total, Converter={StaticResource decimalToString}}"
+                       FontSize="18"
+                       FontWeight="Bold"/>
+            </StackPanel>-->
+        </StackPanel>
+    </Grid>
+</UserControl>

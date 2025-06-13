@@ -2,7 +2,6 @@
 using ClickBar.Models.TableOverview.Kuhinja;
 using ClickBar.ViewModels;
 using ClickBar.Views.TableOverview;
-using ClickBar_Database_Drlja;
 using ClickBar_Logging;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -35,21 +34,18 @@ namespace ClickBar.Commands.TableOverview
 
         public void Execute(object parameter)
         {
-            if (_currentView.DrljaDbContextFactory != null)
+            try
             {
-                try
-                {
-                    _currentView.SetKuhinjaNarudzbine();
+                _currentView.SelectedDate = DateTime.Now;
 
-                    KuhinjaPorudzbineWindow kuhinjaPorudzbineWindow = new KuhinjaPorudzbineWindow(_currentView);
-                    kuhinjaPorudzbineWindow.ShowDialog();
+                KuhinjaPorudzbineWindow kuhinjaPorudzbineWindow = new KuhinjaPorudzbineWindow(_currentView);
+                kuhinjaPorudzbineWindow.ShowDialog();
 
-                }
-                catch (Exception ex)
-                {
-                    Log.Error("OpenKuhinjaCommand -> Execute -> Greska prilikom otvaranja kuhinje: ", ex);
-                    MessageBox.Show("Došlo je do greške prilikom otvaranja kuhinje!", "", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("OpenKuhinjaCommand -> Execute -> Greska prilikom otvaranja kuhinje: ", ex);
+                MessageBox.Show("Došlo je do greške prilikom otvaranja kuhinje!", "", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

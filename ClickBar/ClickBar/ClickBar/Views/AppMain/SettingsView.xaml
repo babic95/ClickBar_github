@@ -133,6 +133,13 @@
                                    VerticalContentAlignment="Center"
                                    Height="40"
                                    Margin="0 2.5 0 2.5"/>
+                            <Label Content="Omogući plaćanje karticom:"
+                                   FontSize="18"
+                                   Foreground="White"
+                                   HorizontalContentAlignment="Right"
+                                   VerticalContentAlignment="Center"
+                                   Height="40"
+                                   Margin="0 5 0 5"/>
                             <Label Content="Pokreni servis za porucivanje:"
                                    FontSize="18"
                                    Foreground="White"
@@ -292,7 +299,7 @@
                                       Width="300"
                                       Height="40"
                                       Margin="0 5 0 5"/>
-                            <ComboBox ItemsSource="{Binding Source={StaticResource typesApp}}"
+                            <ComboBox ItemsSource="{Binding AllPrinters}"
                                       SelectedItem="{Binding Settings.PrinterNameSank1}"
                                       FontSize="18"
                                       HorizontalAlignment="Center"
@@ -301,7 +308,7 @@
                                       Width="300"
                                       Height="40"
                                       Margin="0 5 0 5"/>
-                            <ComboBox ItemsSource="{Binding AllTypesApp}"
+                            <ComboBox ItemsSource="{Binding Source={StaticResource typesApp}}"
                                       SelectedItem="{Binding Settings.TypeApp, Mode=TwoWay}"
                                       FontSize="18"
                                       HorizontalAlignment="Center"
@@ -310,6 +317,11 @@
                                       Width="300"
                                       Height="40"
                                       Margin="0 5 0 5"/>
+                            <ToggleButton Width="80"
+                                          Height="40"
+                                          Margin="0 5 0 5"
+                                          Style="{StaticResource SwitchTypeToggleButton}"
+                                          IsChecked="{Binding Settings.EnabledKartica}"/>
                             <ToggleButton Width="80"
                                           Height="40"
                                           Margin="0 5 0 5"

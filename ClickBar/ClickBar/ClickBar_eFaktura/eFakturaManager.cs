@@ -42,13 +42,17 @@ namespace ClickBar_eFaktura
                     if (instance == null)
                     {
                         instance = new eFakturaManager();
+#if DEBUG
                         _url = _urlDemo;
+#else
+                        _url = _urlLive;
+#endif
                     }
                     return instance;
                 }
             }
         }
-        #endregion Constructors
+#endregion Constructors
 
         #region Public methods
         //public async Task<bool> SendSalesInvoice(string idInvoicem,

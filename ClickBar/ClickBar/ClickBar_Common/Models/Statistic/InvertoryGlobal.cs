@@ -15,5 +15,6 @@ namespace ClickBar_Common.Models.Statistic
         public decimal SellingUnitPrice { get; set; }
         public decimal InputUnitPrice { get; set; }
         public decimal TotalAmout { get; set; }
+        public decimal Tax { get; set; }
     }
 }

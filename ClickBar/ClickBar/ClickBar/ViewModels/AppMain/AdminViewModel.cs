@@ -16,6 +16,10 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Extensions.DependencyInjection;
+using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Vml;
+using ClickBar.Enums.Kuhinja;
+using DocumentFormat.OpenXml.InkML;
 
 namespace ClickBar.ViewModels.AppMain
 {
@@ -48,7 +52,7 @@ namespace ClickBar.ViewModels.AppMain
         public AdminViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            DbContext = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>().CreateDbContext();
+            DbContextFactory = _serviceProvider.GetRequiredService<IDbContextFactory<SqlServerDbContext>>();
             _loggedCashier = serviceProvider.GetRequiredService<CashierDB>();
 
             IsCheckedRoundPaymentPlace = false;
@@ -65,7 +69,7 @@ namespace ClickBar.ViewModels.AppMain
         #endregion Constructors
 
         #region Internal Properties
-        internal SqlServerDbContext DbContext { get; private set; }
+        internal IDbContextFactory<SqlServerDbContext> DbContextFactory { get; private set; }
         #endregion Internal Properties
 
         #region Properties
@@ -242,86 +246,78 @@ namespace ClickBar.ViewModels.AppMain
         #region Private methods
         private void SetDefaultValueFromDB()
         {
-            DbContext.PartHalls.ToList().ForEach(part =>
+            using (var dbcontext = DbContextFactory.CreateDbContext())
             {
-                PartHall partHall = new PartHall()
+                foreach(var part in dbcontext.PartHalls)
                 {
-                    Id = part.Id,
-                    Name = part.Name,
-                    Image = part.Image
-                };
-
-                Rooms.Add(partHall);
-            });
-
-            DbContext.PaymentPlaces.ToList().ForEach(payment =>
-            {
-                PaymentPlace paymentPlace = new PaymentPlace()
-                {
-                    Id = payment.Id,
-                    PartHallId = payment.PartHallId,
-                    Left = payment.LeftCanvas.Value,
-                    Top = payment.TopCanvas.Value,
-                    Type = payment.Type.HasValue ? (PaymentPlaceTypeEnumeration)payment.Type.Value : PaymentPlaceTypeEnumeration.Normal,
-                    Popust = payment.Popust,
-                    Name = !string.IsNullOrEmpty(payment.Name) ? payment.Name : payment.Id.ToString()
-                };
-
-                if (paymentPlace.Type == PaymentPlaceTypeEnumeration.Normal)
-                {
-                    paymentPlace.Width = payment.Width.Value;
-                    paymentPlace.Height = payment.Height.Value;
-                }
-                else
-                {
-                    paymentPlace.Diameter = payment.Width.Value;
-                }
-
-                var unprocessedOrders = DbContext.UnprocessedOrders.FirstOrDefault(order => order.PaymentPlaceId == payment.Id);
-
-                if (unprocessedOrders != null)
-                {
-                    CashierDB? cashierDB = DbContext.Cashiers.Find(unprocessedOrders.CashierId);
-                    var itemsInUnprocessedOrder = DbContext.Items.Join(DbContext.ItemsInUnprocessedOrder,
-                        item => item.Id,
-                        itemInUnprocessedOrder => itemInUnprocessedOrder.ItemId,
-                        (item, itemInUnprocessedOrder) => new { Item = item, ItemInUnprocessedOrder = itemInUnprocessedOrder })
-                    .Where(item => item.ItemInUnprocessedOrder.UnprocessedOrderId == unprocessedOrders.Id);
-
-                    if (cashierDB != null && itemsInUnprocessedOrder.Any())
+                    PartHall partHall = new PartHall()
                     {
-                        ObservableCollection<ItemInvoice> items = new ObservableCollection<ItemInvoice>();
-                        decimal total = 0;
+                        Id = part.Id,
+                        Name = part.Name,
+                        Image = part.Image
+                    };
 
-                        itemsInUnprocessedOrder.ToList().ForEach(item =>
-                        {
-                            ItemInvoice itemInvoice = new ItemInvoice(new Item(item.Item), item.ItemInUnprocessedOrder.Quantity);
-                            items.Add(itemInvoice);
-                            total += itemInvoice.TotalAmout;
-                        });
+                    Rooms.Add(partHall);
+                }
 
-                        paymentPlace.Order = new Order(cashierDB, items);
+                foreach(var payment in dbcontext.PaymentPlaces)
+                {
+                    PaymentPlace paymentPlace = new PaymentPlace()
+                    {
+                        Id = payment.Id,
+                        PartHallId = payment.PartHallId,
+                        Left = payment.LeftCanvas.Value,
+                        Top = payment.TopCanvas.Value,
+                        Type = payment.Type.HasValue ? (PaymentPlaceTypeEnumeration)payment.Type.Value : PaymentPlaceTypeEnumeration.Normal,
+                        Popust = payment.Popust,
+                        Name = !string.IsNullOrEmpty(payment.Name) ? payment.Name : payment.Id.ToString()
+                    };
+
+                    if (paymentPlace.Type == PaymentPlaceTypeEnumeration.Normal)
+                    {
+                        paymentPlace.Width = payment.Width.Value;
+                        paymentPlace.Height = payment.Height.Value;
+                    }
+                    else
+                    {
+                        paymentPlace.Diameter = payment.Width.Value;
+                    }
+
+                    var unprocessedOrders = dbcontext.UnprocessedOrders.Include(u => u.Cashier).AsNoTracking()
+                    .FirstOrDefault(order => order.PaymentPlaceId == payment.Id);
+
+                    if (unprocessedOrders != null)
+                    {
+                        decimal total = Decimal.Round(dbcontext.OrdersToday.Include(o => o.OrderTodayItems).AsNoTracking()
+                                .Where(o => o.TableId == paymentPlace.Id &&
+                                o.UnprocessedOrderId == unprocessedOrders.Id &&
+                                o.Faza != (int)FazaKuhinjeEnumeration.Naplacena &&
+                                o.Faza != (int)FazaKuhinjeEnumeration.Obrisana &&
+                                o.TotalPrice != 0)
+                                .Sum(o => o.OrderTodayItems.Sum(oti => Decimal.Round((oti.Quantity - oti.StornoQuantity - oti.NaplacenoQuantity) * (oti.TotalPrice / oti.Quantity), 2))), 2);
+
+                        paymentPlace.Order = new Order(unprocessedOrders.Cashier);
                         paymentPlace.Background = Brushes.Red;
                         paymentPlace.Total = total;
                     }
-                }
-                else
-                {
-                    paymentPlace.Order = new Order(payment.Id, payment.PartHallId);
-                    paymentPlace.Background = Brushes.Green;
-                    paymentPlace.Total = 0;
-                }
+                    else
+                    {
+                        paymentPlace.Order = new Order(payment.Id, payment.PartHallId);
+                        paymentPlace.Background = Brushes.Green;
+                        paymentPlace.Total = 0;
+                    }
 
-                switch (paymentPlace.Type)
-                {
-                    case PaymentPlaceTypeEnumeration.Normal:
-                        AllNormalPaymentPlaces.Add(paymentPlace);
-                        break;
-                    case PaymentPlaceTypeEnumeration.Round:
-                        AllRoundPaymentPlaces.Add(paymentPlace);
-                        break;
+                    switch (paymentPlace.Type)
+                    {
+                        case PaymentPlaceTypeEnumeration.Normal:
+                            AllNormalPaymentPlaces.Add(paymentPlace);
+                            break;
+                        case PaymentPlaceTypeEnumeration.Round:
+                            AllRoundPaymentPlaces.Add(paymentPlace);
+                            break;
+                    }
                 }
-            });
+            }
         }
         #endregion Private methods
     }

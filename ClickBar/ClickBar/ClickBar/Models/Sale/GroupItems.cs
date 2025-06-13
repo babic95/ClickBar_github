@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ClickBar_DatabaseSQLManager.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,12 +13,17 @@ namespace ClickBar.Models.Sale
         private int _idSupergroup;
         private string _name;
         private bool _focusable;
+        private int _rb;
 
-        public GroupItems(int id, int idSupergroup, string name)
+        public GroupItems()
         {
-            Id = id;
-            Name = name;
-            IdSupergroup = idSupergroup;
+        }
+        public GroupItems(ItemGroupDB itemGroupDB)
+        {
+            Id = itemGroupDB.Id;
+            Name = itemGroupDB.Name;
+            IdSupergroup = itemGroupDB.IdSupergroup;
+            Rb = itemGroupDB.Rb;
             Focusable = false;
         }
 
@@ -28,6 +34,15 @@ namespace ClickBar.Models.Sale
             {
                 _id = value;
                 OnPropertyChange(nameof(Id));
+            }
+        }
+        public int Rb
+        {
+            get { return _rb; }
+            set
+            {
+                _rb = value;
+                OnPropertyChange(nameof(Rb));
             }
         }
         public int IdSupergroup

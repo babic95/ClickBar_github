@@ -40,13 +40,16 @@ namespace ClickBar.Commands.AppMain.Admin.Rooms
 
                     if (result == MessageBoxResult.Yes)
                     {
-                        PartHallDB? partHallDB = _currentViewModel.DbContext.PartHalls.Find(_currentViewModel.CurrentPartHall.Id);
-
-                        if (partHallDB != null)
+                        using (var dbContext = _currentViewModel.DbContextFactory.CreateDbContext())
                         {
-                            _currentViewModel.DbContext.PartHalls.Remove(partHallDB);
-                            _currentViewModel.DbContext.SaveChanges();
-                            MessageBox.Show("Uspešno ste obrisali prostoriju!", "Uspešno brisanje", MessageBoxButton.OK, MessageBoxImage.Information);
+                            PartHallDB? partHallDB = dbContext.PartHalls.Find(_currentViewModel.CurrentPartHall.Id);
+
+                            if (partHallDB != null)
+                            {
+                                dbContext.PartHalls.Remove(partHallDB);
+                                dbContext.SaveChanges();
+                                MessageBox.Show("Uspešno ste obrisali prostoriju!", "Uspešno brisanje", MessageBoxButton.OK, MessageBoxImage.Information);
+                            }
                         }
                     }
                 }

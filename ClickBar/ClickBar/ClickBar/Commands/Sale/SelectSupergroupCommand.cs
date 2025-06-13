@@ -43,20 +43,15 @@ namespace ClickBar.Commands.Sale
                 _viewModel.Groups = new ObservableCollection<GroupItems>();
                 _viewModel.Items = new ObservableCollection<Item>();
 
-                var groups = _viewModel.AllGroups.Where(group => group.IdSupergroup == idSupergroup).ToList();
+                var groups = _viewModel.AllGroups.Where(group => group.IdSupergroup == idSupergroup &&
+                !group.Name.ToLower().Contains("sirovine") && !group.Name.ToLower().Contains("sirovina"))
+                    .OrderBy(group => group.Rb)
+                    .Select(group => new GroupItems(group))
+                    .ToList();
 
                 if (groups.Any())
                 {
-                    groups.ForEach(group =>
-                    {
-                        GroupItems g = new GroupItems(group.Id, group.IdSupergroup, group.Name);
-
-                        if (!g.Name.ToLower().Contains("sirovine"))
-                        {
-                            _viewModel.Groups.Add(g);
-                        }
-                        
-                    });
+                    groups.ForEach(g => _viewModel.Groups.Add(g));
                 }
             }
         }

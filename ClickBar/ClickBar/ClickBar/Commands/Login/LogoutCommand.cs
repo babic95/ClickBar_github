@@ -56,13 +56,24 @@ namespace ClickBar.Commands.Login
             AppStateParameter appStateParameter;
             if (_currentView is AppMainViewModel appMainViewModel)
             {
-                appStateParameter = new AppStateParameter(AppStateEnumerable.Login, null);
+                appStateParameter = new AppStateParameter(AppStateEnumerable.Login, 
+                    null,
+                    -1);
                 appMainViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
             }
             else if (_currentView is SaleViewModel saleViewModel)
             {
-                appStateParameter = new AppStateParameter(AppStateEnumerable.Login, null);
+                appStateParameter = new AppStateParameter(AppStateEnumerable.Login, 
+                    null,
+                    -1);
                 saleViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+            }
+            else if (_currentView is KuhinjaViewModel kuhinjaViewModel)
+            {
+                appStateParameter = new AppStateParameter(AppStateEnumerable.Login,
+                    null,
+                    -1);
+                kuhinjaViewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
             }
         }
     }

@@ -49,7 +49,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         public PayRefaundViewModel(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            RefaundCommand = _serviceProvider.GetRequiredService<RefaundCommand>();
+            //RefaundCommand = _serviceProvider.GetRequiredService<RefaundCommand>();
         }
 
         #endregion Constructors
@@ -293,7 +293,7 @@ namespace ClickBar.ViewModels.AppMain.Statistic
         #endregion Properties
 
         #region Commands
-        public ICommand RefaundCommand { get; }
+        public ICommand RefaundCommand => new RefaundCommand(_serviceProvider, this);
         #endregion Commands
 
         #region Public methods

@@ -152,8 +152,9 @@
                                         </VisualBrush.Visual>
                                     </VisualBrush>
                                 </Border.Background>
-                                <Button Command="{Binding DataContext.ClickOnPaymentPlaceCommand, ElementName=canvas}"
-                                        CommandParameter="{Binding Order}"
+                                <Button Command="{Binding DataContext.ClickOnPaymentPlaceChangePaymentPlaceCommand,
+                                    ElementName=canvas}"
+                                        CommandParameter="{Binding Id}"
                                         Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         BorderThickness="0"
                                         Background="Transparent"

@@ -1,4 +1,5 @@
-﻿using ClickBar.ViewModels.AppMain.Statistic;
+﻿using ClickBar.Models.AppMain.Statistic;
+using ClickBar.ViewModels.AppMain.Statistic;
 using ClickBar.Views.AppMain.AuxiliaryWindows.Statistic;
 using System;
 using System.Collections.Generic;
@@ -27,6 +28,8 @@ namespace ClickBar.Commands.AppMain.Statistic.Radnici
 
         public void Execute(object parameter)
         {
+            _currentViewModel.CurrentRadnik = new Radnik();
+
             AddEditRadnikWindow addEditRadnikWindow = new AddEditRadnikWindow(_currentViewModel);
             addEditRadnikWindow.ShowDialog();
         }
