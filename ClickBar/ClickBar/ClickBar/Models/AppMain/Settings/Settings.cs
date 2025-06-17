@@ -34,6 +34,7 @@ namespace ClickBar.Models.AppMain.Settings
         private bool _runPorudzbineServis;
         private TypeAppEnumeration _typeApp;
         private bool _enabledKartica;
+        private bool _disableSomeoneElsePayment;
 
         public Settings(SettingsFile settingsFile)
         {
@@ -72,6 +73,16 @@ namespace ClickBar.Models.AppMain.Settings
             EfakturaDirectory = settingsFile.EfakturaDirectory;
             RunPorudzbineServis = settingsFile.RunPorudzbineServis;
             EnabledKartica = settingsFile.EnableKartica;
+            DisableSomeoneElsePayment = settingsFile.DisableSomeoneElsePayment;
+        }
+        public bool DisableSomeoneElsePayment
+        {
+            get { return _disableSomeoneElsePayment; }
+            set
+            {
+                _disableSomeoneElsePayment = value;
+                OnPropertyChange(nameof(DisableSomeoneElsePayment));
+            }
         }
         public bool EnabledKartica
         {

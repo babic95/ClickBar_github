@@ -56,7 +56,8 @@ namespace ClickBar.Commands.AppMain.Settings
                     RunPorudzbineServis = _currentViewModel.Settings.RunPorudzbineServis,
                     //UrlToLPFR = _currentViewModel.Settings.UrlToLPFR,
                     TypeApp = _currentViewModel.Settings.TypeApp,
-                    EnableKartica = _currentViewModel.Settings.EnabledKartica
+                    EnableKartica = _currentViewModel.Settings.EnabledKartica,
+                    DisableSomeoneElsePayment = _currentViewModel.Settings.DisableSomeoneElsePayment,
                 };
 
                 if (_currentViewModel.Settings.Pos80mmFormat)

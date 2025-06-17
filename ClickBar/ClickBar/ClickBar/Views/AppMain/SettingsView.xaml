@@ -140,6 +140,13 @@
                                    VerticalContentAlignment="Center"
                                    Height="40"
                                    Margin="0 5 0 5"/>
+                            <Label Content="Zabrana naplate tuđeg stola:"
+                                   FontSize="18"
+                                   Foreground="White"
+                                   HorizontalContentAlignment="Right"
+                                   VerticalContentAlignment="Center"
+                                   Height="40"
+                                   Margin="0 5 0 5"/>
                             <Label Content="Pokreni servis za porucivanje:"
                                    FontSize="18"
                                    Foreground="White"
@@ -322,6 +329,11 @@
                                           Margin="0 5 0 5"
                                           Style="{StaticResource SwitchTypeToggleButton}"
                                           IsChecked="{Binding Settings.EnabledKartica}"/>
+                            <ToggleButton Width="80"
+                                          Height="40"
+                                          Margin="0 5 0 5"
+                                          Style="{StaticResource SwitchTypeToggleButton}"
+                                          IsChecked="{Binding Settings.DisableSomeoneElsePayment}"/>
                             <ToggleButton Width="80"
                                           Height="40"
                                           Margin="0 5 0 5"

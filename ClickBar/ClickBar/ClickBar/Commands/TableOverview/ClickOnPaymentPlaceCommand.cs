@@ -165,41 +165,55 @@ namespace ClickBar.Commands.TableOverview
                                     ord.Faza != (int)FazaKuhinjeEnumeration.Naplacena &&
                                     ord.Faza != (int)FazaKuhinjeEnumeration.Obrisana);
 
-                                if (ordersToday != null && ordersToday.Any())
+                            if (ordersToday != null && ordersToday.Any())
+                            {
+                                var someoneElsePayment = ordersToday.Any(o => o.CashierId != _viewModel.SaleViewModel.LoggedCashier.Id);
+
+                                if (SettingsManager.Instance.GetDisableSomeoneElsePayment() &&
+                                    someoneElsePayment)
                                 {
-                                    List<OldOrder> oldOrders = new List<OldOrder>();
-                                    foreach (var orderToday in ordersToday)
-                                    {
-                                        var items = new ObservableCollection<ItemInvoice>(orderToday.OrderTodayItems
-                                            .Where(o => o.Quantity - o.StornoQuantity  - o.NaplacenoQuantity > 0).Select(oti => new ItemInvoice(
-                                                new Item(dbContext.Items.FirstOrDefault(i => i.Id == oti.ItemId)),
-                                                oti.Quantity - oti.StornoQuantity - oti.NaplacenoQuantity, paymentPlace.Popust)
-                                        ));
-
-                                        if (items.Any())
-                                        {
-                                            OldOrder oldOrder = new OldOrder(orderToday.OrderDateTime,
-                                                unprocessedOrderDB.Cashier.Name,
-                                                orderToday.Name,
-                                                items);
-
-                                            oldOrders.Add(oldOrder);
-                                        }
-                                    }
-
-                                    _viewModel.SaleViewModel.OldOrders = oldOrders.Any() ? new ObservableCollection<OldOrder>(oldOrders.OrderBy(o => o.OrderDateTime)) :
-                                        new ObservableCollection<OldOrder>();
-
-                                    decimal total = ordersToday.Sum(o => o.OrderTodayItems.Sum(oti => Decimal.Round((oti.Quantity - oti.StornoQuantity - oti.NaplacenoQuantity) * (oti.TotalPrice / oti.Quantity), 2)));
-                                    _viewModel.SaleViewModel.TotalAmount = total;
-                                    _viewModel.SaleViewModel.CurrentOrder = new Order(paymentPlace.Id, paymentPlace.PartHallId)
-                                    {
-                                        Cashier = order.Cashier
-                                    };
-                                    //paymentPlace.Background = Brushes.Green;
-                                    //paymentPlace.Order = null;
-                                    //paymentPlace.Total = 0;
+                                    _viewModel.SaleViewModel.TableId = 0;
+                                   MessageBox.Show("Nije moguće naplatiti sto od drugog konobara!",
+                                        "Greška",
+                                        MessageBoxButton.OK,
+                                        MessageBoxImage.Error);
+                                    return;
                                 }
+
+                                List<OldOrder> oldOrders = new List<OldOrder>();
+                                foreach (var orderToday in ordersToday)
+                                {
+                                    var items = new ObservableCollection<ItemInvoice>(orderToday.OrderTodayItems
+                                        .Where(o => o.Quantity - o.StornoQuantity - o.NaplacenoQuantity > 0).Select(oti => new ItemInvoice(
+                                            new Item(dbContext.Items.FirstOrDefault(i => i.Id == oti.ItemId)),
+                                            oti.Quantity - oti.StornoQuantity - oti.NaplacenoQuantity, paymentPlace.Popust)
+                                    ));
+
+                                    if (items.Any())
+                                    {
+                                        OldOrder oldOrder = new OldOrder(orderToday.OrderDateTime,
+                                            unprocessedOrderDB.Cashier.Name,
+                                            unprocessedOrderDB.Cashier.Id,
+                                            orderToday.Name,
+                                            items);
+
+                                        oldOrders.Add(oldOrder);
+                                    }
+                                }
+
+                                _viewModel.SaleViewModel.OldOrders = oldOrders.Any() ? new ObservableCollection<OldOrder>(oldOrders.OrderBy(o => o.OrderDateTime)) :
+                                    new ObservableCollection<OldOrder>();
+
+                                decimal total = ordersToday.Sum(o => o.OrderTodayItems.Sum(oti => Decimal.Round((oti.Quantity - oti.StornoQuantity - oti.NaplacenoQuantity) * (oti.TotalPrice / oti.Quantity), 2)));
+                                _viewModel.SaleViewModel.TotalAmount = total;
+                                _viewModel.SaleViewModel.CurrentOrder = new Order(paymentPlace.Id, paymentPlace.PartHallId)
+                                {
+                                    Cashier = order.Cashier
+                                };
+                                //paymentPlace.Background = Brushes.Green;
+                                //paymentPlace.Order = null;
+                                //paymentPlace.Total = 0;
+                            }
                             //}
                             //else
                             //{

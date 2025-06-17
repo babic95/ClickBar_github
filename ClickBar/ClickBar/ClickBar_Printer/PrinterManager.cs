@@ -167,6 +167,7 @@ namespace ClickBar_Printer
         public void PrintInventoryStatus(List<InvertoryGlobal> inventoryStatusAll, 
             string title, 
             DateTime dateTime,
+            bool isOnlyQuantity,
             SupplierGlobal? supplierGlobal = null)
         {
             PrinterFormatEnumeration? printerFormatEnumeration = SettingsManager.Instance.GetPrinterFormat();
@@ -176,10 +177,10 @@ namespace ClickBar_Printer
                 switch (printerFormatEnumeration.Value)
                 {
                     case PrinterFormatEnumeration.Pos58mm:
-                        FormatPos.PrintInventoryStatus(PrinterFormatEnumeration.Pos58mm, inventoryStatusAll, title, dateTime, supplierGlobal);
+                        FormatPos.PrintInventoryStatus(PrinterFormatEnumeration.Pos58mm, inventoryStatusAll, title, dateTime, isOnlyQuantity, supplierGlobal);
                         break;
                     case PrinterFormatEnumeration.Pos80mm:
-                        FormatPos.PrintInventoryStatus(PrinterFormatEnumeration.Pos80mm, inventoryStatusAll, title, dateTime, supplierGlobal);
+                        FormatPos.PrintInventoryStatus(PrinterFormatEnumeration.Pos80mm, inventoryStatusAll, title, dateTime, isOnlyQuantity, supplierGlobal);
                         break;
                 }
             }

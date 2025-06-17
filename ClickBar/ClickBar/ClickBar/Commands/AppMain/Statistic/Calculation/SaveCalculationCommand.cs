@@ -299,7 +299,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                         }
 
                         calculationViewModel.DbContext.SaveChanges();
-                        PrinterManager.Instance.PrintInventoryStatus(invertoryGlobals, $"KALKULACIJA_{calculationDB.Counter}-{calculationDB.CalculationDate.Year}", calculationDB.CalculationDate, supplierGlobal);
+                        PrinterManager.Instance.PrintInventoryStatus(invertoryGlobals, $"KALKULACIJA_{calculationDB.Counter}-{calculationDB.CalculationDate.Year}", calculationDB.CalculationDate, false, supplierGlobal);
                         calculationViewModel.SuppliersAll = new List<Supplier>();
                         calculationViewModel.InventoryStatusAll = new List<Invertory>();
                         calculationViewModel.DbContext.Suppliers.ToList().ForEach(x =>
@@ -592,7 +592,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Calculation
                                 }
                                 viewCalculationViewModel.DbContext.SaveChanges();
 
-                                PrinterManager.Instance.PrintInventoryStatus(invertoryGlobals, $"KALKULACIJA_{calculationDB.Counter}-{calculationDB.CalculationDate.Year}", calculationDB.CalculationDate, supplierGlobal);
+                                PrinterManager.Instance.PrintInventoryStatus(invertoryGlobals, $"KALKULACIJA_{calculationDB.Counter}-{calculationDB.CalculationDate.Year}", calculationDB.CalculationDate, false, supplierGlobal);
 
                                 viewCalculationViewModel.CalculationsAll = new ObservableCollection<Models.AppMain.Statistic.Calculation>();
                                 viewCalculationViewModel.Calculations = new ObservableCollection<Models.AppMain.Statistic.Calculation>();

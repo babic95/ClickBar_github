@@ -35,5 +35,6 @@ namespace ClickBar_Settings
         public bool RunPorudzbineServis { get; set; }
         public TypeAppEnumeration TypeApp { get; set; }
         public bool EnableKartica { get; set; }
+        public bool DisableSomeoneElsePayment { get; set; }
     }
 }

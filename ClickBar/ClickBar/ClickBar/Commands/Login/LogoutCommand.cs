@@ -47,6 +47,14 @@ namespace ClickBar.Commands.Login
 
         private void Logout()
         {
+            try
+            {
+                var saleViewModdel = _serviceProvider.GetRequiredService<SaleViewModel>();
+                saleViewModdel.Reset();
+            }
+            catch (Exception ex)
+            {
+            }
             // Resetovanje CashierDB
             var scopedCashierDB = _serviceProvider.GetRequiredService<CashierDB>();
             scopedCashierDB.Id = null;

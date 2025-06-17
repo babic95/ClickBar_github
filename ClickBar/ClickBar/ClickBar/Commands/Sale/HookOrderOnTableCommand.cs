@@ -3,6 +3,7 @@ using ClickBar.Enums.Kuhinja;
 using ClickBar.Models.Sale;
 using ClickBar.Models.TableOverview;
 using ClickBar.ViewModels;
+using ClickBar.ViewModels.Sale;
 using ClickBar_Common.Enums;
 using ClickBar_Common.Models.Invoice;
 using ClickBar_DatabaseSQLManager;
@@ -64,15 +65,22 @@ namespace ClickBar.Commands.Sale
                         TableId = _viewModel.TableId,
                     };
 
-                    var typeApp = SettingsManager.Instance.GetTypeApp();
+                    if (SettingsManager.Instance.EnableSmartCard())
+                    {
+                        _viewModel.LogoutCommand.Execute(true);
+                    }
+                    else
+                    {
+                        var typeApp = SettingsManager.Instance.GetTypeApp();
 
-                    var appStateParameter = new AppStateParameter(
-                        typeApp == TypeAppEnumeration.Sale ? AppStateEnumerable.Sale : AppStateEnumerable.TableOverview,
-                        _viewModel.LoggedCashier,
-                        -1,
-                        _viewModel);
+                        var appStateParameter = new AppStateParameter(
+                            typeApp == TypeAppEnumeration.Sale ? AppStateEnumerable.Sale : AppStateEnumerable.TableOverview,
+                            _viewModel.LoggedCashier,
+                            -1,
+                            _viewModel);
 
-                    _viewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+                        _viewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+                    }
                 }
                 else
                 {
@@ -103,6 +111,15 @@ namespace ClickBar.Commands.Sale
 
                             if (unprocessedOrderDB != null)
                             {
+                                if (SettingsManager.Instance.GetDisableSomeoneElsePayment() &&
+                                    unprocessedOrderDB.CashierId != _viewModel.LoggedCashier.Id)
+                                {
+                                    MessageBox.Show("Nije moguće dodati artikle na porudžbinu koja je već napravljena na drugom konobaru!",
+                                        "Greška",
+                                        MessageBoxButton.OK,
+                                        MessageBoxImage.Error);
+                                    return;
+                                }
                                 //decimal totalSum = _viewModel.ItemsInvoice.Sum(i => i.TotalAmout);
 
                                 //unprocessedOrderDB.TotalAmount += Decimal.Round(totalSum * ((100 - tableDB.Popust) / 100), 2);
@@ -158,13 +175,20 @@ namespace ClickBar.Commands.Sale
 
                             _viewModel.Reset();
 
-                            var appStateParameter = new AppStateParameter(
-                                SettingsManager.Instance.GetTypeApp() == TypeAppEnumeration.Sale ? AppStateEnumerable.Sale : AppStateEnumerable.TableOverview,
-                                _viewModel.LoggedCashier,
-                                tableId,
-                                _viewModel);
+                            if (SettingsManager.Instance.EnableSmartCard())
+                            {
+                                _viewModel.LogoutCommand.Execute(true);
+                            }
+                            else
+                            {
+                                var appStateParameter = new AppStateParameter(
+                                    SettingsManager.Instance.GetTypeApp() == TypeAppEnumeration.Sale ? AppStateEnumerable.Sale : AppStateEnumerable.TableOverview,
+                                    _viewModel.LoggedCashier,
+                                    tableId,
+                                    _viewModel);
 
-                            _viewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+                                _viewModel.UpdateAppViewModelCommand.Execute(appStateParameter);
+                            }
                         }
                     }
                     catch (Exception ex)

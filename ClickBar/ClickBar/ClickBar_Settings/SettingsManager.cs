@@ -115,6 +115,7 @@ namespace ClickBar_Settings
                 _settingsFile.RunPorudzbineServis = settingsFile.RunPorudzbineServis;
                 _settingsFile.TypeApp = settingsFile.TypeApp;
                 _settingsFile.EnableKartica = settingsFile.EnableKartica;
+                _settingsFile.DisableSomeoneElsePayment = settingsFile.DisableSomeoneElsePayment;
 
                 SaveSettingsFile();
             }
@@ -259,6 +260,10 @@ namespace ClickBar_Settings
         public bool EnableSmartCard()
         {
             return _settingsFile.EnableSmartCard;
+        }
+        public bool GetDisableSomeoneElsePayment()
+        {
+            return _settingsFile.DisableSomeoneElsePayment;
         }
         public bool CancelOrderFromTable()
         {
@@ -468,6 +473,7 @@ namespace ClickBar_Settings
                 RunPorudzbineServis = false,
                 TypeApp = TypeAppEnumeration.Table,
                 EnableKartica = true,
+                DisableSomeoneElsePayment = false,
             };
 #else
             _settingsFile = new SettingsFile()
@@ -498,6 +504,7 @@ namespace ClickBar_Settings
                 RunPorudzbineServis = false,
                 TypeApp = TypeAppEnumeration.Table,
                 EnableKartica = true,
+                DisableSomeoneElsePayment = false,
             };
 
 #endif

@@ -115,6 +115,7 @@ namespace ClickBar.Commands.AppMain.Statistic.ViewCalculation
                         PrinterManager.Instance.PrintInventoryStatus(invertoryGlobals,
                             $"KALKULACIJA_{calculation.Counter}-{calculation.CalculationDate.Year}",
                             calculation.CalculationDate,
+                            false,
                             supplierGlobal);
                     }
                 }

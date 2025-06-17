@@ -1,6 +1,7 @@
 ﻿using ClickBar.Converters;
 using ClickBar.Enums;
 using ClickBar.Enums.AppMain.Statistic;
+using ClickBar.Enums.Kuhinja;
 using ClickBar.Models.AppMain.Statistic;
 using ClickBar.Models.Sale;
 using ClickBar.ViewModels;
@@ -17,6 +18,7 @@ using ClickBar_Printer.PaperFormat;
 using ClickBar_Settings;
 using DocumentFormat.OpenXml.Vml;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using SQLitePCL;
 using System;
@@ -30,11 +32,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Input;
 using System.Windows.Forms;
-using Microsoft.Extensions.DependencyInjection;
+using System.Windows.Input;
 using MessageBox = System.Windows.MessageBox;
-using ClickBar.Enums.Kuhinja;
 
 namespace ClickBar.Commands.Sale
 {
@@ -70,7 +70,19 @@ namespace ClickBar.Commands.Sale
                 {
                     if (saleViewModel.OldOrders.Any())
                     {
-                        foreach(var oldOrder in saleViewModel.OldOrders)
+                        var someoneElsePayment = saleViewModel.OldOrders.Any(o => o.CashierId != saleViewModel.LoggedCashier.Id);
+
+                        if (SettingsManager.Instance.GetDisableSomeoneElsePayment() &&
+                            someoneElsePayment)
+                        {
+                            MessageBox.Show("Nije moguće naplatiti sto od drugog konobara!",
+                                "Greška",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
+                            return;
+                        }
+
+                        foreach (var oldOrder in saleViewModel.OldOrders)
                         {
                             if (oldOrder.Items.Any())
                             {
@@ -480,7 +492,7 @@ namespace ClickBar.Commands.Sale
             //    total += itemFileSystemWatcher.TotalAmount;
             //});
             //invoiceRequset.Items = items;
-            Black(invoiceRequset, paySaleViewModel, total, items, paySaleViewModel.SaleViewModel.LoggedCashier);
+            Black(invoiceRequset, paySaleViewModel, total, items, paySaleViewModel.SaleViewModel.LoggedCashier.Id);
 #else
             Normal(invoiceRequset, paySaleViewModel, total, items, popust, paySaleViewModel.SaleViewModel.LoggedCashier);
 #endif

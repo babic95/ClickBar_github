@@ -162,6 +162,7 @@ namespace ClickBar_Printer.PaperFormat
             List<InvertoryGlobal> inventoryStatusAll, 
             string title,
             DateTime dateTime,
+            bool isOnlyQuantity,
             SupplierGlobal? supplierGlobal = null)
         {
             decimal totalInputPriceCal = 0;
@@ -202,9 +203,13 @@ namespace ClickBar_Printer.PaperFormat
                 _inventoryStatus += SplitInParts($"{inventory.Name}", "Naziv:", 36);
                 _inventoryStatus += SplitInParts($"{inventory.Jm}", "JM:", 36);
                 _inventoryStatus += SplitInParts($"{string.Format("{0:#,##0.00}", inventory.Quantity).Replace(',', '#').Replace('.', ',').Replace('#', '.')}", "Količina:", 36);
-                _inventoryStatus += SplitInParts($"{string.Format("{0:#,##0.00}", inventory.InputUnitPrice).Replace(',', '#').Replace('.', ',').Replace('#', '.')}", "Jed. ulazna cena:", 36);
-                _inventoryStatus += SplitInParts($"{string.Format("{0:#,##0.00}", inventory.SellingUnitPrice).Replace(',', '#').Replace('.', ',').Replace('#', '.')}", "Jed. prodajna cena:", 36);
-                _inventoryStatus += SplitInParts($"{string.Format("{0:#,##0.00}", inventory.TotalAmout).Replace(',', '#').Replace('.', ',').Replace('#', '.')}", "Prodajna vrednost:", 36);
+
+                if (!isOnlyQuantity)
+                {
+                    _inventoryStatus += SplitInParts($"{string.Format("{0:#,##0.00}", inventory.InputUnitPrice).Replace(',', '#').Replace('.', ',').Replace('#', '.')}", "Jed. ulazna cena:", 36);
+                    _inventoryStatus += SplitInParts($"{string.Format("{0:#,##0.00}", inventory.SellingUnitPrice).Replace(',', '#').Replace('.', ',').Replace('#', '.')}", "Jed. prodajna cena:", 36);
+                    _inventoryStatus += SplitInParts($"{string.Format("{0:#,##0.00}", inventory.TotalAmout).Replace(',', '#').Replace('.', ',').Replace('#', '.')}", "Prodajna vrednost:", 36);
+                }
 
                 _inventoryStatus += "                                        \r\n";
 
@@ -214,10 +219,13 @@ namespace ClickBar_Printer.PaperFormat
 
             _inventoryStatus += "====================================\r\n";
 
-            _inventoryStatus += SplitInParts($"{string.Format("{0:#,##0.00}", totalInputPriceCal).Replace(',', '#').Replace('.', ',').Replace('#', '.')}", "Ukupan ulaz:", 36);
-            _inventoryStatus += SplitInParts($"{string.Format("{0:#,##0.00}", totalSellingPriceCal).Replace(',', '#').Replace('.', ',').Replace('#', '.')}", "Ukupan izlaz:", 36);
+            if (!isOnlyQuantity)
+            {
+                _inventoryStatus += SplitInParts($"{string.Format("{0:#,##0.00}", totalInputPriceCal).Replace(',', '#').Replace('.', ',').Replace('#', '.')}", "Ukupan ulaz:", 36);
+                _inventoryStatus += SplitInParts($"{string.Format("{0:#,##0.00}", totalSellingPriceCal).Replace(',', '#').Replace('.', ',').Replace('#', '.')}", "Ukupan izlaz:", 36);
 
-            _inventoryStatus += "====================================\r\n";
+                _inventoryStatus += "====================================\r\n";
+            }
 
             string? prName = SettingsManager.Instance.GetPrinterName();
 

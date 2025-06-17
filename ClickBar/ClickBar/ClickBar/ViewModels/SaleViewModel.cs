@@ -416,7 +416,7 @@ namespace ClickBar.ViewModels
         internal void Reset()
         {
             CurrentOrder = null;
-            CashierNema = LoggedCashier.Name;
+            CashierNema = LoggedCashier != null ? LoggedCashier.Name : string.Empty;
             TableId = 0;
             TotalAmount = 0;
             ItemsInvoice = new ObservableCollection<ItemInvoice>();

@@ -25,11 +25,13 @@ namespace ClickBar.Models.Sale
         private bool _isCheckedZabraniPopust;
         private int _rb;
         private ObservableCollection<ItemZelja> _zelje;
+        private int? _normId;
 
         public Item() { }
         public Item(ItemDB itemDB)
         {
             Id = itemDB.Id;
+            NormId = itemDB.IdNorm;
             Rb = itemDB.Rb;
             Name = itemDB.Name;
             InputUnitPrice = itemDB.InputUnitPrice;
@@ -56,6 +58,15 @@ namespace ClickBar.Models.Sale
                         Zelja = zeljaDB.Zelja
                     });
                 }
+            }
+        }
+        public int? NormId
+        {
+            get { return _normId; }
+            set
+            {
+                _normId = value;
+                OnPropertyChange(nameof(NormId));
             }
         }
         public string Id
