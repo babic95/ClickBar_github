@@ -109,9 +109,4 @@ export default defineConfig({
     optimizeDeps: {
         include: ['events']
     },
-    build: {
-        rollupOptions: {
-            external: ['@awesome-cordova-plugins/printer'],
-        },
-    },
 });

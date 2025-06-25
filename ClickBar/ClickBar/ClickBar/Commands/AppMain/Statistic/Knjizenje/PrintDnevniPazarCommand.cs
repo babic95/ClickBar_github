@@ -79,222 +79,113 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
 
                     decimal nivelacija = 0;
 
-                    invoices.ToList().ForEach(invoice =>
+                    // Učitaj sve potrebne invoice id-jeve
+                    var invoiceIds = invoices.Select(x => x.Id).ToList();
+
+                    // Učitaj Invoice iz baze sa svim ItemInvoice
+                    var invoiceDBs = _dbContext.Invoices
+                        .Where(inv => invoiceIds.Contains(inv.Id))
+                        .ToList();
+
+                    var itemInvoices = _dbContext.ItemInvoices
+                        .Where(ii => invoiceIds.Contains(ii.InvoiceId))
+                        .ToList();
+
+                    // Učitaj sve ItemCode iz itemInvoices gde nije null ili empty
+                    var itemCodes = itemInvoices
+                        .Where(ii => !string.IsNullOrEmpty(ii.ItemCode))
+                        .Select(ii => ii.ItemCode)
+                        .Distinct()
+                        .ToList();
+
+                    // Učitaj sve ItemDB objekte u batch-u
+                    List<ItemDB> itemsDB;
+                    if (is1010)
                     {
-                        try
+                        itemsDB = _dbContext.Items
+                            .Where(item => itemCodes.Contains(item.Id)
+                                && item.InputUnitPrice != null
+                                && item.InputUnitPrice.HasValue)
+                            .ToList();
+                    }
+                    else
+                    {
+                        itemsDB = _dbContext.Items
+                            .Where(item => itemCodes.Contains(item.Id))
+                            .ToList();
+                    }
+
+                    // Učitaj ItemGroups
+                    var groupIds = itemsDB.Select(i => i.IdItemGroup).Distinct().ToList();
+                    var groupsDB = _dbContext.ItemGroups
+                        .Where(g => groupIds.Contains(g.Id))
+                        .ToDictionary(g => g.Id);
+
+                    // Dictionary za brzi pristup
+                    var itemsDBDict = itemsDB.ToDictionary(i => i.Id);
+
+                    foreach (var invoice in invoices)
+                    {
+                        var invoiceDB = invoiceDBs.FirstOrDefault(inv => inv.Id == invoice.Id);
+                        if (invoiceDB == null) continue;
+
+                        var relatedItems = itemInvoices.Where(ii => ii.InvoiceId == invoiceDB.Id);
+                        foreach (var itemInvoiceDB in relatedItems)
                         {
-                            var invoiceDB = _dbContext.Invoices.FirstOrDefault(inv => inv.Id == invoice.Id);
+                            if (string.IsNullOrEmpty(itemInvoiceDB.ItemCode)) continue;
 
-                            if (invoiceDB != null)
+                            if (itemsDBDict.TryGetValue(itemInvoiceDB.ItemCode, out var itemDB) && itemInvoiceDB.Quantity.HasValue)
                             {
-                                var itemsDB = _dbContext.ItemInvoices.Where(inv => inv.InvoiceId == invoiceDB.Id);
+                                if (!groupsDB.TryGetValue(itemDB.IdItemGroup, out var groupDB)) continue;
 
-                                if (itemsDB != null &&
-                                    itemsDB.Any())
+                                var item = new Item(itemDB);
+                                var itemInvoice = new ItemInvoice(item, itemInvoiceDB);
+
+                                bool isRefund = invoice.TransactionType == Enums.Sale.TransactionTypeEnumeration.Refundacija;
+
+                                Action<ItemInvoice, ItemDB, ItemGroupDB> setPDV = null;
+
+                                // Možeš napraviti mapu labela u akcije za još brži kod, ali ovako je jasnije:
+                                switch (itemDB.Label)
                                 {
-                                    itemsDB.ToList().ForEach(itemInvoiceDB =>
-                                    {
-                                        if (!string.IsNullOrEmpty(itemInvoiceDB.ItemCode))
-                                        {
-                                            ItemDB? itemDB = null;
-                                            if (is1010)
-                                            {
-                                                itemDB = _dbContext.Items.FirstOrDefault(item => item.Id == itemInvoiceDB.ItemCode &&
-                                                item.InputUnitPrice != null &&
-                                                item.InputUnitPrice.HasValue);
-                                            }
-                                            else
-                                            {
-                                                itemDB = _dbContext.Items.FirstOrDefault(item => item.Id == itemInvoiceDB.ItemCode);
-                                            }
-
-                                            if (itemDB != null &&
-                                            itemInvoiceDB.Quantity.HasValue)
-                                            {
-                                                var groupDB = _dbContext.ItemGroups.Find(itemDB.IdItemGroup);
-
-                                                if (groupDB != null)
-                                                {
-                                                    Item item = new Item(itemDB);
-                                                    ItemInvoice itemInvoice = new ItemInvoice(item, itemInvoiceDB);
-
-                                                    bool isRefund = invoice.TransactionType == Enums.Sale.TransactionTypeEnumeration.Refundacija ? true : false;
-
-                                                    switch (itemDB.Label)
-                                                    {
-                                                        case "Ђ":
-                                                            if (!itemInvoice.IsSirovina)
-                                                            {
-                                                                SetItemsPDV(allItems20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            else
-                                                            {
-                                                                SetItemsPDV(allItemsSirovina20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            break;
-                                                        case "6":
-                                                            if (!itemInvoice.IsSirovina)
-                                                            {
-                                                                SetItemsPDV(allItems20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            else
-                                                            {
-                                                                SetItemsPDV(allItemsSirovina20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            break;
-                                                        case "Е":
-                                                            if (!itemInvoice.IsSirovina)
-                                                            {
-                                                                SetItemsPDV(allItems10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            else
-                                                            {
-                                                                SetItemsPDV(allItemsSirovina10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            break;
-                                                        case "7":
-                                                            if (!itemInvoice.IsSirovina)
-                                                            {
-                                                                SetItemsPDV(allItems10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            else
-                                                            {
-                                                                SetItemsPDV(allItemsSirovina10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            break;
-                                                        case "Г":
-                                                            if (!itemInvoice.IsSirovina)
-                                                            {
-                                                                SetItemsPDV(allItems0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            else
-                                                            {
-                                                                SetItemsPDV(allItemsSirovina0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            break;
-                                                        case "4":
-                                                            if (!itemInvoice.IsSirovina)
-                                                            {
-                                                                SetItemsPDV(allItems0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            else
-                                                            {
-                                                                SetItemsPDV(allItemsSirovina0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            break;
-                                                        case "А":
-                                                            if (!itemInvoice.IsSirovina)
-                                                            {
-                                                                SetItemsPDV(allItemsNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            else
-                                                            {
-                                                                SetItemsPDV(allItemsSirovinaNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            break;
-                                                        case "1":
-                                                            if (!itemInvoice.IsSirovina)
-                                                            {
-                                                                SetItemsPDV(allItemsNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            else
-                                                            {
-                                                                SetItemsPDV(allItemsSirovinaNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            break;
-                                                        case "Ж":
-                                                            if (!itemInvoice.IsSirovina)
-                                                            {
-                                                                SetItemsPDV(allItems20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            else
-                                                            {
-                                                                SetItemsPDV(allItemsSirovina20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            break;
-                                                        case "8":
-                                                            if (!itemInvoice.IsSirovina)
-                                                            {
-                                                                SetItemsPDV(allItems20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            else
-                                                            {
-                                                                SetItemsPDV(allItemsSirovina20PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            break;
-                                                        case "A":
-                                                            if (!itemInvoice.IsSirovina)
-                                                            {
-                                                                SetItemsPDV(allItems10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            else
-                                                            {
-                                                                SetItemsPDV(allItemsSirovina10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            break;
-                                                        case "31":
-                                                            if (!itemInvoice.IsSirovina)
-                                                            {
-                                                                SetItemsPDV(allItems10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            else
-                                                            {
-                                                                SetItemsPDV(allItemsSirovina10PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            break;
-                                                        case "N":
-                                                            if (!itemInvoice.IsSirovina)
-                                                            {
-                                                                SetItemsPDV(allItemsNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            else
-                                                            {
-                                                                SetItemsPDV(allItemsSirovinaNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            break;
-                                                        case "47":
-                                                            if (!itemInvoice.IsSirovina)
-                                                            {
-                                                                SetItemsPDV(allItemsNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            else
-                                                            {
-                                                                SetItemsPDV(allItemsSirovinaNoPDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            break;
-                                                        case "P":
-                                                            if (!itemInvoice.IsSirovina)
-                                                            {
-                                                                SetItemsPDV(allItems0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            else
-                                                            {
-                                                                SetItemsPDV(allItemsSirovina0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            break;
-                                                        case "49":
-                                                            if (!itemInvoice.IsSirovina)
-                                                            {
-                                                                SetItemsPDV(allItems0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            else
-                                                            {
-                                                                SetItemsPDV(allItemsSirovina0PDV, itemInvoice, nivelacija, isRefund, itemDB, is1010, groupDB);
-                                                            }
-                                                            break;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    });
+                                    case "Ђ":
+                                    case "6":
+                                    case "Ж":
+                                    case "8":
+                                        setPDV = itemInvoice.IsSirovina
+                                            ? (ii, idb, gdb) => SetItemsPDV(allItemsSirovina20PDV, ii, nivelacija, isRefund, idb, is1010, gdb)
+                                            : (ii, idb, gdb) => SetItemsPDV(allItems20PDV, ii, nivelacija, isRefund, idb, is1010, gdb);
+                                        break;
+                                    case "Е":
+                                    case "7":
+                                    case "A":
+                                    case "31":
+                                        setPDV = itemInvoice.IsSirovina
+                                            ? (ii, idb, gdb) => SetItemsPDV(allItemsSirovina10PDV, ii, nivelacija, isRefund, idb, is1010, gdb)
+                                            : (ii, idb, gdb) => SetItemsPDV(allItems10PDV, ii, nivelacija, isRefund, idb, is1010, gdb);
+                                        break;
+                                    case "Г":
+                                    case "4":
+                                    case "P":
+                                    case "49":
+                                        setPDV = itemInvoice.IsSirovina
+                                            ? (ii, idb, gdb) => SetItemsPDV(allItemsSirovina0PDV, ii, nivelacija, isRefund, idb, is1010, gdb)
+                                            : (ii, idb, gdb) => SetItemsPDV(allItems0PDV, ii, nivelacija, isRefund, idb, is1010, gdb);
+                                        break;
+                                    case "А":
+                                    case "1":
+                                    case "N":
+                                    case "47":
+                                        setPDV = itemInvoice.IsSirovina
+                                            ? (ii, idb, gdb) => SetItemsPDV(allItemsSirovinaNoPDV, ii, nivelacija, isRefund, idb, is1010, gdb)
+                                            : (ii, idb, gdb) => SetItemsPDV(allItemsNoPDV, ii, nivelacija, isRefund, idb, is1010, gdb);
+                                        break;
                                 }
+
+                                setPDV?.Invoke(itemInvoice, itemDB, groupDB);
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            int aaa = 2;
-                        }
-                    });
+                    }
 
                     if (_currentViewModel is KnjizenjeViewModel)
                     {
@@ -402,9 +293,9 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                             }
                             else
                             {
+                                it.TotalAmount += itemInvoice.TotalAmout;
                                 it.MPC_Average = it.TotalAmount > 0 && it.Quantity > 0 ? Decimal.Round(it.TotalAmount / it.Quantity, 2) : 0;
                                 it.MPC_Original = it.MPC_Average;
-                                it.TotalAmount += itemInvoice.TotalAmout;
                             }
                         }
                         else
@@ -420,9 +311,96 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                             }
                             else
                             {
+                                it.TotalAmount -= itemInvoice.TotalAmout;
                                 it.MPC_Average = it.TotalAmount > 0 && it.Quantity > 0 ? Decimal.Round(it.TotalAmount / it.Quantity, 2) : 0;
                                 it.MPC_Original = it.MPC_Average;
-                                it.TotalAmount -= itemInvoice.TotalAmout;
+                            }
+                        }
+
+                        if (itemDB.IdNorm == null)
+                        {
+                            if (itemInvoice.InputUnitPrice.HasValue)
+                            {
+                                it.TotalInputPrice += !isRefund ? decimal.Round(itemInvoice.Quantity * itemInvoice.InputUnitPrice.Value, 2) : decimal.Round(itemInvoice.Quantity * -1 * itemInvoice.InputUnitPrice.Value, 2);
+                            }
+                        }
+                        else
+                        {
+                            decimal inputPrice = 0;
+
+                            var itemsNorm1 = _dbContext.ItemsInNorm.Include(i => i.Item).Where(n => n.IdNorm == itemDB.IdNorm);
+
+                            if (itemsNorm1 != null && itemsNorm1.Any())
+                            {
+                                foreach (var itemNorm1 in itemsNorm1)
+                                {
+                                    var itemsNorm2 = _dbContext.ItemsInNorm.Include(i => i.Item).Where(n => itemNorm1.Item.IdNorm != null &&
+                                    n.IdNorm == itemNorm1.Item.IdNorm);
+
+                                    if (itemsNorm2 != null && itemsNorm2.Any())
+                                    {
+                                        foreach (var itemNorm2 in itemsNorm2)
+                                        {
+                                            var itemsNorm3 = _dbContext.ItemsInNorm.Include(i => i.Item).Where(n => itemNorm2.Item.IdNorm != null &&
+                                            n.IdNorm == itemNorm2.Item.IdNorm);
+
+                                            if (itemsNorm3 != null && itemsNorm3.Any())
+                                            {
+                                                foreach (var itemNorm3 in itemsNorm3)
+                                                {
+                                                    var normInInvoice = _dbContext.ItemInvoices.FirstOrDefault(ii => ii.ItemCode == itemNorm3.IdItem &&
+                                                    ii.InvoiceId == itemInvoice.InvoiceId);
+
+                                                    if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
+                                                    {
+                                                        inputPrice += decimal.Round(itemInvoice.Quantity *
+                                                            itemNorm3.Quantity *
+                                                            itemNorm2.Quantity *
+                                                            itemNorm1.Quantity *
+                                                            normInInvoice.InputUnitPrice.Value, 2);
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                var normInInvoice = _dbContext.ItemInvoices.FirstOrDefault(ii => ii.ItemCode == itemNorm2.IdItem &&
+                                                ii.InvoiceId == itemInvoice.InvoiceId);
+
+                                                if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
+                                                {
+                                                    inputPrice += decimal.Round(itemInvoice.Quantity *
+                                                        itemNorm2.Quantity *
+                                                        itemNorm1.Quantity *
+                                                        normInInvoice.InputUnitPrice.Value, 2);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        var normInInvoice = _dbContext.ItemInvoices.FirstOrDefault(ii => ii.ItemCode == itemNorm1.IdItem &&
+                                        ii.InvoiceId == itemInvoice.InvoiceId);
+
+                                        if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
+                                        {
+                                            inputPrice += decimal.Round(itemInvoice.Quantity *
+                                                itemNorm1.Quantity *
+                                                normInInvoice.InputUnitPrice.Value, 2);
+                                        }
+                                    }
+                                }
+
+                                if (inputPrice > 0)
+                                {
+                                    it.TotalInputPrice += !isRefund ? inputPrice : -1 * inputPrice;
+                                }
+                            }
+                            else
+                            {
+                                if (itemInvoice.InputUnitPrice.HasValue)
+                                {
+                                    it.TotalInputPrice += !isRefund ? decimal.Round(itemInvoice.Quantity * itemInvoice.InputUnitPrice.Value, 2) : decimal.Round(itemInvoice.Quantity * -1 * itemInvoice.InputUnitPrice.Value, 2);
+                                }
                             }
                         }
                     }
@@ -454,6 +432,93 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                     {
                         reportPerItems.TotalAmount = isRefund ? -1 * itemInvoice.TotalAmout : itemInvoice.TotalAmout;
                         reportPerItems.MPC_Average = itemInvoice.Item.SellingUnitPrice;
+
+                        if (itemDB.IdNorm == null)
+                        {
+                            if (itemInvoice.InputUnitPrice.HasValue)
+                            {
+                                reportPerItems.TotalInputPrice += !isRefund ? decimal.Round(itemInvoice.Quantity * itemInvoice.InputUnitPrice.Value, 2) : decimal.Round(itemInvoice.Quantity * -1 * itemInvoice.InputUnitPrice.Value, 2);
+                            }
+                        }
+                        else 
+                        {
+                            decimal inputPrice = 0;
+
+                            var itemsNorm1 = _dbContext.ItemsInNorm.Include(i => i.Item).Where(n => n.IdNorm == itemDB.IdNorm);
+
+                            if (itemsNorm1 != null && itemsNorm1.Any())
+                            {
+                                foreach(var itemNorm1 in itemsNorm1)
+                                {
+                                    var itemsNorm2 = _dbContext.ItemsInNorm.Include(i => i.Item).Where(n => itemNorm1.Item.IdNorm != null &&
+                                    n.IdNorm == itemNorm1.Item.IdNorm);
+
+                                    if(itemsNorm2 != null && itemsNorm2.Any())
+                                    {
+                                        foreach(var itemNorm2 in itemsNorm2)
+                                        {
+                                            var itemsNorm3 = _dbContext.ItemsInNorm.Include(i => i.Item).Where(n => itemNorm2.Item.IdNorm != null &&
+                                            n.IdNorm == itemNorm2.Item.IdNorm);
+
+                                            if(itemsNorm3 != null && itemsNorm3.Any())
+                                            {
+                                                foreach(var itemNorm3 in itemsNorm3)
+                                                {
+                                                    var normInInvoice = _dbContext.ItemInvoices.FirstOrDefault(ii => ii.ItemCode == itemNorm3.IdItem &&
+                                                    ii.InvoiceId == itemInvoice.InvoiceId);
+
+                                                    if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
+                                                    {
+                                                        inputPrice += decimal.Round(itemInvoice.Quantity *
+                                                            itemNorm3.Quantity * 
+                                                            itemNorm2.Quantity *
+                                                            itemNorm1.Quantity *
+                                                            normInInvoice.InputUnitPrice.Value, 2);
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                var normInInvoice = _dbContext.ItemInvoices.FirstOrDefault(ii => ii.ItemCode == itemNorm2.IdItem &&
+                                                ii.InvoiceId == itemInvoice.InvoiceId);
+
+                                                if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
+                                                {
+                                                    inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                                        itemNorm2.Quantity *
+                                                        itemNorm1.Quantity *
+                                                        normInInvoice.InputUnitPrice.Value, 2);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        var normInInvoice = _dbContext.ItemInvoices.FirstOrDefault(ii => ii.ItemCode == itemNorm1.IdItem &&
+                                        ii.InvoiceId == itemInvoice.InvoiceId);
+
+                                        if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
+                                        {
+                                            inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                                itemNorm1.Quantity *
+                                                normInInvoice.InputUnitPrice.Value, 2);
+                                        }
+                                    }
+                                }
+
+                                if (inputPrice > 0)
+                                {
+                                    reportPerItems.TotalInputPrice += !isRefund ? inputPrice : -1 * inputPrice;
+                                }
+                            }
+                            else
+                            {
+                                if (itemInvoice.InputUnitPrice.HasValue)
+                                {
+                                    reportPerItems.TotalInputPrice += !isRefund ? decimal.Round(itemInvoice.Quantity * itemInvoice.InputUnitPrice.Value, 2) : decimal.Round(itemInvoice.Quantity * -1 * itemInvoice.InputUnitPrice.Value, 2);
+                                }
+                            }
+                        }
                     }
 
                     allItemsPDV[itemGroupDB.Name].Add(itemInvoice.Item.Id, new List<ReportPerItems>() { reportPerItems });
@@ -507,6 +572,93 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                                 it.TotalAmount -= itemInvoice.TotalAmout;
                             }
                         }
+
+                        if (itemDB.IdNorm == null)
+                        {
+                            if (itemInvoice.InputUnitPrice.HasValue)
+                            {
+                                it.TotalInputPrice += !isRefund ? decimal.Round(itemInvoice.Quantity * itemInvoice.InputUnitPrice.Value, 2) : decimal.Round(itemInvoice.Quantity * -1 * itemInvoice.InputUnitPrice.Value, 2);
+                            }
+                        }
+                        else
+                        {
+                            decimal inputPrice = 0;
+
+                            var itemsNorm1 = _dbContext.ItemsInNorm.Include(i => i.Item).Where(n => n.IdNorm == itemDB.IdNorm);
+
+                            if (itemsNorm1 != null && itemsNorm1.Any())
+                            {
+                                foreach (var itemNorm1 in itemsNorm1)
+                                {
+                                    var itemsNorm2 = _dbContext.ItemsInNorm.Include(i => i.Item).Where(n => itemNorm1.Item.IdNorm != null &&
+                                    n.IdNorm == itemNorm1.Item.IdNorm);
+
+                                    if (itemsNorm2 != null && itemsNorm2.Any())
+                                    {
+                                        foreach (var itemNorm2 in itemsNorm2)
+                                        {
+                                            var itemsNorm3 = _dbContext.ItemsInNorm.Include(i => i.Item).Where(n => itemNorm2.Item.IdNorm != null &&
+                                            n.IdNorm == itemNorm2.Item.IdNorm);
+
+                                            if (itemsNorm3 != null && itemsNorm3.Any())
+                                            {
+                                                foreach (var itemNorm3 in itemsNorm3)
+                                                {
+                                                    var normInInvoice = _dbContext.ItemInvoices.FirstOrDefault(ii => ii.ItemCode == itemNorm3.IdItem &&
+                                                    ii.InvoiceId == itemInvoice.InvoiceId);
+
+                                                    if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
+                                                    {
+                                                        inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                                            itemNorm3.Quantity *
+                                                            itemNorm2.Quantity *
+                                                            itemNorm1.Quantity *
+                                                            normInInvoice.InputUnitPrice.Value, 2);
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                var normInInvoice = _dbContext.ItemInvoices.FirstOrDefault(ii => ii.ItemCode == itemNorm2.IdItem &&
+                                                ii.InvoiceId == itemInvoice.InvoiceId);
+
+                                                if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
+                                                {
+                                                    inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                                        itemNorm2.Quantity * 
+                                                        itemNorm1.Quantity *
+                                                        normInInvoice.InputUnitPrice.Value, 2);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        var normInInvoice = _dbContext.ItemInvoices.FirstOrDefault(ii => ii.ItemCode == itemNorm1.IdItem &&
+                                        ii.InvoiceId == itemInvoice.InvoiceId);
+
+                                        if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
+                                        {
+                                            inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                                itemNorm1.Quantity * 
+                                                normInInvoice.InputUnitPrice.Value, 2);
+                                        }
+                                    }
+                                }
+
+                                if (inputPrice > 0)
+                                {
+                                    it.TotalInputPrice += !isRefund ? inputPrice : -1 * inputPrice;
+                                }
+                            }
+                            else
+                            {
+                                if (itemInvoice.InputUnitPrice.HasValue)
+                                {
+                                    it.TotalInputPrice += !isRefund ? decimal.Round(itemInvoice.Quantity * itemInvoice.InputUnitPrice.Value, 2) : decimal.Round(itemInvoice.Quantity * -1 * itemInvoice.InputUnitPrice.Value, 2);
+                                }
+                            }
+                        }
                     }
                     else
                     {
@@ -518,6 +670,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                             Quantity = isRefund ? -1 * itemInvoice.Quantity : itemInvoice.Quantity,
                             //TotalAmount = isRefund ? -1 * itemInvoice.TotalAmout : itemInvoice.TotalAmout,
                             //MPC_Average = itemInvoice.Item.SellingUnitPrice,
+                            //TotalInputPrice = 0,
                             MPC_Original = itemInvoice.Item.OriginalUnitPrice,
                             IsSirovina = itemInvoice.IsSirovina,
                             Nivelacija = isRefund ? 0 : - 1 * Decimal.Round((itemInvoice.Item.OriginalUnitPrice * itemInvoice.Quantity) - itemInvoice.TotalAmout, 2),
@@ -543,6 +696,93 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                         allItemsPDV[itemGroupDB.Name][itemInvoice.Item.Id].Add(reportPerItems);
 
                         nivelacija += reportPerItems.Nivelacija;
+
+                        if (itemDB.IdNorm == null)
+                        {
+                            if (itemInvoice.InputUnitPrice.HasValue)
+                            {
+                                reportPerItems.TotalInputPrice += !isRefund ? decimal.Round(itemInvoice.Quantity * itemInvoice.InputUnitPrice.Value, 2) : decimal.Round(itemInvoice.Quantity * -1 * itemInvoice.InputUnitPrice.Value, 2);
+                            }
+                        }
+                        else
+                        {
+                            decimal inputPrice = 0;
+
+                            var itemsNorm1 = _dbContext.ItemsInNorm.Include(i => i.Item).Where(n => n.IdNorm == itemDB.IdNorm);
+
+                            if (itemsNorm1 != null && itemsNorm1.Any())
+                            {
+                                foreach (var itemNorm1 in itemsNorm1)
+                                {
+                                    var itemsNorm2 = _dbContext.ItemsInNorm.Include(i => i.Item).Where(n => itemNorm1.Item.IdNorm != null &&
+                                    n.IdNorm == itemNorm1.Item.IdNorm);
+
+                                    if (itemsNorm2 != null && itemsNorm2.Any())
+                                    {
+                                        foreach (var itemNorm2 in itemsNorm2)
+                                        {
+                                            var itemsNorm3 = _dbContext.ItemsInNorm.Include(i => i.Item).Where(n => itemNorm2.Item.IdNorm != null &&
+                                            n.IdNorm == itemNorm2.Item.IdNorm);
+
+                                            if (itemsNorm3 != null && itemsNorm3.Any())
+                                            {
+                                                foreach (var itemNorm3 in itemsNorm3)
+                                                {
+                                                    var normInInvoice = _dbContext.ItemInvoices.FirstOrDefault(ii => ii.ItemCode == itemNorm3.IdItem &&
+                                                    ii.InvoiceId == itemInvoice.InvoiceId);
+
+                                                    if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
+                                                    {
+                                                        inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                                            itemNorm3.Quantity *
+                                                            itemNorm2.Quantity *
+                                                            itemNorm1.Quantity *
+                                                            normInInvoice.InputUnitPrice.Value, 2);
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                var normInInvoice = _dbContext.ItemInvoices.FirstOrDefault(ii => ii.ItemCode == itemNorm2.IdItem &&
+                                                ii.InvoiceId == itemInvoice.InvoiceId);
+
+                                                if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
+                                                {
+                                                    inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                                        itemNorm2.Quantity *
+                                                        itemNorm1.Quantity * 
+                                                        normInInvoice.InputUnitPrice.Value, 2);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        var normInInvoice = _dbContext.ItemInvoices.FirstOrDefault(ii => ii.ItemCode == itemNorm1.IdItem &&
+                                        ii.InvoiceId == itemInvoice.InvoiceId);
+
+                                        if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
+                                        {
+                                            inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                                itemNorm1.Quantity *
+                                                normInInvoice.InputUnitPrice.Value, 2);
+                                        }
+                                    }
+                                }
+
+                                if (inputPrice > 0)
+                                {
+                                    reportPerItems.TotalInputPrice += !isRefund ? inputPrice : -1 * inputPrice;
+                                }
+                            }
+                            else
+                            {
+                                if (itemInvoice.InputUnitPrice.HasValue)
+                                {
+                                    reportPerItems.TotalInputPrice += !isRefund ? decimal.Round(itemInvoice.Quantity * itemInvoice.InputUnitPrice.Value, 2) : decimal.Round(itemInvoice.Quantity * -1 * itemInvoice.InputUnitPrice.Value, 2);
+                                }
+                            }
+                        }
                     }
                 }
                 else
@@ -555,6 +795,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                         Quantity = isRefund ? -1 * itemInvoice.Quantity : itemInvoice.Quantity,
                         //TotalAmount = isRefund ? -1 * itemInvoice.TotalAmout : itemInvoice.TotalAmout,
                         //MPC_Average = itemInvoice.Item.SellingUnitPrice,
+                        //TotalInputPrice = 0,
                         MPC_Original = itemInvoice.Item.OriginalUnitPrice,
                         IsSirovina = itemInvoice.IsSirovina,
                         Nivelacija = isRefund ? 0 : -1 * Decimal.Round((itemInvoice.Item.OriginalUnitPrice * itemInvoice.Quantity) - itemInvoice.TotalAmout, 2),
@@ -581,6 +822,93 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                     allItemsPDV[itemGroupDB.Name].Add(itemInvoice.Item.Id, new List<ReportPerItems>() { reportPerItems });
 
                     nivelacija += reportPerItems.Nivelacija;
+
+                    if (itemDB.IdNorm == null)
+                    {
+                        if (itemInvoice.InputUnitPrice.HasValue)
+                        {
+                            reportPerItems.TotalInputPrice += !isRefund ? decimal.Round(itemInvoice.Quantity * itemInvoice.InputUnitPrice.Value, 2) : decimal.Round(itemInvoice.Quantity * -1 * itemInvoice.InputUnitPrice.Value, 2);
+                        }
+                    }
+                    else
+                    {
+                        decimal inputPrice = 0;
+
+                        var itemsNorm1 = _dbContext.ItemsInNorm.Include(i => i.Item).Where(n => n.IdNorm == itemDB.IdNorm);
+
+                        if (itemsNorm1 != null && itemsNorm1.Any())
+                        {
+                            foreach (var itemNorm1 in itemsNorm1)
+                            {
+                                var itemsNorm2 = _dbContext.ItemsInNorm.Include(i => i.Item).Where(n => itemNorm1.Item.IdNorm != null &&
+                                n.IdNorm == itemNorm1.Item.IdNorm);
+
+                                if (itemsNorm2 != null && itemsNorm2.Any())
+                                {
+                                    foreach (var itemNorm2 in itemsNorm2)
+                                    {
+                                        var itemsNorm3 = _dbContext.ItemsInNorm.Include(i => i.Item).Where(n => itemNorm2.Item.IdNorm != null &&
+                                        n.IdNorm == itemNorm2.Item.IdNorm);
+
+                                        if (itemsNorm3 != null && itemsNorm3.Any())
+                                        {
+                                            foreach (var itemNorm3 in itemsNorm3)
+                                            {
+                                                var normInInvoice = _dbContext.ItemInvoices.FirstOrDefault(ii => ii.ItemCode == itemNorm3.IdItem &&
+                                                ii.InvoiceId == itemInvoice.InvoiceId);
+
+                                                if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
+                                                {
+                                                    inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                                        itemNorm3.Quantity *
+                                                        itemNorm2.Quantity *
+                                                        itemNorm1.Quantity *
+                                                        normInInvoice.InputUnitPrice.Value, 2);
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            var normInInvoice = _dbContext.ItemInvoices.FirstOrDefault(ii => ii.ItemCode == itemNorm2.IdItem &&
+                                            ii.InvoiceId == itemInvoice.InvoiceId);
+
+                                            if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
+                                            {
+                                                inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                                    itemNorm2.Quantity *
+                                                    itemNorm1.Quantity *
+                                                    normInInvoice.InputUnitPrice.Value, 2);
+                                            }
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    var normInInvoice = _dbContext.ItemInvoices.FirstOrDefault(ii => ii.ItemCode == itemNorm1.IdItem &&
+                                    ii.InvoiceId == itemInvoice.InvoiceId);
+
+                                    if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
+                                    {
+                                        inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                            itemNorm1.Quantity *
+                                            normInInvoice.InputUnitPrice.Value, 2);
+                                    }
+                                }
+                            }
+
+                            if (inputPrice > 0)
+                            {
+                                reportPerItems.TotalInputPrice += !isRefund ? inputPrice : -1 * inputPrice;
+                            }
+                        }
+                        else
+                        {
+                            if (itemInvoice.InputUnitPrice.HasValue)
+                            {
+                                reportPerItems.TotalInputPrice += !isRefund ? decimal.Round(itemInvoice.Quantity * itemInvoice.InputUnitPrice.Value, 2) : decimal.Round(itemInvoice.Quantity * -1 * itemInvoice.InputUnitPrice.Value, 2);
+                            }
+                        }
+                    }
                 }
             }
         }

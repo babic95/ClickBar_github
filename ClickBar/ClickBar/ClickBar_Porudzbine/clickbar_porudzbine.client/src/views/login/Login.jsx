@@ -120,11 +120,6 @@ const Login = () => {
 
                 </div>
 
-                {/*<div className="centerB">*/}
-                {/*    <p><Link to="/download">Preuzmite Cordova Aplikaciju</Link></p>*/}
-                {/*    <PrintComponent />*/}
-                {/*</div>*/}
-
                 <div className="formCenter">
                     <form className="formFields" onSubmit={handleSubmit}>
 

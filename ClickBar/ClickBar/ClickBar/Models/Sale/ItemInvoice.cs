@@ -18,6 +18,7 @@ namespace ClickBar.Models.Sale
         private bool _isSirovina;
         private ObservableCollection<Zelja> _zelje;
         private string? _globalZelja;
+        private string _invoiceId;
 
         public ItemInvoice(Item item, decimal quantity, decimal popust = 0)
         {
@@ -38,6 +39,7 @@ namespace ClickBar.Models.Sale
                 Quantity = itemInvoiceDB.Quantity.Value;
                 TotalAmout = itemInvoiceDB.TotalAmout.Value;
                 InputUnitPrice = itemInvoiceDB.InputUnitPrice;
+                InvoiceId = itemInvoiceDB.InvoiceId;
 
                 var stopaPDV = item.Label == "Ђ" || item.Label == "6" ? 20 :
                 item.Label == "Е" || item.Label == "7" ? 10 :
@@ -49,6 +51,15 @@ namespace ClickBar.Models.Sale
                 Item.Label = $"{stopaPDV}%"; 
 
                 IsSirovina = itemInvoiceDB.IsSirovina == null ? false : itemInvoiceDB.IsSirovina.Value == 1 ? true : false;
+            }
+        }
+        public string InvoiceId
+        {
+            get { return _invoiceId; }
+            set
+            {
+                _invoiceId = value;
+                OnPropertyChange(nameof(InvoiceId));
             }
         }
         public string? GlobalZelja

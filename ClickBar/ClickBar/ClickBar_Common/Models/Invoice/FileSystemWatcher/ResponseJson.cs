@@ -14,5 +14,7 @@ namespace ClickBar_Common.Models.Invoice.FileSystemWatcher
         public string InvoiceNumber { get; set; }
         public string TotalInvoiceNumber { get; set; }
         public IEnumerable<TaxItem> TaxItems { get; set; }
+        public string InvoiceText { get; set; }
+        public string InvoiceQRCode { get; set; }
     }
 }

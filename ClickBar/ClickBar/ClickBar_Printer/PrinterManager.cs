@@ -220,7 +220,8 @@ namespace ClickBar_Printer
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovina0PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovinaNoPDV)
         {
-            FormatA4.PrintDnevniPazar(sqliteDbContext, fromDateTime, toDateTime,
+            
+            FormatA4.PrintDnevniPazarA4(sqliteDbContext, fromDateTime, toDateTime,
                 allItems20PDV,
                 allItems10PDV,
                 allItems0PDV,
@@ -229,6 +230,15 @@ namespace ClickBar_Printer
                 allItemsSirovina10PDV,
                 allItemsSirovina0PDV,
                 allItemsSirovinaNoPDV);
+            //FormatA4.PrintDnevniPazar(sqliteDbContext, fromDateTime, toDateTime,
+            //    allItems20PDV,
+            //    allItems10PDV,
+            //    allItems0PDV,
+            //    allItemsNoPDV,
+            //    allItemsSirovina20PDV,
+            //    allItemsSirovina10PDV,
+            //    allItemsSirovina0PDV,
+            //    allItemsSirovinaNoPDV);
         }
         public void LagerListaNaDan(SqlServerDbContext sqliteDbContext, DateTime dateTime,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems20PDV,

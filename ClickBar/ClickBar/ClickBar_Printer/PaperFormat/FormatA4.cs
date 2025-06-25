@@ -44,6 +44,7 @@ namespace ClickBar_Printer.PaperFormat
 
         private static decimal _dnevniPazarTotalAmountProdaja;
         private static decimal _dnevniPazarNivelacijaProdaja;
+        private static decimal _dnevniPazarZaradaProdaja;
         private static decimal _dnevniPazarTotalAmountSirovine;
 
         private static string _nivelacijaFix;
@@ -308,7 +309,7 @@ namespace ClickBar_Printer.PaperFormat
             }
         }
         public static void PrintDnevniPazar(SqlServerDbContext sqliteDbContext,
-            DateTime fromDateTime, 
+            DateTime fromDateTime,
             DateTime? toDateTime,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems20PDV,
             Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems10PDV,
@@ -426,6 +427,141 @@ namespace ClickBar_Printer.PaperFormat
                     pdoc.PrintPage += new PrintPageEventHandler(printDnevniPazar);
                     pdoc.Print();
                     pdoc.PrintPage -= new PrintPageEventHandler(printDnevniPazar);
+                    _morePage = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                ClickBar_Logging.Log.Error("FormatA4 - PrintDnevniPazar - Greska prilokom stampe dnevnog pazara: ", ex);
+            }
+        }
+        public static void PrintDnevniPazarA4(SqlServerDbContext sqliteDbContext,
+            DateTime fromDateTime,
+            DateTime? toDateTime,
+            Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems20PDV,
+            Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems10PDV,
+            Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems0PDV,
+            Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsNoPDV,
+            Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovina20PDV,
+            Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovina10PDV,
+            Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovina0PDV,
+            Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsSirovinaNoPDV)
+        {
+            try
+            {
+                _enableSirovina = true;
+                var firma = sqliteDbContext.Firmas.FirstOrDefault();
+
+                _firma = string.Empty;
+                if (firma != null)
+                {
+                    _firma += " \r\n";
+                    _firma += string.IsNullOrEmpty(firma.Name) ? "" : $"{"Naziv firme:".PadRight(27)}{firma.Name}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Pib) ? "" : $"{"PIB:".PadRight(27)}{firma.Pib}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.MB) ? "" : $"{"MB:".PadRight(27)}{firma.MB}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.NamePP) ? "" : $"{"Naziv poslovnog prostora:".PadRight(27)}{firma.NamePP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.AddressPP) ? "" : $"{"Adresa poslovnog prostora:".PadRight(27)}{firma.AddressPP}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Number) ? "" : $"{"Broj telefona:".PadRight(27)}{firma.Number}\r\n";
+                    _firma += string.IsNullOrEmpty(firma.Email) ? "" : $"{"Email:".PadRight(27)}{firma.Email}\r\n";
+                    _firma += " \r\n";
+                    _firma += " \r\n";
+                }
+                _dnevniPazarCounter = 1;
+                _dnevniPazarTotalAmountProdaja = 0;
+                _dnevniPazarNivelacijaProdaja = 0;
+                _dnevniPazarTotalAmountSirovine = 0;
+
+                _start = $"Izveštaj po artiklima";
+
+                _dnevniPazarFix = "-------------------------------------------------------------------------------------------------------------------------------------------------\r\n";
+
+                if (toDateTime == null)
+                {
+                    _dnevniPazarFix += $"Izveštaj po artiklima za: {fromDateTime.ToString("dd.MM.yyyy")}\r\n".PadLeft(103);
+                }
+                else
+                {
+                    _dnevniPazarFix += $"Izveštaj po artiklima za period: {fromDateTime.ToString("dd.MM.yyyy")} - {toDateTime.Value.ToString("dd.MM.yyyy")}\r\n".PadLeft(100);
+                }
+
+                _dnevniPazarFix += "                          \r\n";
+                _dnevniPazarFix += "                          \r\n";
+                _dnevniPazarFix += "                          \r\n";
+                _dnevniPazarFix += "                          \r\n";
+                _dnevniPazarFix += "                          \r\n";
+                _dnevniPazarFix += "                          \r\n";
+                _dnevniPazarFix += $"Artikli - Prodaja:\r\n";
+
+                _dnevniPazarItemsFix = "Br.-"; //CenterString("Br.", 4, false) + "-";
+                _dnevniPazarItemsFix += $"{CenterString("Artikal", 40, false)}-".PadRight(55);
+                _dnevniPazarItemsFix += $"JM-".PadRight(9);
+                _dnevniPazarItemsFix += $"{CenterString("MPC", 8)}".PadRight(10);
+                _dnevniPazarItemsFix += $"{CenterString("artikla", 8, false)}-".PadLeft(15);
+
+                _dnevniPazarItemsFix += $"{CenterString("Količina", 13, false)}-".PadRight(16);
+
+                _dnevniPazarItemsFix += $"{CenterString("Prosečna", 10)}".PadRight(10);
+                _dnevniPazarItemsFix += $"{CenterString("MPC", 10, false)}-".PadLeft(13);
+
+                _dnevniPazarItemsFix += $"{CenterString("Iznos", 16)}".PadRight(21);
+                _dnevniPazarItemsFix += $"{CenterString("pazara", 10, false)}-".PadLeft(10);
+
+                _dnevniPazarItemsFix += $"{CenterString("Vrednost", 16)}".PadRight(16);
+                _dnevniPazarItemsFix += $"{CenterString("niv.", 16, false)}-";
+
+                _dnevniPazarItemsFix += $"{CenterString("Niv.", 8)}";
+                _dnevniPazarItemsFix += $"{CenterString("u %", 8, false)}-";
+
+                _dnevniPazarItemsFix += $"{CenterString("Prosečna", 10)}".PadLeft(14);
+                _dnevniPazarItemsFix += $"{CenterString("zarada", 10, false)}-".PadLeft(13);
+
+                _dnevniPazarItemsFix += $"{CenterString("Ukupna", 14)}".PadRight(14);
+                _dnevniPazarItemsFix += $"{CenterString("zarada", 10, false)}-".PadLeft(13);
+
+                _dnevniPazarItemsProdaja = GetDnevniPazarItemsA4(allItems20PDV,
+                allItems10PDV,
+                allItems0PDV,
+                allItemsNoPDV,
+                false);
+
+                _dnevniPazarItemsSirovine = GetDnevniPazarItemsA4(allItemsSirovina20PDV,
+                allItemsSirovina10PDV,
+                allItemsSirovina0PDV,
+                allItemsSirovinaNoPDV,
+                true);
+
+                _end = $"UKUPNO PRODAJA:" +
+                    $"{string.Format("{0:#,##0.00}", _dnevniPazarTotalAmountProdaja).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(86)}" +
+                    $"{string.Format("{0:#,##0.00}", _dnevniPazarNivelacijaProdaja).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(10)}" +
+                    $"{string.Format("{0:#,##0.00}", _dnevniPazarZaradaProdaja).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(35)}\r\n";
+
+                _end += $"UKUPNO SIROVINE:" +
+                    $"{string.Format("{0:#,##0.00}", _dnevniPazarTotalAmountSirovine).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(85)}\r\n";
+
+
+                string? prName = null;
+                foreach (string printer in PrinterSettings.InstalledPrinters)
+                {
+                    if (printer.ToLower().Contains("pdf"))
+                    {
+                        prName = printer;
+                        break;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(prName))
+                {
+                    var pdoc = new PrintDocument();
+                    pdoc.DefaultPageSettings.Landscape = true;
+                    pdoc.PrinterSettings.PrinterName = prName;
+                    _width = pdoc.PrinterSettings.DefaultPageSettings.PaperSize.Width;
+
+                    _morePage = null;
+                    //pdoc.PrinterSettings.PrintFileName = nivelacija.NameNivelacije.Replace('-', '_');
+                    //pdoc.PrinterSettings.PrintToFile = true;
+                    pdoc.PrintPage += new PrintPageEventHandler(printDnevniPazarA4);
+                    pdoc.Print();
+                    pdoc.PrintPage -= new PrintPageEventHandler(printDnevniPazarA4);
                     _morePage = null;
                 }
             }
@@ -1884,7 +2020,7 @@ namespace ClickBar_Printer.PaperFormat
                 string[] pazarItemsSirovine = _dnevniPazarItemsSirovine.Split("\r\n");
                 string[] end = _end.Split("\r\n");
                 string[]? pazarItemsFixSirovine = _dnevniPazarItemsFixSirovine == null ? null : _dnevniPazarItemsFixSirovine.Split("-");
-                
+
                 List<string> signature = new List<string>();
 
                 //float xL = 18.346456693F;
@@ -2076,7 +2212,513 @@ namespace ClickBar_Printer.PaperFormat
                             };
                             return;
                         }
-                        
+
+                    }
+                    else if (_morePage.Type == Models.Type.Sirovine && _enableSirovina)
+                    {
+                        y += graphics.MeasureString(newRow, drawFontRegularManji).Height;
+                        for (; ind < pazarItemsSirovine.Length - 1; ind++)
+                        {
+                            if (y < neededHeight)
+                            {
+                                if (pazarItemsSirovine[ind].Contains("Ukupno za PDV"))
+                                {
+                                    graphics.DrawString(pazarItemsSirovine[ind], drawFontRegularManjiBold, drawBrush, xL, y);
+                                    y += graphics.MeasureString(pazarItemsSirovine[ind], drawFontRegularManjiBold).Height;
+                                    y += graphics.MeasureString(pazarItemsSirovine[ind], drawFontRegularManjiBold).Height;
+                                    y += graphics.MeasureString(pazarItemsSirovine[ind], drawFontRegularManjiBold).Height;
+                                }
+                                else
+                                {
+                                    if (pazarItemsSirovine[ind].Contains("greska"))
+                                    {
+                                        var splits = pazarItemsSirovine[ind].Split("greska");
+
+                                        graphics.DrawString(splits[0], drawFontRegularManji, drawBrushGreska, xL, y);
+                                        y += graphics.MeasureString(splits[0], drawFontRegularManji).Height;
+                                    }
+                                    else
+                                    {
+                                        graphics.DrawString(pazarItemsSirovine[ind], drawFontRegularManji, drawBrush, xL, y);
+                                        y += graphics.MeasureString(pazarItemsSirovine[ind], drawFontRegularManji).Height;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                e.HasMorePages = true;
+                                _morePage = new MorePage()
+                                {
+                                    Type = Models.Type.Sirovine,
+                                    Index = ind
+                                };
+                                return;
+                            }
+                        }
+
+                        if (y < neededHeight)
+                        {
+                            graphics.DrawString(end[1], drawFontRegularBold2, drawBrush, xL, y);
+                            y += graphics.MeasureString(end[1], drawFontRegularBold2).Height;
+                        }
+                        else
+                        {
+                            e.HasMorePages = true;
+                            _morePage = new MorePage()
+                            {
+                                Type = Models.Type.End,
+                                Index = 1
+                            };
+                            return;
+                        }
+                    }
+                    else if (_morePage.Type == Models.Type.End)
+                    {
+                        if (y < neededHeight)
+                        {
+                            graphics.DrawString(end[ind], drawFontRegularBold2, drawBrush, xL, y);
+                            y += graphics.MeasureString(end[ind], drawFontRegularBold2).Height;
+                        }
+                        else
+                        {
+                            e.HasMorePages = true;
+                            _morePage = new MorePage()
+                            {
+                                Type = Models.Type.End,
+                                Index = ind
+                            };
+                            return;
+                        }
+
+                        if (ind == 0)
+                        {
+                            if (_enableSirovina)
+                            {
+                                string sirovine = $"Artikli - Sirovine:\r\n";
+                                y += graphics.MeasureString(newRow, drawFontRegular).Height;
+                                y += graphics.MeasureString(newRow, drawFontRegular).Height;
+                                graphics.DrawString(sirovine, drawFontRegular, drawBrush, xL, y);
+                                y += graphics.MeasureString(sirovine, drawFontRegular).Height;
+                                y += graphics.MeasureString(newRow, drawFontRegular).Height;
+
+                                for (int i = 0; i < pazarItemsSirovine.Length - 1; i++)
+                                {
+                                    if (y < neededHeight)
+                                    {
+                                        if (pazarItemsSirovine[i].Contains("Ukupno za PDV"))
+                                        {
+                                            graphics.DrawString(pazarItemsSirovine[i], drawFontRegularManjiBold, drawBrush, xL, y);
+                                            y += graphics.MeasureString(pazarItemsSirovine[i], drawFontRegularManjiBold).Height;
+                                            y += graphics.MeasureString(pazarItemsSirovine[i], drawFontRegularManjiBold).Height;
+                                            y += graphics.MeasureString(pazarItemsSirovine[i], drawFontRegularManjiBold).Height;
+                                        }
+                                        else
+                                        {
+                                            if (pazarItemsSirovine[i].Contains("greska"))
+                                            {
+                                                var splits = pazarItemsSirovine[i].Split("greska");
+
+                                                graphics.DrawString(splits[0], drawFontRegularManji, drawBrushGreska, xL, y);
+                                                y += graphics.MeasureString(splits[0], drawFontRegularManji).Height;
+                                            }
+                                            else
+                                            {
+                                                graphics.DrawString(pazarItemsSirovine[i], drawFontRegularManji, drawBrush, xL, y);
+                                                y += graphics.MeasureString(pazarItemsSirovine[i], drawFontRegularManji).Height;
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        e.HasMorePages = true;
+                                        _morePage = new MorePage()
+                                        {
+                                            Type = Models.Type.Sirovine,
+                                            Index = i
+                                        };
+                                        return;
+                                    }
+                                }
+                            }
+
+                            if (y < neededHeight)
+                            {
+                                graphics.DrawString(end[1], drawFontRegularBold2, drawBrush, xL, y);
+                                y += graphics.MeasureString(end[1], drawFontRegularBold2).Height;
+                            }
+                            else
+                            {
+                                e.HasMorePages = true;
+                                _morePage = new MorePage()
+                                {
+                                    Type = Models.Type.End,
+                                    Index = 1
+                                };
+                                return;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    y += graphics.MeasureString(newRow, drawFontRegularManji).Height;
+                    for (int i = 0; i < pazarItemsProdaja.Length - 1; i++)
+                    {
+                        if (y < neededHeight)
+                        {
+                            if (pazarItemsProdaja[i].Contains("Ukupno za PDV"))
+                            {
+                                graphics.DrawString(pazarItemsProdaja[i], drawFontRegularManjiBold, drawBrush, xL, y);
+                                y += graphics.MeasureString(pazarItemsProdaja[i], drawFontRegularManjiBold).Height;
+                                y += graphics.MeasureString(pazarItemsProdaja[i], drawFontRegularManjiBold).Height;
+                                y += graphics.MeasureString(pazarItemsProdaja[i], drawFontRegularManjiBold).Height;
+                            }
+                            else
+                            {
+                                graphics.DrawString(pazarItemsProdaja[i], drawFontRegularManji, drawBrush, xL, y);
+                                y += graphics.MeasureString(pazarItemsProdaja[i], drawFontRegularManji).Height;
+                            }
+                        }
+                        else
+                        {
+                            e.HasMorePages = true;
+                            _morePage = new MorePage()
+                            {
+                                Type = Models.Type.Items,
+                                Index = i
+                            };
+                            return;
+                        }
+                    }
+                    if (y < neededHeight)
+                    {
+                        graphics.DrawString(end[0], drawFontRegularBold2, drawBrush, xL, y);
+                        y += graphics.MeasureString(end[0], drawFontRegularBold2).Height;
+                    }
+                    else
+                    {
+                        e.HasMorePages = true;
+                        _morePage = new MorePage()
+                        {
+                            Type = Models.Type.End,
+                            Index = 0
+                        };
+                        return;
+                    }
+
+                    if (_enableSirovina)
+                    {
+                        string sirovine = $"Artikli - Sirovine:\r\n";
+                        y += graphics.MeasureString(newRow, drawFontRegular).Height;
+                        y += graphics.MeasureString(newRow, drawFontRegular).Height;
+                        graphics.DrawString(sirovine, drawFontRegular, drawBrush, xL, y);
+                        y += graphics.MeasureString(sirovine, drawFontRegular).Height;
+                        y += graphics.MeasureString(newRow, drawFontRegular).Height;
+
+                        for (int i = 0; i < pazarItemsSirovine.Length - 1; i++)
+                        {
+                            if (y < neededHeight)
+                            {
+                                if (pazarItemsSirovine[i].Contains("Ukupno za PDV"))
+                                {
+                                    graphics.DrawString(pazarItemsSirovine[i], drawFontRegularManjiBold, drawBrush, xL, y);
+                                    y += graphics.MeasureString(pazarItemsSirovine[i], drawFontRegularManjiBold).Height;
+                                    y += graphics.MeasureString(pazarItemsSirovine[i], drawFontRegularManjiBold).Height;
+                                    y += graphics.MeasureString(pazarItemsSirovine[i], drawFontRegularManjiBold).Height;
+                                }
+                                else
+                                {
+                                    if (pazarItemsSirovine[i].Contains("greska"))
+                                    {
+                                        var splits = pazarItemsSirovine[i].Split("greska");
+
+                                        graphics.DrawString(splits[0], drawFontRegularManji, drawBrushGreska, xL, y);
+                                        y += graphics.MeasureString(splits[0], drawFontRegularManji).Height;
+                                    }
+                                    else
+                                    {
+                                        graphics.DrawString(pazarItemsSirovine[i], drawFontRegularManji, drawBrush, xL, y);
+                                        y += graphics.MeasureString(pazarItemsSirovine[i], drawFontRegularManji).Height;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                e.HasMorePages = true;
+                                _morePage = new MorePage()
+                                {
+                                    Type = Models.Type.Sirovine,
+                                    Index = i
+                                };
+                                return;
+                            }
+                        }
+                    }
+
+                    if (y < neededHeight)
+                    {
+                        graphics.DrawString(end[1], drawFontRegularBold2, drawBrush, xL, y);
+                        y += graphics.MeasureString(end[1], drawFontRegularBold2).Height;
+                    }
+                    else
+                    {
+                        e.HasMorePages = true;
+                        _morePage = new MorePage()
+                        {
+                            Type = Models.Type.End,
+                            Index = 1
+                        };
+                        return;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+        private static void printDnevniPazarA4(object sender, PrintPageEventArgs e)
+        {
+            try
+            {
+                const float neededHeight = 547.0582677614F;
+                string newRow = "                                                                                                    \r\n";
+                string line = "-------------------------------------------------------------------------------------------------------------------------------------------------\r\n";
+                Graphics graphics = e.Graphics;
+                graphics.PageUnit = GraphicsUnit.Point;
+                Font drawFontRegularManji = new Font("Cascadia Code",
+                    _fontSizeInMM * 0.853f,
+                    FontStyle.Regular, GraphicsUnit.Millimeter);
+                Font drawFontRegularManjiBold = new Font("Cascadia Code",
+                    _fontSizeInMM * 0.853f,
+                    FontStyle.Bold, GraphicsUnit.Millimeter);
+                Font drawFontRegular = new Font("Cascadia Code",
+                    _fontSizeInMM,
+                    FontStyle.Regular, GraphicsUnit.Millimeter);
+                Font drawFontRegularBold = new Font("Cascadia Code",
+                    _fontSizeInMM * 1.1f,
+                    FontStyle.Bold, GraphicsUnit.Millimeter);
+                Font drawFontRegularBold2 = new Font("Cascadia Code",
+                    _fontSizeInMM * 0.995f,
+                    FontStyle.Bold, GraphicsUnit.Millimeter);
+
+                Font drawFontBiger1 = new Font("Cascadia Code",
+                    _fontSizeInMM * 3,
+                    FontStyle.Bold, GraphicsUnit.Millimeter);
+                Font drawFontBiger2 = new Font("Cascadia Code",
+                    _fontSizeInMM * 2,
+                    FontStyle.Regular, GraphicsUnit.Millimeter);
+                Font drawFontBiger3 = new Font("Cascadia Code",
+                    _fontSizeInMM * 1.5f,
+                    FontStyle.Regular, GraphicsUnit.Millimeter);
+                Font drawFontBiger4 = new Font("Cascadia Code",
+                    _fontSizeInMM * 1.2f,
+                    FontStyle.Regular, GraphicsUnit.Millimeter);
+
+                SolidBrush drawBrush = new SolidBrush(System.Drawing.Color.Black);
+                SolidBrush drawBrushGreska = new SolidBrush(System.Drawing.Color.Red);
+                SolidBrush drawBrushWhite = new SolidBrush(System.Drawing.Color.White);
+                SolidBrush drawBrushGray = new SolidBrush(System.Drawing.Color.Gray);
+                string[] fix = _dnevniPazarFix.Split("\r\n");
+                string[] firma = _firma.Split("\r\n");
+                string[] pazarItemsFix = _dnevniPazarItemsFix.Split("-");
+                string[] pazarItemsProdaja = _dnevniPazarItemsProdaja.Split("\r\n");
+                string[] pazarItemsSirovine = _dnevniPazarItemsSirovine.Split("\r\n");
+                string[] end = _end.Split("\r\n");
+                string[]? pazarItemsFixSirovine = _dnevniPazarItemsFixSirovine == null ? null : _dnevniPazarItemsFixSirovine.Split("-");
+
+                List<string> signature = new List<string>();
+
+                //float xL = 18.346456693F;
+                float xL = 30F;
+                float xR = 0;
+                float yL = 28.346456693F;
+                float yR = 28.346456693F;
+                float width = 0; // max width I found through trial and error
+                float height = 0F;
+
+                width = graphics.MeasureString(line, drawFontRegular).Width;
+                height = graphics.MeasureString(line, drawFontRegular).Height;
+
+                xR = width / 2 + xL + xL - 4;
+
+                if (_morePage is null)
+                {
+                    graphics.DrawString(_start, drawFontBiger2, drawBrush, xL, yL);
+                    yL += graphics.MeasureString(_start, drawFontBiger2).Height;
+
+                    foreach (var row in firma)
+                    {
+                        graphics.DrawString(row, drawFontRegularManji, drawBrush, xL, yL);
+                        yL += graphics.MeasureString(row, drawFontRegularManji).Height;
+                    }
+                    yL += graphics.MeasureString(newRow, drawFontRegular).Height;
+
+                    foreach (var row in fix)
+                    {
+                        graphics.DrawString(row, drawFontRegular, drawBrush, xL, yL);
+                        yL += graphics.MeasureString(row, drawFontRegular).Height;
+                    }
+                    yL += graphics.MeasureString(newRow, drawFontRegular).Height;
+
+                    float x = xL;
+                    foreach (var row in pazarItemsFix)
+                    {
+                        if (row.ToLower().Contains("br"))
+                        {
+                            var currentY = graphics.MeasureString(row, drawFontRegularBold).Height;
+                            var rect = new RectangleF(xL, yL - currentY, width,
+                                graphics.MeasureString(row, drawFontRegularBold).Height + 2 * currentY);
+                            graphics.FillRectangle(drawBrushGray, rect);
+                        }
+
+                        graphics.DrawString(row, drawFontRegularBold, drawBrush, x, yL);
+                        x += graphics.MeasureString(row, drawFontRegularBold).Width;
+                    }
+                    yL += 2 * graphics.MeasureString(newRow, drawFontRegularBold).Height;
+                }
+
+                float y = yR > yL ? yR : yL;
+
+                int ind = 0;
+
+                if (_morePage is not null)
+                {
+                    ind = _morePage.Index;
+
+                    if (_morePage.Type == Models.Type.Items)
+                    {
+                        y += graphics.MeasureString(newRow, drawFontRegularManji).Height;
+                        for (; ind < pazarItemsProdaja.Length - 1; ind++)
+                        {
+                            if (y < neededHeight)
+                            {
+                                if (pazarItemsProdaja[ind].Contains("Ukupno za PDV"))
+                                {
+                                    graphics.DrawString(pazarItemsProdaja[ind], drawFontRegularManjiBold, drawBrush, xL, y);
+                                    y += graphics.MeasureString(pazarItemsProdaja[ind], drawFontRegularManjiBold).Height;
+                                    y += graphics.MeasureString(pazarItemsProdaja[ind], drawFontRegularManjiBold).Height;
+                                    y += graphics.MeasureString(pazarItemsProdaja[ind], drawFontRegularManjiBold).Height;
+                                }
+                                else
+                                {
+                                    graphics.DrawString(pazarItemsProdaja[ind], drawFontRegularManji, drawBrush, xL, y);
+                                    y += graphics.MeasureString(pazarItemsProdaja[ind], drawFontRegularManji).Height;
+                                }
+                            }
+                            else
+                            {
+                                e.HasMorePages = true;
+                                _morePage = new MorePage()
+                                {
+                                    Type = Models.Type.Items,
+                                    Index = ind
+                                };
+                                return;
+                            }
+                        }
+
+                        if (y < neededHeight)
+                        {
+                            graphics.DrawString(end[0], drawFontRegularBold2, drawBrush, xL, y);
+                            y += graphics.MeasureString(end[0], drawFontRegularBold2).Height;
+                        }
+                        else
+                        {
+                            e.HasMorePages = true;
+                            _morePage = new MorePage()
+                            {
+                                Type = Models.Type.End,
+                                Index = 0
+                            };
+                            return;
+                        }
+
+                        if (_enableSirovina)
+                        {
+                            string sirovine = $"Artikli - Sirovine:\r\n";
+                            y += graphics.MeasureString(newRow, drawFontRegular).Height;
+                            y += graphics.MeasureString(newRow, drawFontRegular).Height;
+                            graphics.DrawString(sirovine, drawFontRegular, drawBrush, xL, y);
+                            y += graphics.MeasureString(sirovine, drawFontRegular).Height;
+                            y += graphics.MeasureString(newRow, drawFontRegular).Height;
+
+                            if (pazarItemsFixSirovine != null &&
+                                pazarItemsFixSirovine.Any())
+                            {
+                                float x = xL;
+                                foreach (var row in pazarItemsFixSirovine)
+                                {
+                                    if (row.ToLower().Contains("br"))
+                                    {
+                                        var currentY = graphics.MeasureString(row, drawFontRegularBold).Height;
+                                        var rect = new RectangleF(xL, y - currentY, width,
+                                            graphics.MeasureString(row, drawFontRegularBold).Height + 2 * currentY);
+                                        graphics.FillRectangle(drawBrushGray, rect);
+                                    }
+
+                                    graphics.DrawString(row, drawFontRegularBold, drawBrush, x, y);
+                                    x += graphics.MeasureString(row, drawFontRegularBold).Width;
+                                }
+                                y += 2 * graphics.MeasureString(newRow, drawFontRegularBold).Height;
+                            }
+
+                            for (int i = 0; i < pazarItemsSirovine.Length - 1; i++)
+                            {
+                                if (y < neededHeight)
+                                {
+                                    if (pazarItemsSirovine[i].Contains("Ukupno za PDV"))
+                                    {
+                                        graphics.DrawString(pazarItemsSirovine[i], drawFontRegularManjiBold, drawBrush, xL, y);
+                                        y += graphics.MeasureString(pazarItemsSirovine[i], drawFontRegularManjiBold).Height;
+                                        y += graphics.MeasureString(pazarItemsSirovine[i], drawFontRegularManjiBold).Height;
+                                        y += graphics.MeasureString(pazarItemsSirovine[i], drawFontRegularManjiBold).Height;
+                                    }
+                                    else
+                                    {
+                                        if (pazarItemsSirovine[i].Contains("greska"))
+                                        {
+                                            var splits = pazarItemsSirovine[i].Split("greska");
+
+                                            graphics.DrawString(splits[0], drawFontRegularManji, drawBrushGreska, xL, y);
+                                            y += graphics.MeasureString(splits[0], drawFontRegularManji).Height;
+                                        }
+                                        else
+                                        {
+                                            graphics.DrawString(pazarItemsSirovine[i], drawFontRegularManji, drawBrush, xL, y);
+                                            y += graphics.MeasureString(pazarItemsSirovine[i], drawFontRegularManji).Height;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    e.HasMorePages = true;
+                                    _morePage = new MorePage()
+                                    {
+                                        Type = Models.Type.Sirovine,
+                                        Index = i
+                                    };
+                                    return;
+                                }
+                            }
+                        }
+
+                        if (y < neededHeight)
+                        {
+                            graphics.DrawString(end[1], drawFontRegularBold2, drawBrush, xL, y);
+                            y += graphics.MeasureString(end[1], drawFontRegularBold2).Height;
+                        }
+                        else
+                        {
+                            e.HasMorePages = true;
+                            _morePage = new MorePage()
+                            {
+                                Type = Models.Type.End,
+                                Index = 1
+                            };
+                            return;
+                        }
+
                     }
                     else if (_morePage.Type == Models.Type.Sirovine && _enableSirovina)
                     {
@@ -2780,6 +3422,109 @@ namespace ClickBar_Printer.PaperFormat
 
             return result;
         }
+        private static string GetItemDnevniPazarA4(Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsPDV,
+            string PDV,
+            bool isSirovine)
+        {
+            string result = string.Empty;
+
+
+            decimal totalNivelacija = 0;
+            decimal totalAmountDecimal = 0;
+            decimal totalZaradaDecimal = 0;
+            foreach (var item in allItemsPDV)
+            {
+                result += $"{item.Key}\r\n";
+                var items = item.Value.OrderBy(item => item.Key).ToDictionary(x => x.Key, x => x.Value);
+
+                foreach (var i in items)
+                {
+                    i.Value.ForEach(item =>
+                    {
+
+                        if (isSirovine == item.IsSirovina)
+                        {
+                            string name = $"{item.ItemId} - {item.Name}";
+
+                            name = SplitInParts(name, "", 42, 1);
+
+                            string[] splitName = name.Split("\r\n");
+
+                            if (splitName.Length > 1)
+                            {
+                                name = string.Empty;
+                                int length = splitName.Length;
+                                if (splitName[splitName.Length - 1].Length == 0)
+                                {
+                                    length = splitName.Length - 1;
+                                }
+                                for (int j = 0; j < length; j++)
+                                {
+                                    if (j == length - 1)
+                                    {
+                                        name += $"        {splitName[j]}";
+                                    }
+                                    else
+                                    {
+                                        name += $"{splitName[j]}\r\n";
+                                    }
+                                }
+                            }
+
+                            decimal niv = item.MPC_Average > 0 ? Decimal.Round((item.MPC_Average * 100 / item.MPC_Original) - 100, 2) : 0;
+
+                            string counter = CenterString(_dnevniPazarCounter++.ToString(), 4, false).PadRight(8);
+                            string jm = item.JM.PadLeft(6);
+                            string quantity = string.Format("{0:#,##0.000}", item.Quantity).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(13);
+                            string MPC = string.Format("{0:#,##0.00}", item.MPC_Original).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(16);
+                            string MPC_Average = string.Format("{0:#,##0.00}", item.MPC_Average).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(15);
+                            string totalAmount = string.Format("{0:#,##0.00}", item.TotalAmount).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(16);
+                            string nivelacija = string.Format("{0:#,##0.00}", item.Nivelacija).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(13);
+                            string marza = (string.Format("{0:#,##0.00}", niv).Replace(',', '#').Replace('.', ',').Replace('#', '.') + "%").PadLeft(11);
+                            decimal prosecnaZaradaBroj = item.Quantity == 0 ? 0 : decimal.Round((item.TotalAmount - item.TotalInputPrice) / item.Quantity, 2);
+                            string prosecnaZarada = string.Format("{0:#,##0.00}", prosecnaZaradaBroj).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(14);
+                            string ukupnaZarada = string.Format("{0:#,##0.00}", item.TotalAmount - item.TotalInputPrice).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(16);
+
+                            if (item.TotalAmount == 0)
+                            {
+                                result += $"{counter}{name}{jm}{MPC}{quantity}" +
+                                    $"{MPC_Average}{totalAmount}{nivelacija}{marza}{prosecnaZarada}{ukupnaZarada}greska\r\n";
+                            }
+                            else
+                            {
+                                result += $"{counter}{name}{jm}{MPC}{quantity}" +
+                                    $"{MPC_Average}{totalAmount}{nivelacija}{marza}{prosecnaZarada}{ukupnaZarada}\r\n";
+                            }
+
+                            result += "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------\r\n";
+
+                            totalAmountDecimal += item.TotalAmount;
+                            totalZaradaDecimal += item.TotalAmount - item.TotalInputPrice;
+                            if (!item.IsSirovina)
+                            {
+                                totalNivelacija += item.Nivelacija;
+
+                                _dnevniPazarTotalAmountProdaja += item.TotalAmount;
+                                _dnevniPazarNivelacijaProdaja += item.Nivelacija;
+                                _dnevniPazarZaradaProdaja += item.TotalAmount - item.TotalInputPrice;
+                            }
+                            else
+                            {
+                                _dnevniPazarTotalAmountSirovine += item.TotalAmount;
+                            }
+                        }
+                    });
+                }
+            }
+            string totalNivelacijaString = string.Format("{0:#,##0.00}", totalNivelacija).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(12);
+            string totalAmountString = string.Format("{0:#,##0.00}", totalAmountDecimal).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(87);
+            string totalZaradaString = string.Format("{0:#,##0.00}", totalZaradaDecimal).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(41);
+            string pdv = PDV.Contains("Nije") ? PDV : PDV + "%";
+            pdv = pdv.PadRight(10);
+            result += $"    Ukupno za PDV: {pdv} {totalAmountString}{totalNivelacijaString}{totalZaradaString}\r\n\r\n";
+
+            return result;
+        }
         private static string GetItemA4InventoryStatus(List<InvertoryGlobal> inventoryStatus)
         {
             string result = string.Empty;
@@ -2990,6 +3735,34 @@ namespace ClickBar_Printer.PaperFormat
             if (allItemsNoPDV.Any())
             {
                 result += GetItemDnevniPazar(allItemsNoPDV, "Nije u PDV", isSirovine);
+            }
+
+            return result;
+        }
+        private static string GetDnevniPazarItemsA4(
+            Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems20PDV,
+            Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems10PDV,
+            Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItems0PDV,
+            Dictionary<string, Dictionary<string, List<ReportPerItems>>> allItemsNoPDV,
+            bool isSirovine)
+        {
+            string result = string.Empty;
+
+            if (allItems20PDV.Any())
+            {
+                result += GetItemDnevniPazarA4(allItems20PDV, "20", isSirovine);
+            }
+            if (allItems10PDV.Any())
+            {
+                result += GetItemDnevniPazarA4(allItems10PDV, "10", isSirovine);
+            }
+            if (allItems0PDV.Any())
+            {
+                result += GetItemDnevniPazarA4(allItems0PDV, "0", isSirovine);
+            }
+            if (allItemsNoPDV.Any())
+            {
+                result += GetItemDnevniPazarA4(allItemsNoPDV, "Nije u PDV", isSirovine);
             }
 
             return result;

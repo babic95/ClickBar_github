@@ -1,22 +1,3 @@
-//import { StrictMode } from 'react';
-//import { createRoot } from 'react-dom/client';
-//import { BrowserRouter } from 'react-router-dom';
-//import App from './App.jsx';
-//import { registerSW } from 'virtual:pwa-register';
-
-//registerSW();
-
-//document.addEventListener('deviceready', () => {
-//    console.log('Cordova is ready');
-//}, false);
-
-//createRoot(document.getElementById('root')).render(
-//    <StrictMode>
-//        <BrowserRouter>
-//            <App />
-//        </BrowserRouter>
-//    </StrictMode>
-//);
 import React from 'react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
