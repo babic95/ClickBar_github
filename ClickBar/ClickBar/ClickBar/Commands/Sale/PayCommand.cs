@@ -1046,7 +1046,7 @@ namespace ClickBar.Commands.Sale
                     {
                         try
                         {
-                            PrinterManager.Instance.PrintJournal(invoiceRequset);
+                            PrinterManager.Instance.PrintJournal(invoiceRequset); //stampa crnog
                         }
                         catch (Exception ex)
                         {

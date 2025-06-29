@@ -267,10 +267,10 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
             bool is1010,
             ItemGroupDB itemGroupDB)
         {
-            if (!allItemsPDV.ContainsKey(itemGroupDB.Name))
-            {
-                allItemsPDV.Add(itemGroupDB.Name, new Dictionary<string, List<ReportPerItems>>());
-            }
+                if (!allItemsPDV.ContainsKey(itemGroupDB.Name))
+                {
+                    allItemsPDV.Add(itemGroupDB.Name, new Dictionary<string, List<ReportPerItems>>());
+                }
 
             if (itemInvoice.IsSirovina)
             {
@@ -289,7 +289,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                                 is1010)
                             {
                                 it.TotalAmount += itemInvoice.InputUnitPrice.Value * itemInvoice.Quantity;
-                                it.MPC_Average = Decimal.Round(it.TotalAmount / it.Quantity, 2);
+                                it.MPC_Average = it.TotalAmount == 0 || it.Quantity == 0 ? 0 : Decimal.Round(it.TotalAmount / it.Quantity, 2);
                             }
                             else
                             {
@@ -307,7 +307,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                                 is1010)
                             {
                                 it.TotalAmount -= itemInvoice.InputUnitPrice.Value * itemInvoice.Quantity;
-                                it.MPC_Average = Decimal.Round(it.TotalAmount / it.Quantity, 2);
+                                it.MPC_Average = it.TotalAmount == 0 || it.Quantity == 0 ? 0 : Decimal.Round(it.TotalAmount / it.Quantity, 2);
                             }
                             else
                             {
@@ -440,7 +440,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                                 reportPerItems.TotalInputPrice += !isRefund ? decimal.Round(itemInvoice.Quantity * itemInvoice.InputUnitPrice.Value, 2) : decimal.Round(itemInvoice.Quantity * -1 * itemInvoice.InputUnitPrice.Value, 2);
                             }
                         }
-                        else 
+                        else
                         {
                             decimal inputPrice = 0;
 
@@ -448,21 +448,21 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
 
                             if (itemsNorm1 != null && itemsNorm1.Any())
                             {
-                                foreach(var itemNorm1 in itemsNorm1)
+                                foreach (var itemNorm1 in itemsNorm1)
                                 {
                                     var itemsNorm2 = _dbContext.ItemsInNorm.Include(i => i.Item).Where(n => itemNorm1.Item.IdNorm != null &&
                                     n.IdNorm == itemNorm1.Item.IdNorm);
 
-                                    if(itemsNorm2 != null && itemsNorm2.Any())
+                                    if (itemsNorm2 != null && itemsNorm2.Any())
                                     {
-                                        foreach(var itemNorm2 in itemsNorm2)
+                                        foreach (var itemNorm2 in itemsNorm2)
                                         {
                                             var itemsNorm3 = _dbContext.ItemsInNorm.Include(i => i.Item).Where(n => itemNorm2.Item.IdNorm != null &&
                                             n.IdNorm == itemNorm2.Item.IdNorm);
 
-                                            if(itemsNorm3 != null && itemsNorm3.Any())
+                                            if (itemsNorm3 != null && itemsNorm3.Any())
                                             {
-                                                foreach(var itemNorm3 in itemsNorm3)
+                                                foreach (var itemNorm3 in itemsNorm3)
                                                 {
                                                     var normInInvoice = _dbContext.ItemInvoices.FirstOrDefault(ii => ii.ItemCode == itemNorm3.IdItem &&
                                                     ii.InvoiceId == itemInvoice.InvoiceId);
@@ -470,7 +470,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                                                     if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
                                                     {
                                                         inputPrice += decimal.Round(itemInvoice.Quantity *
-                                                            itemNorm3.Quantity * 
+                                                            itemNorm3.Quantity *
                                                             itemNorm2.Quantity *
                                                             itemNorm1.Quantity *
                                                             normInInvoice.InputUnitPrice.Value, 2);
@@ -484,7 +484,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
 
                                                 if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
                                                 {
-                                                    inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                                    inputPrice += decimal.Round(itemInvoice.Quantity *
                                                         itemNorm2.Quantity *
                                                         itemNorm1.Quantity *
                                                         normInInvoice.InputUnitPrice.Value, 2);
@@ -499,7 +499,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
 
                                         if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
                                         {
-                                            inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                            inputPrice += decimal.Round(itemInvoice.Quantity *
                                                 itemNorm1.Quantity *
                                                 normInInvoice.InputUnitPrice.Value, 2);
                                         }
@@ -541,7 +541,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                                 is1010)
                             {
                                 it.TotalAmount += itemInvoice.InputUnitPrice.Value * itemInvoice.Quantity;
-                                it.MPC_Average = Decimal.Round(it.TotalAmount / it.Quantity, 2);
+                                it.MPC_Average = it.TotalAmount == 0 || it.Quantity == 0 ? 0 : Decimal.Round(it.TotalAmount / it.Quantity, 2);
                             }
                             else
                             {
@@ -565,7 +565,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                                 is1010)
                             {
                                 it.TotalAmount -= itemInvoice.InputUnitPrice.Value * itemInvoice.Quantity;
-                                it.MPC_Average = Decimal.Round(it.TotalAmount / it.Quantity, 2);
+                                it.MPC_Average = it.TotalAmount == 0 || it.Quantity == 0 ? 0 : Decimal.Round(it.TotalAmount / it.Quantity, 2);
                             }
                             else
                             {
@@ -609,7 +609,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
 
                                                     if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
                                                     {
-                                                        inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                                        inputPrice += decimal.Round(itemInvoice.Quantity *
                                                             itemNorm3.Quantity *
                                                             itemNorm2.Quantity *
                                                             itemNorm1.Quantity *
@@ -624,8 +624,8 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
 
                                                 if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
                                                 {
-                                                    inputPrice += decimal.Round(itemInvoice.Quantity * 
-                                                        itemNorm2.Quantity * 
+                                                    inputPrice += decimal.Round(itemInvoice.Quantity *
+                                                        itemNorm2.Quantity *
                                                         itemNorm1.Quantity *
                                                         normInInvoice.InputUnitPrice.Value, 2);
                                                 }
@@ -639,8 +639,8 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
 
                                         if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
                                         {
-                                            inputPrice += decimal.Round(itemInvoice.Quantity * 
-                                                itemNorm1.Quantity * 
+                                            inputPrice += decimal.Round(itemInvoice.Quantity *
+                                                itemNorm1.Quantity *
                                                 normInInvoice.InputUnitPrice.Value, 2);
                                         }
                                     }
@@ -673,7 +673,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
                             //TotalInputPrice = 0,
                             MPC_Original = itemInvoice.Item.OriginalUnitPrice,
                             IsSirovina = itemInvoice.IsSirovina,
-                            Nivelacija = isRefund ? 0 : - 1 * Decimal.Round((itemInvoice.Item.OriginalUnitPrice * itemInvoice.Quantity) - itemInvoice.TotalAmout, 2),
+                            Nivelacija = isRefund ? 0 : -1 * Decimal.Round((itemInvoice.Item.OriginalUnitPrice * itemInvoice.Quantity) - itemInvoice.TotalAmout, 2),
                         };
 
                         if (itemInvoice.InputUnitPrice != null &&
@@ -733,7 +733,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
 
                                                     if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
                                                     {
-                                                        inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                                        inputPrice += decimal.Round(itemInvoice.Quantity *
                                                             itemNorm3.Quantity *
                                                             itemNorm2.Quantity *
                                                             itemNorm1.Quantity *
@@ -748,9 +748,9 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
 
                                                 if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
                                                 {
-                                                    inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                                    inputPrice += decimal.Round(itemInvoice.Quantity *
                                                         itemNorm2.Quantity *
-                                                        itemNorm1.Quantity * 
+                                                        itemNorm1.Quantity *
                                                         normInInvoice.InputUnitPrice.Value, 2);
                                                 }
                                             }
@@ -763,7 +763,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
 
                                         if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
                                         {
-                                            inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                            inputPrice += decimal.Round(itemInvoice.Quantity *
                                                 itemNorm1.Quantity *
                                                 normInInvoice.InputUnitPrice.Value, 2);
                                         }
@@ -859,7 +859,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
 
                                                 if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
                                                 {
-                                                    inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                                    inputPrice += decimal.Round(itemInvoice.Quantity *
                                                         itemNorm3.Quantity *
                                                         itemNorm2.Quantity *
                                                         itemNorm1.Quantity *
@@ -874,7 +874,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
 
                                             if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
                                             {
-                                                inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                                inputPrice += decimal.Round(itemInvoice.Quantity *
                                                     itemNorm2.Quantity *
                                                     itemNorm1.Quantity *
                                                     normInInvoice.InputUnitPrice.Value, 2);
@@ -889,7 +889,7 @@ namespace ClickBar.Commands.AppMain.Statistic.Knjizenje
 
                                     if (normInInvoice != null && normInInvoice.InputUnitPrice.HasValue)
                                     {
-                                        inputPrice += decimal.Round(itemInvoice.Quantity * 
+                                        inputPrice += decimal.Round(itemInvoice.Quantity *
                                             itemNorm1.Quantity *
                                             normInInvoice.InputUnitPrice.Value, 2);
                                     }

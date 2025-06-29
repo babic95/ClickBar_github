@@ -331,18 +331,18 @@ namespace ClickBar_Printer.PaperFormat
             _totalAmount = 0;
             try
             {
-                _journal = string.Format("Касир:{0}\r\n", invoiceRequest.Cashier.PadLeft(36 - "Касир:".Length));
-                _journal += string.Format("Време:{0}\r\n", DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss").PadLeft(36 - "Време:".Length));
+                _journal = string.Format("Касир:{0}\r\n", invoiceRequest.Cashier.PadLeft(30 - "Касир:".Length));
+                _journal += string.Format("Време:{0}\r\n", DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss").PadLeft(30 - "Време:".Length));
                 _journal += GetItemsForJournal(invoiceRequest);
 
-                _journal += "------------------------------------\r\n";
+                _journal += "------------------------------\r\n";
 
-                _journal += string.Format("Укупан износ:{0}\r\n", string.Format("{0:#,##0.00}", _totalAmount).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(36 - "Укупан износ:".Length));
+                _journal += string.Format("Укупан износ:{0}\r\n", string.Format("{0:#,##0.00}", _totalAmount).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(30 - "Укупан износ:".Length));
 
-                _journal += string.Format("{0}{1}\r\n", "Готовина:".PadRight(26),
+                _journal += string.Format("{0}{1}\r\n", "Готовина:".PadRight(20),
                     string.Format("{0:#,##0.00}", _totalAmount).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(10));
 
-                _journal += "====================================\r\n";
+                _journal += "==============================\r\n";
 
 
                 string? prName = SettingsManager.Instance.GetPrinterName();
@@ -500,35 +500,35 @@ namespace ClickBar_Printer.PaperFormat
 
                     if (report.EndReport < dateTime)
                     {
-                        reportText += CenterString("Presek stanja", 36);
+                        reportText += CenterString("Presek stanja", 30);
                     }
                     else
                     {
-                        reportText += CenterString("Dnevni izveštaj", 36);
+                        reportText += CenterString("Dnevni izveštaj", 30);
                     }
                 }
                 else
                 {
-                    reportText += CenterString("Periodični izveštaj", 36);
+                    reportText += CenterString("Periodični izveštaj", 30);
                 }
             }
             else
             {
                 if (report.EndReport.Subtract(report.StartReport) < new TimeSpan(29, 0, 0))
                 {
-                    reportText += CenterString("Dnevni izveštaj", 36);
+                    reportText += CenterString("Dnevni izveštaj", 30);
                 }
                 else
                 {
-                    reportText += CenterString("Periodični izveštaj", 36);
+                    reportText += CenterString("Periodični izveštaj", 30);
                 }
             }
 
 
-            reportText += SplitInParts($"{report.StartReport.ToString("dd.MM.yyyy. HH:mm")}", "Početak:", 36);
-            reportText += SplitInParts($"{report.EndReport.ToString("dd.MM.yyyy. HH:mm")}", "Kraj:", 36);
+            reportText += SplitInParts($"{report.StartReport.ToString("dd.MM.yyyy. HH:mm")}", "Početak:", 30);
+            reportText += SplitInParts($"{report.EndReport.ToString("dd.MM.yyyy. HH:mm")}", "Kraj:", 30);
 
-            reportText += "====================================\r\n";
+            reportText += "==============================\r\n";
             reportText += "                            \r\n";
             reportText += "                            \r\n";
 
@@ -542,14 +542,14 @@ namespace ClickBar_Printer.PaperFormat
 
             if (report.ReportItems.Any())
             {
-                reportText += "==============ARTIKLI===============\r\n";
+                reportText += "===========ARTIKLI============\r\n";
                 reportText += ReportReportItems(report.ReportItems);
-                reportText += "====================================\r\n";
+                reportText += "==============================\r\n";
             }
 
-            reportText += "===============KASIRI===============\r\n";
+            reportText += "============KASIRI============\r\n";
             reportText += ReportCashiers(report.ReportCashiers);
-            reportText += "====================================\r\n";
+            reportText += "==============================\r\n";
 
             //if (report.InvoiceTypes.Any())
             //{
@@ -565,7 +565,7 @@ namespace ClickBar_Printer.PaperFormat
 
             //reportText += SplitInParts($"{report.TotalTraffic.ToString("00.00")} din", "Promet:", 40);
             reportText += "                            \r\n";
-            reportText += "====================================\r\n";
+            reportText += "==============================\r\n";
             if (report.StartReport.Day == report.EndReport.Day)
             {
                 if (report.StartReport.Month == report.EndReport.Month)
@@ -574,36 +574,36 @@ namespace ClickBar_Printer.PaperFormat
 
                     if (report.EndReport < dateTime)
                     {
-                        reportText += CenterString("Kraj presek stanja", 36);
+                        reportText += CenterString("Kraj presek stanja", 30);
                     }
                     else
                     {
-                        reportText += CenterString("Kraj dnevnog izveštaja", 36);
+                        reportText += CenterString("Kraj dnevnog izveštaja", 30);
                     }
                 }
                 else
                 {
-                    reportText += CenterString("Kraj periodičnog izveštaja", 36);
+                    reportText += CenterString("Kraj periodičnog izveštaja", 30);
                 }
             }
             else
             {
                 if (report.EndReport.Subtract(report.StartReport) < new TimeSpan(29, 0, 0))
                 {
-                    reportText += CenterString("Kraj dnevnog izveštaja", 36);
+                    reportText += CenterString("Kraj dnevnog izveštaja", 30);
                 }
                 else
                 {
-                    reportText += CenterString("Kraj periodičnog izveštaja", 36);
+                    reportText += CenterString("Kraj periodičnog izveštaja", 30);
                 }
             }
-            reportText += "====================================\r\n";
+            reportText += "==============================\r\n";
 
             return reportText;
         }
         public static string CreateReport(Report report, bool withTax = true)
         {
-            string reportText = "====================================\r\n";
+            string reportText = "==============================\r\n";
             if (report.StartReport.Day == report.EndReport.Day)
             {
                 if (report.StartReport.Month == report.EndReport.Month)
@@ -612,73 +612,73 @@ namespace ClickBar_Printer.PaperFormat
 
                     if (report.EndReport < dateTime)
                     {
-                        reportText += CenterString("Presek stanja", 36);
+                        reportText += CenterString("Presek stanja", 30);
                     }
                     else
                     {
-                        reportText += CenterString("Dnevni izveštaj", 36);
+                        reportText += CenterString("Dnevni izveštaj", 30);
                     }
                 }
                 else
                 {
-                    reportText += CenterString("Periodični izveštaj", 36);
+                    reportText += CenterString("Periodični izveštaj", 30);
                 }
             }
             else
             {
                 if (report.EndReport.Subtract(report.StartReport) < new TimeSpan(29, 0, 0))
                 {
-                    reportText += CenterString("Dnevni izveštaj", 36);
+                    reportText += CenterString("Dnevni izveštaj", 30);
                 }
                 else
                 {
-                    reportText += CenterString("Periodični izveštaj", 36);
+                    reportText += CenterString("Periodični izveštaj", 30);
                 }
             }
 
 
-            reportText += SplitInParts($"{report.StartReport.ToString("dd.MM.yyyy. HH:mm")}", "Početak:", 36);
-            reportText += SplitInParts($"{report.EndReport.ToString("dd.MM.yyyy. HH:mm")}", "Kraj:", 36);
-            reportText += "====================================\r\n";
+            reportText += SplitInParts($"{report.StartReport.ToString("dd.MM.yyyy. HH:mm")}", "Početak:", 30);
+            reportText += SplitInParts($"{report.EndReport.ToString("dd.MM.yyyy. HH:mm")}", "Kraj:", 30);
+            reportText += "==============================\r\n";
             reportText += "                            \r\n";
             reportText += "                            \r\n";
 
             if (withTax)
             {
-                reportText += "===============TAKSE================\r\n";
+                reportText += "============TAKSE=============\r\n";
                 reportText += ReportReportTaxes(report.ReportTaxes);
-                reportText += "====================================\r\n";
+                reportText += "==============================\r\n";
             }
 
 #if CRNO
 #else
-            reportText += "==========NAČINI PLAĆANJA===========\r\n";
+            reportText += "=======NAČINI PLAĆANJA========\r\n";
             reportText += ReportPayments(report.Payments);
-            reportText += "====================================\r\n";
+            reportText += "==============================\r\n";
 #endif
 
-            reportText += "===============KASIRI===============\r\n";
+            reportText += "============KASIRI============\r\n";
             reportText += ReportCashiers(report.ReportCashiers);
-            reportText += "====================================\r\n";
+            reportText += "==============================\r\n";
 
             if (withTax)
             {
-                reportText += "==========REKAPITULACIJA============\r\n";
-                reportText += SplitInParts($"{string.Format("{0:#,##0.00}", report.NormalSale).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "PROMET PRODAJA:", 36);
-                reportText += SplitInParts($"{string.Format("{0:#,##0.00}", report.NormalRefund).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "PROMET REFUNDACIJA:", 36);
-                reportText += SplitInParts($"{string.Format("{0:#,##0.00}", (report.NormalSale + report.NormalRefund)).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "UKUPAN PROMET:", 36);
+                reportText += "=======REKAPITULACIJA=========\r\n";
+                reportText += SplitInParts($"{string.Format("{0:#,##0.00}", report.NormalSale).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "PROMET PRODAJA:", 30);
+                reportText += SplitInParts($"{string.Format("{0:#,##0.00}", report.NormalRefund).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "PROMET REFUNDACIJA:", 30);
+                reportText += SplitInParts($"{string.Format("{0:#,##0.00}", (report.NormalSale + report.NormalRefund)).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "UKUPAN PROMET:", 30);
 
-                reportText += SplitInParts($"{string.Format("{0:#,##0.00}", report.NormalSalePDV).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "PDV PROMET PRODAJA:", 36);
-                reportText += SplitInParts($"{string.Format("{0:#,##0.00}", report.NormalRefundPDV).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "PDV PROMET REFUNDACIJA:", 36);
-                reportText += SplitInParts($"{string.Format("{0:#,##0.00}", (report.NormalSalePDV + report.NormalRefundPDV)).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "UKUPAN PDV PROMET:", 36);
-                reportText += "====================================\r\n";
+                reportText += SplitInParts($"{string.Format("{0:#,##0.00}", report.NormalSalePDV).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "PDV PROMET PRODAJA:", 30);
+                reportText += SplitInParts($"{string.Format("{0:#,##0.00}", report.NormalRefundPDV).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "PDV PROMET REFUNDACIJA:", 30);
+                reportText += SplitInParts($"{string.Format("{0:#,##0.00}", (report.NormalSalePDV + report.NormalRefundPDV)).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "UKUPAN PDV PROMET:", 30);
+                reportText += "==============================\r\n";
             }
 
             if (report.ReportItems.Any())
             {
-                reportText += "==============ARTIKLI===============\r\n";
+                reportText += "===========ARTIKLI============\r\n";
                 reportText += ReportReportItems(report.ReportItems);
-                reportText += "====================================\r\n";
+                reportText += "==============================\r\n";
             }
 
             //if (report.InvoiceTypes.Any())
@@ -690,13 +690,13 @@ namespace ClickBar_Printer.PaperFormat
 #if CRNO
 #else
             reportText += "===========Gotovina u kasi==========\r\n";
-            reportText += SplitInParts("Bruto", "Valuta", 36);
-            reportText += SplitInParts($"{string.Format("{0:#,##0.00}", report.CashInHand).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "RSD", 36);
-            //reportText += "========================================\r\n";
+            reportText += SplitInParts("Bruto", "Valuta", 30);
+            reportText += SplitInParts($"{string.Format("{0:#,##0.00}", report.CashInHand).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "RSD", 30);
+            //reportText += "==================================\r\n";
 #endif
             //reportText += SplitInParts($"{report.TotalTraffic.ToString("00.00")} din", "Promet:", 40);
             reportText += "                            \r\n";
-            reportText += "====================================\r\n";
+            reportText += "==============================\r\n";
             if (report.StartReport.Day == report.EndReport.Day)
             {
                 if (report.StartReport.Month == report.EndReport.Month)
@@ -705,30 +705,30 @@ namespace ClickBar_Printer.PaperFormat
 
                     if (report.EndReport < dateTime)
                     {
-                        reportText += CenterString("Kraj presek stanja", 36);
+                        reportText += CenterString("Kraj presek stanja", 30);
                     }
                     else
                     {
-                        reportText += CenterString("Kraj dnevnog izveštaja", 36);
+                        reportText += CenterString("Kraj dnevnog izveštaja", 30);
                     }
                 }
                 else
                 {
-                    reportText += CenterString("Kraj periodičnog izveštaja", 36);
+                    reportText += CenterString("Kraj periodičnog izveštaja", 30);
                 }
             }
             else
             {
                 if (report.EndReport.Subtract(report.StartReport) < new TimeSpan(29, 0, 0))
                 {
-                    reportText += CenterString("Kraj dnevnog izveštaja", 36);
+                    reportText += CenterString("Kraj dnevnog izveštaja", 30);
                 }
                 else
                 {
-                    reportText += CenterString("Kraj periodičnog izveštaja", 36);
+                    reportText += CenterString("Kraj periodičnog izveštaja", 30);
                 }
             }
-            reportText += "====================================\r\n";
+            reportText += "==============================\r\n";
 
             return reportText;
         }
@@ -790,7 +790,7 @@ namespace ClickBar_Printer.PaperFormat
             Graphics graphics = e.Graphics;
             graphics.PageUnit = GraphicsUnit.Point;
             Font drawFontRegular = new Font("Cascadia Code",
-                _fontSizeInMM,
+                _fontSizeInMM *1.2f,
                 System.Drawing.FontStyle.Regular, GraphicsUnit.Millimeter);
             SolidBrush drawBrush = new SolidBrush(System.Drawing.Color.Black);
 
@@ -857,7 +857,7 @@ namespace ClickBar_Printer.PaperFormat
                 Graphics graphics = e.Graphics;
                 graphics.PageUnit = GraphicsUnit.Point;
                 Font drawFontRegular = new Font("Cascadia Code",
-                    _fontSizeInMM,
+                    _fontSizeInMM * 1.2f,
                     System.Drawing.FontStyle.Regular, GraphicsUnit.Millimeter);
                 Font drawFontUpperBold = new Font("Cascadia Code",
                     drawFontRegular.SizeInPoints * 1.5f,
@@ -964,22 +964,22 @@ namespace ClickBar_Printer.PaperFormat
 
             foreach (KeyValuePair<string, ReportTax> item in reportTaxes)
             {
-                result += SplitInParts($"{item.Key} ({item.Value.Rate}%)", "PDV grupa:", 36);
-                result += SplitInParts($"{item.Value.Gross.ToString("00.00")} din", "Bruto:", 36);
-                result += SplitInParts($"{item.Value.Pdv.ToString("00.00")} din", "PDV:", 36);
-                result += SplitInParts($"{item.Value.Net.ToString("00.00")} din", "Neto:", 36);
+                result += SplitInParts($"{item.Key} ({item.Value.Rate}%)", "PDV grupa:", 30);
+                result += SplitInParts($"{item.Value.Gross.ToString("00.00")} din", "Bruto:", 30);
+                result += SplitInParts($"{item.Value.Pdv.ToString("00.00")} din", "PDV:", 30);
+                result += SplitInParts($"{item.Value.Net.ToString("00.00")} din", "Neto:", 30);
 
-                result += "                                        \r\n";
+                result += "                                  \r\n";
 
                 totalGross += item.Value.Gross;
                 totalPdv += item.Value.Pdv;
                 totalNet += item.Value.Net;
             }
 
-            result += "-------------- Ukupno --------------\r\n";
-            result += SplitInParts($"{totalGross.ToString("00.00")} din", "Bruto:", 36);
-            result += SplitInParts($"{totalPdv.ToString("00.00")} din", "PDV:", 36);
-            result += SplitInParts($"{totalNet.ToString("00.00")} din", "Neto:", 36);
+            result += "----------- Ukupno -----------\r\n";
+            result += SplitInParts($"{totalGross.ToString("00.00")} din", "Bruto:", 30);
+            result += SplitInParts($"{totalPdv.ToString("00.00")} din", "PDV:", 30);
+            result += SplitInParts($"{totalNet.ToString("00.00")} din", "Neto:", 30);
 
             return result;
         }
@@ -1018,16 +1018,16 @@ namespace ClickBar_Printer.PaperFormat
                         break;
                 }
 
-                result += SplitInParts($"{paymentType}", "Način plaćanja:", 36);
-                result += SplitInParts($"{string.Format("{0:#,##0.00}", x.Amount).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "Bruto:", 36);
+                result += SplitInParts($"{paymentType}", "Način plaćanja:", 30);
+                result += SplitInParts($"{string.Format("{0:#,##0.00}", x.Amount).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "Bruto:", 30);
 
                 result += "                       \r\n";
 
                 total += x.Amount;
             });
 
-            result += "-------------- Ukupno --------------\r\n";
-            result += SplitInParts($"{string.Format("{0:#,##0.00}", total).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "Bruto:", 36);
+            result += "----------- Ukupno -----------\r\n";
+            result += SplitInParts($"{string.Format("{0:#,##0.00}", total).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "Bruto:", 30);
 
             return result;
         }
@@ -1039,24 +1039,24 @@ namespace ClickBar_Printer.PaperFormat
 
             foreach (KeyValuePair<string, Dictionary<string, ReportItem>> group in reportItems)
             {
-                result += CenterString(group.Key, 28);
+                result += CenterString(group.Key, 22);
 
                 foreach (KeyValuePair<string, ReportItem> item in group.Value)
                 {
-                    result += SplitInParts($"{item.Key}", "Šifra:", 36);
-                    result += SplitInParts($"{item.Value.Name}", "Artikal:", 36);
-                    result += SplitInParts($"{item.Value.Quantity}", "Količina:", 36);
-                    result += SplitInParts($"{item.Value.Gross} din", "Bruto:", 36);
+                    result += SplitInParts($"{item.Key}", "Šifra:", 30);
+                    result += SplitInParts($"{item.Value.Name}", "Artikal:", 30);
+                    result += SplitInParts($"{item.Value.Quantity}", "Količina:", 30);
+                    result += SplitInParts($"{item.Value.Gross} din", "Bruto:", 30);
 
                     result += "                            \r\n";
 
                     total += item.Value.Gross;
                 }
-                result += "------------------------------------\r\n";
+                result += "------------------------------\r\n";
             }
 
-            result += "-------------- Ukupno --------------\r\n";
-            result += SplitInParts($"{string.Format("{0:#,##0.00}", total).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "Bruto:", 36);
+            result += "----------- Ukupno -----------\r\n";
+            result += SplitInParts($"{string.Format("{0:#,##0.00}", total).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "Bruto:", 30);
 
             return result;
         }
@@ -1068,16 +1068,16 @@ namespace ClickBar_Printer.PaperFormat
 
             foreach (KeyValuePair<string, decimal> item in cashiers)
             {
-                result += SplitInParts($"{item.Key}", "Kasir:", 36);
-                result += SplitInParts($"{string.Format("{0:#,##0.00}", item.Value).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "Bruto:", 36);
+                result += SplitInParts($"{item.Key}", "Kasir:", 30);
+                result += SplitInParts($"{string.Format("{0:#,##0.00}", item.Value).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "Bruto:", 30);
 
                 result += "                            \r\n";
 
                 total += item.Value;
             }
 
-            result += "-------------- Ukupno --------------\r\n";
-            result += SplitInParts($"{string.Format("{0:#,##0.00}", total).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "Bruto:", 36);
+            result += "----------- Ukupno -----------\r\n";
+            result += SplitInParts($"{string.Format("{0:#,##0.00}", total).Replace(',', '#').Replace('.', ',').Replace('#', '.')} din", "Bruto:", 30);
 
             return result;
         }
@@ -1137,8 +1137,8 @@ namespace ClickBar_Printer.PaperFormat
         private static string GetItemsForJournal(InvoceRequestFileSystemWatcher invoiceRequest)
         {
             string items = "Артикли\r\n";
-            items += "====================================\r\n";
-            items += string.Format("{0}{1}{2}{3}\r\n", "Назив".PadRight(13), "Цена".PadRight(8), "Кол.".PadRight(5), "Укупно".PadLeft(10));
+            items += "==============================\r\n";
+            items += string.Format("{0}{1}{2}{3}\r\n", "Назив".PadRight(10), "Цена".PadRight(7), "Кол.".PadRight(4), "Укупно".PadLeft(9));
 
             foreach (ItemFileSystemWatcher item in invoiceRequest.Items)
             {
@@ -1146,11 +1146,11 @@ namespace ClickBar_Printer.PaperFormat
 
                 decimal price = item.TotalAmount / item.Quantity;
 
-                items += SplitInParts(i, "", 36, 1);
-                items += string.Format("{0}{1}{2}{3}\r\n", string.Empty.PadRight(13),
-                    string.Format("{0:#,##0.00}", price).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadRight(8),
-                    item.Quantity.ToString().PadRight(5),
-                    string.Format("{0:#,##0.00}", item.TotalAmount).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(10));
+                items += SplitInParts(i, "", 30, 1);
+                items += string.Format("{0}{1}{2}{3}\r\n", string.Empty.PadRight(10),
+                    string.Format("{0:#,##0.00}", price).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadRight(7),
+                    $" {item.Quantity}".PadRight(4),
+                    string.Format("{0:#,##0.00}", item.TotalAmount).Replace(',', '#').Replace('.', ',').Replace('#', '.').PadLeft(9));
 
                 _totalAmount += item.TotalAmount;
             }

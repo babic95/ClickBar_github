@@ -17,6 +17,6 @@ namespace ClickBar_InputOutputExcelFiles.Models
         public string Telefon { get; set; }
         public string Email { get; set; }
         public CashierTypeEnumeration Pozicija_Radnika { get; set; }
-        public string Broj_Kartice_Za_Prijavu { get; set; }
+        public string? Broj_Kartice_Za_Prijavu { get; set; }
     }
 }

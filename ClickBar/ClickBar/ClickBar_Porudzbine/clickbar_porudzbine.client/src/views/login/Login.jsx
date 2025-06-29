@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import TextField from '@mui/material/TextField';
 import './Login.css'
 import imageLogo from '../../icons/logo.png';
-import PrintComponent from '../../components/PrintComponent';
 
 const Login = () => {
     const [deferredPrompt, setDeferredPrompt] = useState(null);

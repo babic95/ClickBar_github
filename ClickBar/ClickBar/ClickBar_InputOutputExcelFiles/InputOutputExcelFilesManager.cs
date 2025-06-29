@@ -333,7 +333,8 @@ namespace ClickBar_InputOutputExcelFiles
                         Jmbg = cashier.Jmbg,
                         Telefon = cashier.ContactNumber,
                         Šifra = cashier.Id,
-                        Pozicija_Radnika = cashier.Type
+                        Pozicija_Radnika = cashier.Type,
+                        Broj_Kartice_Za_Prijavu = cashier.SmartCardNumber
                     });
                 });
 
